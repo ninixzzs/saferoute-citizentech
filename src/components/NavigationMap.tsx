@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { DangerZone, IncidentReport, NavigationRoute } from '../types';
-import { Layers, Crosshair } from 'lucide-react';
+import { Layers, Crosshair, Plus, Minus } from 'lucide-react';
 
 interface NavigationMapProps {
   currentPosition: [number, number];
@@ -11,12 +11,13 @@ interface NavigationMapProps {
   incidents: IncidentReport[];
   isNavigating: boolean;
   onZoneClick?: (zone: DangerZone) => void;
+  mapPickMode?: 'none' | 'origin' | 'destination';
+  onMapPick?: (coords: [number, number]) => void;
+  focusPoint?: { coords: [number, number]; ts: number } | null;
+  topControlOffsetClass?: string;
   className?: string;
 }
 
-/**
- * Calculates compass bearing in degrees (0 = North, 90 = East) from point A to B
- */
 function calculateBearing(from: [number, number], to: [number, number]): number {
   const toRad = (d: number) => (d * Math.PI) / 180;
   const toDeg = (r: number) => (r * 180) / Math.PI;
@@ -43,6 +44,10 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
   incidents,
   isNavigating,
   onZoneClick,
+  mapPickMode = 'none',
+  onMapPick,
+  focusPoint = null,
+  topControlOffsetClass = 'top-16',
   className = '',
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -57,8 +62,15 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
 
   const baseTileLayerRef = useRef<L.TileLayer | null>(null);
   const labelsTileLayerRef = useRef<L.TileLayer | null>(null);
+
   const isNavigatingRef = useRef<boolean>(isNavigating);
   isNavigatingRef.current = isNavigating;
+
+  const mapPickModeRef = useRef<'none' | 'origin' | 'destination'>(mapPickMode);
+  mapPickModeRef.current = mapPickMode;
+
+  const onMapPickRef = useRef(onMapPick);
+  onMapPickRef.current = onMapPick;
 
   const [mapType, setMapType] = useState<'satellite' | 'street'>('satellite');
 
@@ -94,6 +106,12 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     zonesLayerGroupRef.current = L.layerGroup().addTo(map);
     incidentsLayerGroupRef.current = L.layerGroup().addTo(map);
 
+    map.on('click', (e: L.LeafletMouseEvent) => {
+      if (mapPickModeRef.current !== 'none' && onMapPickRef.current) {
+        onMapPickRef.current([e.latlng.lat, e.latlng.lng]);
+      }
+    });
+
     mapInstanceRef.current = map;
 
     map.invalidateSize();
@@ -122,7 +140,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     };
   }, []);
 
-  // Handle Map Type Switch (Satélite Real vs Mapa de Ruas)
+  // Handle Map Type Switch (Satélite vs Ruas)
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -177,13 +195,13 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     if (destinationMarkerRef.current) destinationMarkerRef.current.remove();
 
     const isSafe = selectedRoute.type === 'segura';
-    const mainColor = isSafe ? '#1a73e8' : '#64748b';
+    const mainColor = isSafe ? '#2563eb' : '#64748b';
     const glowColor = 'rgba(0, 0, 0, 0.5)';
 
     const glowLine = L.polyline(selectedRoute.path, {
       color: glowColor,
       weight: 9,
-      opacity: 0.85,
+      opacity: 0.8,
       lineCap: 'round',
       lineJoin: 'round',
     }).addTo(map);
@@ -198,7 +216,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     }).addTo(map);
     routePolylineRef.current = mainLine;
 
-    // Origin Pin (Clean White Dot)
+    // Origin Pin
     const originCoords = selectedRoute.path[0];
     const originIcon = L.divIcon({
       html: `
@@ -243,14 +261,20 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     `);
     destinationMarkerRef.current = destMarker;
 
-    // Only flyToBounds when previewing (avoid conflicting with panTo during active driving)
     if (!isNavigatingRef.current) {
       try {
         const bounds = L.latLngBounds(selectedRoute.path);
-        map.flyToBounds(bounds, { padding: [55, 55], duration: 1.1 });
+        map.flyToBounds(bounds, { padding: [55, 55], duration: 1.0 });
       } catch {}
     }
   }, [selectedRoute]);
+
+  // Focus specific coordinate when user clicks an incident in the feed
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !focusPoint) return;
+    map.flyTo(focusPoint.coords, 16, { duration: 0.9 });
+  }, [focusPoint]);
 
   // Update Danger Zones
   useEffect(() => {
@@ -341,8 +365,8 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     const carIcon = L.divIcon({
       html: `
         <div style="position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center;transform:rotate(${bearing}deg);transition:transform 0.6s ease-out;">
-          <div style="position:absolute;width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-bottom:30px solid rgba(26,115,232,0.35);top:-11px;pointer-events:none;"></div>
-          <div style="width:26px;height:26px;border-radius:50%;background:#1a73e8;border:3px solid #ffffff;box-shadow:0 3px 8px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;color:white;z-index:2;">
+          <div style="position:absolute;width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-bottom:30px solid rgba(37,99,235,0.35);top:-11px;pointer-events:none;"></div>
+          <div style="width:26px;height:26px;border-radius:50%;background:#2563eb;border:3px solid #ffffff;box-shadow:0 3px 8px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;color:white;z-index:2;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="#ffffff">
               <polygon points="12,2 20,21 12,17 4,21"/>
             </svg>
@@ -378,17 +402,25 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     }
   };
 
+  const handleZoomIn = () => mapInstanceRef.current?.zoomIn();
+  const handleZoomOut = () => mapInstanceRef.current?.zoomOut();
+
   return (
-    <div className={`relative w-full h-full bg-[#0a0a0a] overflow-hidden ${className}`}>
+    <div
+      className={`relative w-full h-full bg-neutral-900 overflow-hidden ${
+        mapPickMode !== 'none' ? 'cursor-crosshair' : ''
+      } ${className}`}
+    >
       <div
         ref={mapContainerRef}
         className="w-full h-full"
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
 
-      {/* Top-right Map Controls: Layers & Recenter */}
-      <div className="absolute top-16 right-3 z-[400] flex flex-col items-end gap-2 pointer-events-auto">
+      {/* Right-side Map Controls */}
+      <div className={`absolute ${topControlOffsetClass} right-3 z-[400] flex flex-col items-end gap-2 pointer-events-auto`}>
         <button
+          type="button"
           onClick={() => setMapType(mapType === 'satellite' ? 'street' : 'satellite')}
           className="px-2.5 py-1.5 rounded-xl bg-black/80 hover:bg-black text-white text-[11px] font-semibold backdrop-blur-md border border-white/20 shadow-lg flex items-center gap-1.5 transition-all active:scale-95"
           title="Alternar entre Satélite e Mapa de Ruas"
@@ -397,10 +429,33 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
           <span>{mapType === 'satellite' ? 'Satélite' : 'Ruas'}</span>
         </button>
 
+        <div className="flex flex-col rounded-xl overflow-hidden bg-black/80 backdrop-blur-md border border-white/20 shadow-lg">
+          <button
+            type="button"
+            onClick={handleZoomIn}
+            className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 transition-colors border-b border-white/10"
+            title="Aumentar zoom"
+            aria-label="Aumentar zoom"
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={handleZoomOut}
+            className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 transition-colors"
+            title="Diminuir zoom"
+            aria-label="Diminuir zoom"
+          >
+            <Minus className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
         <button
+          type="button"
           onClick={handleRecenter}
           className="w-8 h-8 rounded-full bg-black/80 hover:bg-black text-white backdrop-blur-md border border-white/20 shadow-lg flex items-center justify-center transition-all active:scale-90"
           title="Centralizar mapa no trajeto"
+          aria-label="Centralizar mapa no trajeto"
         >
           <Crosshair className="w-3.5 h-3.5" />
         </button>

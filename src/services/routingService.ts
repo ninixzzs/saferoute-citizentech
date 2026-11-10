@@ -312,6 +312,44 @@ export async function geocodeAddress(
 }
 
 /**
+ * Reverse geocodes a clicked map point into a readable street/neighborhood name
+ */
+export async function reverseGeocode(lat: number, lon: number): Promise<LocationSuggestion> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=17&addressdetails=1`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { 'Accept-Language': 'pt-BR,pt;q=0.9' },
+    });
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const data = await res.json();
+      const addr = data?.address || {};
+      const road = addr.road || addr.pedestrian || addr.suburb || addr.neighbourhood;
+      const area = addr.suburb || addr.neighbourhood || addr.city || 'São Paulo';
+      if (road) {
+        return {
+          name: road,
+          address: `${road} - ${area}`,
+          coordinates: [Number(lat.toFixed(5)), Number(lon.toFixed(5))],
+        };
+      }
+    }
+  } catch {
+    // Fallback below
+  }
+
+  return {
+    name: `Ponto (${lat.toFixed(4)}, ${lon.toFixed(4)})`,
+    address: `${lat.toFixed(5)}, ${lon.toFixed(5)}`,
+    coordinates: [Number(lat.toFixed(5)), Number(lon.toFixed(5))],
+  };
+}
+
+/**
  * Uniformly resamples a dense road polyline to a clean number of animation waypoints
  * while preserving exact street geometry
  */

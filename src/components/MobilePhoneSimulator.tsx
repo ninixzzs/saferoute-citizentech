@@ -54,6 +54,7 @@ interface MobilePhoneSimulatorProps {
   onResetPresetRoutes?: () => void;
   simSpeed: '1x' | '2x';
   onToggleSimSpeed: (speed: '1x' | '2x') => void;
+  focusPoint?: { coords: [number, number]; ts: number } | null;
 }
 
 export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
@@ -83,6 +84,7 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
   isCalculatingRoute = false,
   simSpeed,
   onToggleSimSpeed,
+  focusPoint = null,
 }) => {
   const [originInput, setOriginInput] = useState<string>(originLocation.name);
   const [destInput, setDestInput] = useState<string>(destinationLocation.name);
@@ -224,6 +226,7 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
               dangerZones={dangerZones}
               incidents={incidents}
               isNavigating={isNavigating}
+              focusPoint={focusPoint}
               className="w-full h-full border-0 rounded-none shadow-none"
             />
           </div>

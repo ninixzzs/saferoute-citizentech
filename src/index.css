@@ -1,56 +1,68 @@
 @import "tailwindcss";
 
+/* Enable class-based dark mode in Tailwind CSS v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
+  html {
+    transition: font-size 0.15s ease-out;
+  }
+
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   }
 }
 
-/* Custom pulsing alert and radar effects */
-@keyframes radar-pulse {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
-  }
-  70% {
-    transform: scale(1);
-    box-shadow: 0 0 0 20px rgba(239, 68, 68, 0);
-  }
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
-  }
+/* Architectural dot-grid backgrounds for Light and Dark modes */
+.bg-grid-light {
+  background-color: #f8fafc;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(37, 99, 235, 0.08), transparent),
+    radial-gradient(#cbd5e1 1px, transparent 1px);
+  background-size: 100% 100%, 24px 24px;
 }
 
-.radar-warning {
-  animation: radar-pulse 2s infinite;
+.bg-grid-dark {
+  background-color: #09090b;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(59, 130, 246, 0.12), transparent),
+    radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 100% 100%, 24px 24px;
 }
 
-@keyframes siren-flash {
-  0%, 100% {
-    border-color: rgba(239, 68, 68, 0.9);
-    background-color: rgba(239, 68, 68, 0.15);
-  }
-  50% {
-    border-color: rgba(245, 158, 11, 0.9);
-    background-color: rgba(245, 158, 11, 0.15);
-  }
+/* High contrast accessibility mode */
+html.high-contrast body {
+  filter: contrast(1.15);
 }
 
-.emergency-broadcast {
-  animation: siren-flash 1.2s infinite;
+html.high-contrast *:focus-visible {
+  outline: 3px solid #2563eb !important;
+  outline-offset: 2px !important;
 }
 
 /* Leaflet styles and container adjustments */
 .leaflet-container {
-  background-color: #0a0a0a !important;
+  background-color: #0f172a !important;
   font-family: inherit;
   width: 100% !important;
   height: 100% !important;
   z-index: 1;
 }
 
-/* Sleek minimalist scrollbars */
+.leaflet-popup-content-wrapper {
+  background: #ffffff !important;
+  color: #171717 !important;
+  border-radius: 12px !important;
+  border: 1px solid #e5e5e5 !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.22) !important;
+}
+
+.leaflet-popup-tip {
+  background: #ffffff !important;
+  border: 1px solid #e5e5e5 !important;
+}
+
+/* Sleek scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -59,22 +71,9 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(148, 163, 184, 0.35);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-.leaflet-popup-content-wrapper {
-  background: #ffffff !important;
-  color: #202124 !important;
-  border-radius: 12px !important;
-  border: 1px solid #dadce0 !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
-}
-
-.leaflet-popup-tip {
-  background: #ffffff !important;
-  border: 1px solid #dadce0 !important;
+  background: rgba(148, 163, 184, 0.55);
 }

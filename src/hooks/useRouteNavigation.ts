@@ -3,6 +3,7 @@ import { NavigationRoute, DangerZone } from '../types';
 import { PRESET_ROUTES } from '../data/mockData';
 import {
   geocodeAddress,
+  reverseGeocode,
   calculateRoutesBetweenPoints,
   LocationSuggestion,
   DEFAULT_ORIGIN,
@@ -116,11 +117,55 @@ export function useRouteNavigation() {
 
   const swapOriginAndDestination = useCallback(
     async (dangerZones: DangerZone[]) => {
-      const newOrigin = destinationLocation;
-      const newDest = originLocation;
-      return calculateJourney(newOrigin.name, newDest.name, dangerZones);
+      setIsCalculatingRoute(true);
+      try {
+        const newOrigin = destinationLocation;
+        const newDest = originLocation;
+        const newRoutes = await calculateRoutesBetweenPoints(newOrigin, newDest, dangerZones);
+        setOriginLocation(newOrigin);
+        setDestinationLocation(newDest);
+        setRoutes(newRoutes);
+
+        const safeRoute = newRoutes.find((r) => r.type === 'segura') || newRoutes[0];
+        setSelectedRoute(safeRoute);
+        setCurrentStepIndex(0);
+        setCurrentPosition(safeRoute.path[0]);
+        setIsNavigating(false);
+        setIsPaused(false);
+        setSpeedKmH(0);
+      } finally {
+        setIsCalculatingRoute(false);
+      }
     },
-    [originLocation, destinationLocation, calculateJourney]
+    [originLocation, destinationLocation]
+  );
+
+  // Set Origin or Destination directly from a map click
+  const setPointFromMap = useCallback(
+    async (role: 'origin' | 'destination', coords: [number, number], dangerZones: DangerZone[]) => {
+      setIsCalculatingRoute(true);
+      try {
+        const picked = await reverseGeocode(coords[0], coords[1]);
+        const newOrigin = role === 'origin' ? picked : originLocation;
+        const newDest = role === 'destination' ? picked : destinationLocation;
+
+        const newRoutes = await calculateRoutesBetweenPoints(newOrigin, newDest, dangerZones);
+        setOriginLocation(newOrigin);
+        setDestinationLocation(newDest);
+        setRoutes(newRoutes);
+
+        const safeRoute = newRoutes.find((r) => r.type === 'segura') || newRoutes[0];
+        setSelectedRoute(safeRoute);
+        setCurrentStepIndex(0);
+        setCurrentPosition(safeRoute.path[0]);
+        setIsNavigating(false);
+        setIsPaused(false);
+        setSpeedKmH(0);
+      } finally {
+        setIsCalculatingRoute(false);
+      }
+    },
+    [originLocation, destinationLocation]
   );
 
   const resetToPresetRoutes = useCallback(() => {
@@ -178,6 +223,7 @@ export function useRouteNavigation() {
     switchImmediatelyToSafeRoute,
     calculateJourney,
     swapOriginAndDestination,
+    setPointFromMap,
     resetToPresetRoutes,
     originLocation,
     destinationLocation,
