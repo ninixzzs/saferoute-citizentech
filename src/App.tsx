@@ -23,7 +23,7 @@ import {
   Route,
   ListChecks,
   Navigation,
-  ChevronRight,
+  MessageSquareWarning,
 } from 'lucide-react';
 
 export function App() {
@@ -85,11 +85,12 @@ export function App() {
 
   const { voiceEnabled, setVoiceEnabled, speakAlert } = useVoiceGuidance();
 
-  // Desktop & Mobile workspace states
+  // Workspace states
   const [viewMode, setViewMode] = useState<'map' | 'phone'>('map');
   const [sidebarTab, setSidebarTab] = useState<'routes' | 'itinerary' | 'alerts'>('routes');
   const [mobileTab, setMobileTab] = useState<'map' | 'routes' | 'itinerary' | 'alerts'>('map');
   const [focusPoint, setFocusPoint] = useState<{ coords: [number, number]; ts: number } | null>(null);
+  const [simulatedAlertZone, setSimulatedAlertZone] = useState<DangerZone | null>(null);
 
   // Modals
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -111,14 +112,23 @@ export function App() {
     onEnterCriticalZone: handleEnterCriticalZone,
   });
 
+  const effectiveAlertZone = activeAlertZone || simulatedAlertZone;
+
+  const handleDismissEffectiveAlert = (id: string) => {
+    dismissAlert(id);
+    setSimulatedAlertZone(null);
+  };
+
   const handleAcceptReroute = () => {
     switchImmediatelyToSafeRoute();
+    setSimulatedAlertZone(null);
     speakAlert('Desvio seguro ativado. Rota monitorada em andamento.');
   };
 
   const handleResetAll = () => {
     resetNavigation();
     resetDismissed();
+    setSimulatedAlertZone(null);
   };
 
   const handleFocusIncident = (coords: [number, number]) => {
@@ -132,6 +142,16 @@ export function App() {
       setMobileTab('map');
     }
     return res;
+  };
+
+  const handleTriggerDemoAlert = () => {
+    const targetZone = dangerZones[0];
+    if (targetZone) {
+      setSimulatedAlertZone(targetZone);
+      speakAlert(
+        `Alerta Defesa Civil: Área de risco próxima em ${targetZone.neighborhood}. ${targetZone.defenseCivilTip}`
+      );
+    }
   };
 
   return (
@@ -161,111 +181,186 @@ export function App() {
       />
 
       {/* Main Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-3 sm:py-5 space-y-4 pb-20 lg:pb-6">
-        {/* Desktop Impactful Trip Command Header */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-5 pb-24 lg:pb-8">
+        {/* Hero Header Section with Requested Title & Description */}
         <section
-          aria-label="Resumo da viagem e controles"
-          className="hidden lg:flex items-center justify-between gap-4 p-3.5 px-5 rounded-2xl bg-white/90 dark:bg-neutral-900/85 border border-neutral-200 dark:border-neutral-800 backdrop-blur-xl shadow-sm select-none"
+          aria-label="Apresentação do SafeRoute"
+          className="rounded-3xl bg-white/90 dark:bg-neutral-900/85 border border-neutral-200 dark:border-neutral-800 backdrop-blur-xl p-5 sm:p-6 shadow-sm"
         >
-          {/* Left: Journey Title + Live Status */}
-          <div className="flex items-center gap-4 min-w-0">
-            <div className="flex items-center gap-2 shrink-0 px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/70 text-[11px] font-bold text-indigo-700 dark:text-indigo-300">
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  isNavigating ? 'bg-indigo-600 dark:bg-indigo-400 animate-pulse' : 'bg-indigo-500'
-                }`}
-              />
-              <span>{isNavigating ? 'Navegação Ativa' : 'Pronto para Traçar'}</span>
-            </div>
-
-            <div className="flex items-center gap-2 text-sm font-semibold text-neutral-900 dark:text-white truncate">
-              <span className="truncate max-w-[200px] text-neutral-600 dark:text-neutral-300 font-medium">
-                {originLocation.name}
-              </span>
-              <ChevronRight className="w-4 h-4 text-neutral-400 shrink-0" />
-              <span className="truncate max-w-[220px] font-bold">{destinationLocation.name}</span>
-            </div>
-          </div>
-
-          {/* Right: Telemetry Pills + Desktop View Mode Switcher */}
-          <div className="flex items-center gap-3 shrink-0 tabular-nums">
-            <div className="flex items-center gap-2">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-100/80 dark:bg-neutral-950/80 border border-neutral-200 dark:border-neutral-800 text-xs">
-                <Route className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                <span className="font-mono font-bold text-neutral-950 dark:text-white">
-                  {selectedRoute.distanceKm} km
-                </span>
-                <span className="text-neutral-400">&bull;</span>
-                <span className="font-mono text-neutral-600 dark:text-neutral-300">
-                  {selectedRoute.durationMin} min
-                </span>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+            {/* Hero Title & Description */}
+            <div className="space-y-2 max-w-2xl">
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/70 text-[11px] font-bold text-indigo-700 dark:text-indigo-300">
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    isNavigating ? 'bg-indigo-600 dark:bg-indigo-400 animate-pulse' : 'bg-indigo-500'
+                  }`}
+                />
+                <span>SafeRoute São Paulo &bull; Navegação Preventiva</span>
               </div>
 
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-100/80 dark:bg-neutral-950/80 border border-neutral-200 dark:border-neutral-800 text-xs">
-                <ShieldCheck className="w-3.5 h-3.5 text-neutral-700 dark:text-neutral-300" />
-                <span className="text-neutral-500 dark:text-neutral-400">Segurança:</span>
-                <span className="font-mono font-bold text-neutral-950 dark:text-white">
-                  {selectedRoute.safetyScore}/100
-                </span>
-              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-950 dark:text-white leading-tight">
+                Rotas que avisam antes do risco.
+              </h1>
 
-              <button
-                type="button"
-                onClick={() => setSidebarTab('alerts')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-100/80 dark:bg-neutral-950/80 hover:bg-neutral-200/70 dark:hover:bg-neutral-800 border border-neutral-200 dark:border-neutral-800 text-xs transition-colors"
-              >
-                <AlertCircle className="w-3.5 h-3.5 text-neutral-700 dark:text-neutral-300" />
-                <span className="font-mono font-bold text-neutral-950 dark:text-white">
-                  {allIncidents.length}
-                </span>
-                <span className="text-neutral-500 dark:text-neutral-400">alertas</span>
-              </button>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                O SafeRoute compara o caminho mais rápido com um desvio seguro e manda uma mensagem
+                no celular quando você chega perto de uma área de risco em São Paulo.
+              </p>
             </div>
 
-            <div
-              role="tablist"
-              aria-label="Modo de visualização no computador"
-              className="inline-flex items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800"
-            >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={viewMode === 'map'}
-                onClick={() => setViewMode('map')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                  viewMode === 'map'
-                    ? 'bg-white dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-xs ring-1 ring-neutral-200 dark:ring-neutral-700'
-                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
-                }`}
-              >
-                <Map className="w-3.5 h-3.5" />
-                <span>Mapa Amplo</span>
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={viewMode === 'phone'}
-                onClick={() => setViewMode('phone')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                  viewMode === 'phone'
-                    ? 'bg-white dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-xs ring-1 ring-neutral-200 dark:ring-neutral-700'
-                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
-                }`}
-              >
-                <Smartphone className="w-3.5 h-3.5" />
-                <span>Simulador Celular</span>
-              </button>
+            {/* Interactive Quick Actions & Desktop View Mode Switcher */}
+            <div className="flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end gap-3 shrink-0 tabular-nums select-none">
+              {/* Telemetry Pills */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-100/90 dark:bg-neutral-950/80 border border-neutral-200 dark:border-neutral-800 text-xs">
+                  <Route className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                  <span className="font-mono font-bold text-neutral-950 dark:text-white">
+                    {selectedRoute.distanceKm} km
+                  </span>
+                  <span className="text-neutral-400">&bull;</span>
+                  <span className="font-mono text-neutral-600 dark:text-neutral-300">
+                    {selectedRoute.durationMin} min
+                  </span>
+                </div>
+
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-100/90 dark:bg-neutral-950/80 border border-neutral-200 dark:border-neutral-800 text-xs">
+                  <ShieldCheck className="w-3.5 h-3.5 text-neutral-700 dark:text-neutral-300" />
+                  <span className="text-neutral-500 dark:text-neutral-400">Segurança:</span>
+                  <span className="font-mono font-bold text-neutral-950 dark:text-white">
+                    {selectedRoute.safetyScore}/100
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Controls: Test Alert + Desktop Map/Phone Switcher */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleTriggerDemoAlert}
+                  className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm flex items-center gap-1.5 transition-all active:scale-98"
+                  title="Simular recebimento de alerta da Defesa Civil no aparelho"
+                >
+                  <MessageSquareWarning className="w-3.5 h-3.5" />
+                  <span>Testar Alerta de Risco</span>
+                </button>
+
+                <div
+                  role="tablist"
+                  aria-label="Modo de visualização no computador"
+                  className="hidden lg:inline-flex items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800"
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={viewMode === 'map'}
+                    onClick={() => setViewMode('map')}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                      viewMode === 'map'
+                        ? 'bg-white dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-xs ring-1 ring-neutral-200 dark:ring-neutral-700'
+                        : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
+                    }`}
+                  >
+                    <Map className="w-3.5 h-3.5" />
+                    <span>Mapa Amplo</span>
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={viewMode === 'phone'}
+                    onClick={() => setViewMode('phone')}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                      viewMode === 'phone'
+                        ? 'bg-white dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-xs ring-1 ring-neutral-200 dark:ring-neutral-700'
+                        : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
+                    }`}
+                  >
+                    <Smartphone className="w-3.5 h-3.5" />
+                    <span>Simulador Celular</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* DESKTOP LAYOUT (>= lg): Unified 2-Panel Command Center + Map Stage */}
+        {/* DESKTOP LAYOUT (>= lg): Map Prototype on LEFT (7 cols), Information on RIGHT (5 cols) */}
         <div className="hidden lg:grid lg:grid-cols-12 gap-6 items-start">
-          {/* Left Command Center (5 cols) */}
-          <aside className="lg:col-span-5 rounded-3xl bg-white/95 dark:bg-neutral-900/90 border border-neutral-200 dark:border-neutral-800 backdrop-blur-xl shadow-xl overflow-hidden flex flex-col">
+          {/* LEFT: Interactive Map Stage / Mobile Prototype (7 cols) */}
+          <section
+            aria-label="Protótipo do mapa interativo"
+            className="lg:col-span-7 lg:sticky lg:top-20"
+          >
+            {viewMode === 'map' ? (
+              <ExpandedMapWorkspace
+                currentPosition={currentPosition}
+                nextPosition={nextPosition}
+                selectedRoute={selectedRoute}
+                allRoutes={routes}
+                onSelectRoute={selectRoute}
+                originLocation={originLocation}
+                destinationLocation={destinationLocation}
+                dangerZones={dangerZones}
+                incidents={incidents}
+                isNavigating={isNavigating}
+                isPaused={isPaused}
+                speedKmH={speedKmH}
+                progressPercentage={progressPercentage}
+                activeAlertZone={effectiveAlertZone}
+                onStart={startNavigation}
+                onPause={pauseNavigation}
+                onResume={resumeNavigation}
+                onReset={handleResetAll}
+                onAcceptReroute={handleAcceptReroute}
+                onDismissAlert={handleDismissEffectiveAlert}
+                focusPoint={focusPoint}
+                simSpeed={simSpeed}
+                onToggleSimSpeed={setSimSpeed}
+              />
+            ) : (
+              <MobilePhoneSimulator
+                currentPosition={currentPosition}
+                nextPosition={nextPosition}
+                selectedRoute={selectedRoute}
+                allRoutes={routes}
+                onSelectRoute={selectRoute}
+                dangerZones={dangerZones}
+                incidents={incidents}
+                isNavigating={isNavigating}
+                isPaused={isPaused}
+                speedKmH={speedKmH}
+                progressPercentage={progressPercentage}
+                activeAlertZone={effectiveAlertZone}
+                voiceEnabled={voiceEnabled}
+                onToggleVoice={() => setVoiceEnabled(!voiceEnabled)}
+                onStart={startNavigation}
+                onPause={pauseNavigation}
+                onResume={resumeNavigation}
+                onReset={handleResetAll}
+                onAcceptReroute={handleAcceptReroute}
+                onDismissAlert={handleDismissEffectiveAlert}
+                onOpenReportModal={() => setIsReportModalOpen(true)}
+                originLocation={originLocation}
+                destinationLocation={destinationLocation}
+                onCalculateJourney={(orig, dest) => calculateJourney(orig, dest, dangerZones)}
+                onSwapLocations={() => swapOriginAndDestination(dangerZones)}
+                isCalculatingRoute={isCalculatingRoute}
+                onResetPresetRoutes={resetToPresetRoutes}
+                simSpeed={simSpeed}
+                onToggleSimSpeed={setSimSpeed}
+                focusPoint={focusPoint}
+              />
+            )}
+          </section>
+
+          {/* RIGHT: Information & Command Center (5 cols) */}
+          <aside
+            aria-label="Painel de informações e rotas"
+            className="lg:col-span-5 rounded-3xl bg-white/95 dark:bg-neutral-900/90 border border-neutral-200 dark:border-neutral-800 backdrop-blur-xl shadow-xl overflow-hidden flex flex-col"
+          >
             <div
               role="tablist"
-              aria-label="Seções do painel de controle"
+              aria-label="Seções de informação"
               className="grid grid-cols-3 p-1.5 gap-1 bg-neutral-100/80 dark:bg-neutral-950/60 border-b border-neutral-200 dark:border-neutral-800 select-none"
             >
               <button
@@ -360,76 +455,9 @@ export function App() {
               )}
             </div>
           </aside>
-
-          {/* Right Map Stage (7 cols) */}
-          <section
-            aria-label="Mapa interativo de navegação"
-            className="lg:col-span-7 lg:sticky lg:top-20"
-          >
-            {viewMode === 'map' ? (
-              <ExpandedMapWorkspace
-                currentPosition={currentPosition}
-                nextPosition={nextPosition}
-                selectedRoute={selectedRoute}
-                allRoutes={routes}
-                onSelectRoute={selectRoute}
-                originLocation={originLocation}
-                destinationLocation={destinationLocation}
-                dangerZones={dangerZones}
-                incidents={incidents}
-                isNavigating={isNavigating}
-                isPaused={isPaused}
-                speedKmH={speedKmH}
-                progressPercentage={progressPercentage}
-                activeAlertZone={activeAlertZone}
-                onStart={startNavigation}
-                onPause={pauseNavigation}
-                onResume={resumeNavigation}
-                onReset={handleResetAll}
-                onAcceptReroute={handleAcceptReroute}
-                onDismissAlert={dismissAlert}
-                focusPoint={focusPoint}
-                simSpeed={simSpeed}
-                onToggleSimSpeed={setSimSpeed}
-              />
-            ) : (
-              <MobilePhoneSimulator
-                currentPosition={currentPosition}
-                nextPosition={nextPosition}
-                selectedRoute={selectedRoute}
-                allRoutes={routes}
-                onSelectRoute={selectRoute}
-                dangerZones={dangerZones}
-                incidents={incidents}
-                isNavigating={isNavigating}
-                isPaused={isPaused}
-                speedKmH={speedKmH}
-                progressPercentage={progressPercentage}
-                activeAlertZone={activeAlertZone}
-                voiceEnabled={voiceEnabled}
-                onToggleVoice={() => setVoiceEnabled(!voiceEnabled)}
-                onStart={startNavigation}
-                onPause={pauseNavigation}
-                onResume={resumeNavigation}
-                onReset={handleResetAll}
-                onAcceptReroute={handleAcceptReroute}
-                onDismissAlert={dismissAlert}
-                onOpenReportModal={() => setIsReportModalOpen(true)}
-                originLocation={originLocation}
-                destinationLocation={destinationLocation}
-                onCalculateJourney={(orig, dest) => calculateJourney(orig, dest, dangerZones)}
-                onSwapLocations={() => swapOriginAndDestination(dangerZones)}
-                isCalculatingRoute={isCalculatingRoute}
-                onResetPresetRoutes={resetToPresetRoutes}
-                simSpeed={simSpeed}
-                onToggleSimSpeed={setSimSpeed}
-                focusPoint={focusPoint}
-              />
-            )}
-          </section>
         </div>
 
-        {/* MOBILE APP EXPERIENCE (< lg): Native App Flow without nested phone bezel */}
+        {/* MOBILE APP EXPERIENCE (< lg) */}
         <div className="lg:hidden space-y-3">
           {/* Quick Trip Pill on Mobile */}
           <button
@@ -455,7 +483,6 @@ export function App() {
             </span>
           </button>
 
-          {/* Active Mobile Section */}
           {mobileTab === 'map' && (
             <ExpandedMapWorkspace
               currentPosition={currentPosition}
@@ -471,13 +498,13 @@ export function App() {
               isPaused={isPaused}
               speedKmH={speedKmH}
               progressPercentage={progressPercentage}
-              activeAlertZone={activeAlertZone}
+              activeAlertZone={effectiveAlertZone}
               onStart={startNavigation}
               onPause={pauseNavigation}
               onResume={resumeNavigation}
               onReset={handleResetAll}
               onAcceptReroute={handleAcceptReroute}
-              onDismissAlert={dismissAlert}
+              onDismissAlert={handleDismissEffectiveAlert}
               focusPoint={focusPoint}
               simSpeed={simSpeed}
               onToggleSimSpeed={setSimSpeed}
@@ -539,7 +566,7 @@ export function App() {
         </div>
       </main>
 
-      {/* Fixed Thumb-Friendly Mobile Bottom Navigation Bar (< lg) */}
+      {/* Mobile Bottom Navigation Bar (< lg) */}
       <nav
         aria-label="Navegação principal no smartphone"
         className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-neutral-950/95 backdrop-blur-xl border-t border-neutral-200 dark:border-neutral-800 px-2 py-1.5 shadow-[0_-8px_30px_rgba(0,0,0,0.12)]"

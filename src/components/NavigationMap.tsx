@@ -21,6 +21,101 @@ interface NavigationMapProps {
   className?: string;
 }
 
+// Built-in São Paulo avenue & street simulation vectors (used automatically if tile network fails)
+const SP_SIMULATED_ROADS: { name: string; coords: [number, number][]; major?: boolean }[] = [
+  {
+    name: 'Av. Paulista',
+    major: true,
+    coords: [
+      [-23.5566, -46.6621],
+      [-23.5614, -46.6559],
+      [-23.5654, -46.6517],
+      [-23.5707, -46.6453],
+    ],
+  },
+  {
+    name: 'Rua da Consolação',
+    major: true,
+    coords: [
+      [-23.5466, -46.6494],
+      [-23.5542, -46.6579],
+      [-23.5587, -46.6601],
+    ],
+  },
+  {
+    name: 'Av. 23 de Maio',
+    major: true,
+    coords: [
+      [-23.5515, -46.6395],
+      [-23.5680, -46.6430],
+      [-23.5865, -46.6442],
+    ],
+  },
+  {
+    name: 'Av. Brig. Faria Lima',
+    major: true,
+    coords: [
+      [-23.5676, -46.7022],
+      [-23.5786, -46.6912],
+      [-23.5912, -46.6845],
+    ],
+  },
+  {
+    name: 'Av. São João',
+    major: false,
+    coords: [
+      [-23.5325, -46.6565],
+      [-23.5404, -46.6458],
+      [-23.5450, -46.6382],
+    ],
+  },
+  {
+    name: 'Av. Rio Branco',
+    major: false,
+    coords: [
+      [-23.5280, -46.6435],
+      [-23.5381, -46.6385],
+      [-23.5438, -46.6365],
+    ],
+  },
+  {
+    name: 'Av. Radial Leste',
+    major: true,
+    coords: [
+      [-23.5505, -46.6280],
+      [-23.5432, -46.6087],
+      [-23.5404, -46.5768],
+    ],
+  },
+  {
+    name: 'Av. Ipiranga',
+    major: false,
+    coords: [
+      [-23.5465, -46.6470],
+      [-23.5428, -46.6410],
+      [-23.5385, -46.6360],
+    ],
+  },
+  {
+    name: 'Rua Augusta',
+    major: false,
+    coords: [
+      [-23.5495, -46.6512],
+      [-23.5542, -46.6579],
+      [-23.5635, -46.6650],
+    ],
+  },
+  {
+    name: 'Av. Rebouças',
+    major: true,
+    coords: [
+      [-23.5565, -46.6625],
+      [-23.5638, -46.6745],
+      [-23.5715, -46.6865],
+    ],
+  },
+];
+
 function calculateBearing(from: [number, number], to: [number, number]): number {
   const toRad = (d: number) => (d * Math.PI) / 180;
   const toDeg = (r: number) => (r * 180) / Math.PI;
@@ -66,8 +161,10 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
   const altRoutesLayerRef = useRef<L.LayerGroup | null>(null);
   const zonesLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const incidentsLayerGroupRef = useRef<L.LayerGroup | null>(null);
+  const simStreetsLayerRef = useRef<L.LayerGroup | null>(null);
 
   const baseTileLayerRef = useRef<L.TileLayer | null>(null);
+  const roadsOverlayLayerRef = useRef<L.TileLayer | null>(null);
   const labelsTileLayerRef = useRef<L.TileLayer | null>(null);
 
   const isNavigatingRef = useRef<boolean>(isNavigating);
@@ -76,8 +173,46 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
   const onSelectRouteRef = useRef(onSelectRoute);
   onSelectRouteRef.current = onSelectRoute;
 
-  // Default to Life360-inspired Street Mode ('street'), toggleable to 'satellite'
   const [mapType, setMapType] = useState<'street' | 'satellite'>('street');
+  const [usingSimStreets, setUsingSimStreets] = useState<boolean>(false);
+
+  // Build built-in SP simulated street grid & street name badges (0 external key dependency)
+  const renderSimulatedStreets = (map: L.Map) => {
+    if (!simStreetsLayerRef.current) return;
+    simStreetsLayerRef.current.clearLayers();
+
+    SP_SIMULATED_ROADS.forEach((road) => {
+      // Road casing
+      L.polyline(road.coords, {
+        color: '#cbd5e1',
+        weight: road.major ? 9 : 6,
+        opacity: 0.9,
+        lineCap: 'round',
+      }).addTo(simStreetsLayerRef.current!);
+
+      // Road surface
+      L.polyline(road.coords, {
+        color: road.major ? '#fef3c7' : '#ffffff',
+        weight: road.major ? 6 : 4,
+        opacity: 0.95,
+        lineCap: 'round',
+      }).addTo(simStreetsLayerRef.current!);
+
+      // Street name label badge at midpoint
+      const mid = road.coords[Math.floor(road.coords.length / 2)];
+      const labelIcon = L.divIcon({
+        html: `<div style="background:rgba(255,255,255,0.92);color:#1e293b;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;border:1px solid #cbd5e1;box-shadow:0 1px 4px rgba(0,0,0,0.12);white-space:nowrap;pointer-events:none;">${road.name}</div>`,
+        className: 'sp-sim-street-label',
+        iconSize: [120, 20],
+        iconAnchor: [60, 10],
+      });
+      L.marker(mid, { icon: labelIcon, interactive: false }).addTo(simStreetsLayerRef.current!);
+    });
+
+    if (mapContainerRef.current) {
+      map.getContainer().style.backgroundColor = '#eef2f6';
+    }
+  };
 
   // Initialize Map
   useEffect(() => {
@@ -92,14 +227,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
       zoomAnimation: true,
     });
 
-    // Clean pastel Mapbox/Life360-style street layer by default
-    const streetLayer = L.tileLayer(
-      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-      { maxZoom: 19, subdomains: 'abcd' }
-    );
-    streetLayer.addTo(map);
-    baseTileLayerRef.current = streetLayer;
-
+    simStreetsLayerRef.current = L.layerGroup().addTo(map);
     zonesLayerGroupRef.current = L.layerGroup().addTo(map);
     altRoutesLayerRef.current = L.layerGroup().addTo(map);
     incidentsLayerGroupRef.current = L.layerGroup().addTo(map);
@@ -140,7 +268,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     return () => clearTimeout(t);
   }, [isFullscreen]);
 
-  // Handle Map Type Switch (Modo Rua Life360 vs Satélite)
+  // Handle Map Type Switch (Modo Rua sem API Key vs Satélite)
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -149,10 +277,18 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
       map.removeLayer(baseTileLayerRef.current);
       baseTileLayerRef.current = null;
     }
+    if (roadsOverlayLayerRef.current) {
+      map.removeLayer(roadsOverlayLayerRef.current);
+      roadsOverlayLayerRef.current = null;
+    }
     if (labelsTileLayerRef.current) {
       map.removeLayer(labelsTileLayerRef.current);
       labelsTileLayerRef.current = null;
     }
+    if (simStreetsLayerRef.current) {
+      simStreetsLayerRef.current.clearLayers();
+    }
+    setUsingSimStreets(false);
 
     if (mapType === 'satellite') {
       const satLayer = L.tileLayer(
@@ -161,20 +297,38 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
       ).addTo(map);
       satLayer.bringToBack();
 
+      const transLayer = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',
+        { maxZoom: 19, opacity: 0.75 }
+      ).addTo(map);
+
       const labelsLayer = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
         { maxZoom: 19, opacity: 0.95 }
       ).addTo(map);
 
       baseTileLayerRef.current = satLayer;
+      roadsOverlayLayerRef.current = transLayer;
       labelsTileLayerRef.current = labelsLayer;
     } else {
+      // Esri World Street Map: ZERO API key, clean streets + street names + parks + avenues
+      let errorCount = 0;
       const streetLayer = L.tileLayer(
-        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-        { maxZoom: 19, subdomains: 'abcd' }
-      ).addTo(map);
-      streetLayer.bringToBack();
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+        { maxZoom: 19 }
+      );
 
+      streetLayer.on('tileerror', () => {
+        errorCount += 1;
+        if (errorCount >= 3) {
+          // Automatic seamless fallback to built-in SP simulated street grid + real avenue names
+          setUsingSimStreets(true);
+          renderSimulatedStreets(map);
+        }
+      });
+
+      streetLayer.addTo(map);
+      streetLayer.bringToBack();
       baseTileLayerRef.current = streetLayer;
     }
 
@@ -200,7 +354,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
         .filter((r) => r.id !== selectedRoute.id && r.path.length > 1)
         .forEach((alt) => {
           const altLine = L.polyline(alt.path, {
-            color: mapType === 'street' ? '#94a3b8' : '#cbd5e1',
+            color: mapType === 'street' ? '#64748b' : '#cbd5e1',
             weight: 4.5,
             opacity: 0.65,
             dashArray: '6, 6',
@@ -219,18 +373,17 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     }
 
     const isSafe = selectedRoute.type === 'segura';
-    // Signature Life360 indigo-violet on Street Mode, cobalt blue on Satellite
     const mainColor = isSafe
       ? mapType === 'street'
         ? '#4f46e5'
         : '#2563eb'
       : '#475569';
-    const casingColor = mapType === 'street' ? 'rgba(255, 255, 255, 0.92)' : 'rgba(0, 0, 0, 0.55)';
+    const casingColor = mapType === 'street' ? 'rgba(255, 255, 255, 0.94)' : 'rgba(0, 0, 0, 0.55)';
 
     const casingLine = L.polyline(selectedRoute.path, {
       color: casingColor,
       weight: 9.5,
-      opacity: 0.9,
+      opacity: 0.92,
       lineCap: 'round',
       lineJoin: 'round',
     }).addTo(map);
@@ -245,7 +398,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     }).addTo(map);
     routePolylineRef.current = mainLine;
 
-    // Origin Pin (Life360 clean white bubble with indigo/dark ring)
+    // Origin Pin
     const originCoords = selectedRoute.path[0];
     const originIcon = L.divIcon({
       html: `
@@ -305,7 +458,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     map.flyTo(focusPoint.coords, 16, { duration: 0.9 });
   }, [focusPoint]);
 
-  // Update Danger Zones (Soft Amber Life360 Zone Rings)
+  // Update Danger Zones
   useEffect(() => {
     const layerGroup = zonesLayerGroupRef.current;
     if (!layerGroup) return;
@@ -384,7 +537,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     });
   }, [incidents]);
 
-  // Life360-Inspired Live User / Vehicle Locator Bubble with Pulsing Aura & Heading
+  // Life360-Inspired Live User / Vehicle Locator Bubble
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -398,13 +551,10 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
       html: `
         <div style="position:relative;width:58px;height:66px;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;">
           <div style="position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center;">
-            <!-- Pulsing Life360 safety aura -->
             <div class="life360-pulse-ring" style="position:absolute;inset:0;border-radius:50%;background:${isStreet ? 'rgba(79,70,229,0.28)' : 'rgba(37,99,235,0.3)'};"></div>
-            <!-- Directional heading cone -->
             <div style="position:absolute;inset:0;transform:rotate(${bearing}deg);transition:transform 0.6s ease-out;display:flex;align-items:flex-start;justify-content:center;">
               <div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:12px solid ${accent};margin-top:-7px;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.35));"></div>
             </div>
-            <!-- Central Life360 Avatar Bubble -->
             <div style="width:30px;height:30px;border-radius:50%;background:#ffffff;border:3px solid ${accent};box-shadow:0 3px 10px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;z-index:2;">
               <div style="width:18px;height:18px;border-radius:50%;background:${accent};display:flex;align-items:center;justify-content:center;color:white;">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="#ffffff" style="transform:rotate(${bearing}deg);transition:transform 0.6s ease-out;">
@@ -413,7 +563,6 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
               </div>
             </div>
           </div>
-          <!-- Life360 Live Pill Badge -->
           <div style="margin-top:1px;padding:1px 6px;border-radius:999px;background:#ffffff;color:#111827;font-family:ui-monospace,monospace;font-size:9px;font-weight:800;border:1.5px solid ${accent};box-shadow:0 2px 6px rgba(0,0,0,0.25);white-space:nowrap;">
             ${statusLabel}
           </div>
@@ -449,14 +598,21 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
   };
 
   return (
-    <div className={`relative w-full h-full bg-neutral-900 overflow-hidden select-none ${className}`}>
+    <div className={`relative w-full h-full bg-[#eef2f6] dark:bg-neutral-900 overflow-hidden select-none ${className}`}>
       <div
         ref={mapContainerRef}
         className="w-full h-full select-none"
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
 
-      {/* Right-side Map Controls: Life360 Street Mode / Satellite + Zoom + Recenter */}
+      {/* Simulated street badge notice if offline fallback triggered */}
+      {usingSimStreets && (
+        <div className="absolute bottom-24 left-4 z-[390] px-2.5 py-1 rounded-lg bg-white/90 text-neutral-700 text-[10px] font-semibold border border-neutral-300 shadow-sm pointer-events-none">
+          Malha viária simulada de São Paulo ativa
+        </div>
+      )}
+
+      {/* Right-side Map Controls */}
       <div
         onMouseDown={(e) => e.stopPropagation()}
         onDoubleClick={(e) => e.stopPropagation()}
