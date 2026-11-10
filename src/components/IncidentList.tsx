@@ -73,7 +73,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Filtrar por bairro ou rua..."
             aria-label="Filtrar ocorrências por bairro ou rua"
-            className="w-full pl-9 pr-3 py-2 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:border-blue-500 dark:focus:border-neutral-600"
+            className="w-full pl-9 pr-3 py-2 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:border-neutral-900 dark:focus:border-neutral-400"
           />
         </div>
 

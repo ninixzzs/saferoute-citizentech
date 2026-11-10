@@ -10,7 +10,6 @@ import {
   CornerUpRight,
   CornerUpLeft,
   ArrowUp,
-  Navigation,
 } from 'lucide-react';
 import { DangerZone, IncidentReport, NavigationRoute } from '../types';
 import { LocationSuggestion } from '../services/routingService';
@@ -48,8 +47,8 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
   selectedRoute,
   allRoutes,
   onSelectRoute,
-  originLocation,
-  destinationLocation,
+  originLocation: _originLocation,
+  destinationLocation: _destinationLocation,
   dangerZones,
   incidents,
   isNavigating,
@@ -102,9 +101,9 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
   const currentStreet = activeStep?.street || streetNames[streetIdx] || selectedRoute.name;
 
   const renderTurnIcon = (modifier?: string) => {
-    if (modifier?.includes('left')) return <CornerUpLeft className="w-5 h-5 text-white stroke-[2.5]" />;
-    if (modifier?.includes('right')) return <CornerUpRight className="w-5 h-5 text-white stroke-[2.5]" />;
-    return <ArrowUp className="w-5 h-5 text-white stroke-[2.5]" />;
+    if (modifier?.includes('left')) return <CornerUpLeft className="w-5 h-5 text-neutral-950 stroke-[2.5]" />;
+    if (modifier?.includes('right')) return <CornerUpRight className="w-5 h-5 text-neutral-950 stroke-[2.5]" />;
+    return <ArrowUp className="w-5 h-5 text-neutral-950 stroke-[2.5]" />;
   };
 
   return (
@@ -133,15 +132,15 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
         className="w-full h-full"
       />
 
-      {/* Top-Left Floating Header (Stable height, isolated from map drag) */}
-      <div
-        onMouseDown={(e) => e.stopPropagation()}
-        onTouchStart={(e) => e.stopPropagation()}
-        className="select-none pointer-events-auto"
-      >
-        {isNavigating ? (
+      {/* Top-Left Navigation Turn Card (shown only during active navigation) */}
+      {isNavigating && (
+        <div
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          className="select-none pointer-events-auto"
+        >
           <div className="absolute top-4 left-4 right-28 sm:right-auto sm:w-[360px] z-[400] bg-neutral-950/92 backdrop-blur-xl text-white rounded-2xl p-3 shadow-2xl border border-white/15 flex items-center gap-3 h-[64px]">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shrink-0 shadow-md">
+            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-md">
               {renderTurnIcon(activeStep?.modifier)}
             </div>
             <div className="min-w-0 flex-1">
@@ -158,15 +157,8 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
               <p className="text-xs text-neutral-300 truncate mt-0.5">{currentStreet}</p>
             </div>
           </div>
-        ) : (
-          <div className="hidden sm:flex absolute top-4 left-4 z-[400] max-w-[380px] items-center gap-2 bg-white/95 dark:bg-neutral-950/90 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-lg text-xs text-neutral-800 dark:text-neutral-200">
-            <Navigation className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-            <span className="truncate font-medium">
-              {originLocation.name} &rarr; <strong>{destinationLocation.name}</strong>
-            </span>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Floating Defesa Civil Alert */}
       {activeAlertZone && (
@@ -177,7 +169,7 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
         >
           <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-2">
             <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
-              <AlertTriangle className="w-4 h-4 text-amber-500" />
+              <AlertTriangle className="w-4 h-4 text-neutral-900 dark:text-white" />
               <span>Alerta Defesa Civil SP</span>
             </span>
             <button
@@ -309,7 +301,7 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
         {/* Always reserve subtle progress slot so HUD height never shifts when navigating */}
         <div className="w-full h-1 mt-2.5 bg-neutral-200/70 dark:bg-neutral-800/80 rounded-full overflow-hidden">
           <div
-            className="h-full bg-blue-600 transition-all duration-700 rounded-full"
+            className="h-full bg-neutral-950 dark:bg-white transition-all duration-700 rounded-full"
             style={{ width: `${isNavigating ? progressPercentage : 0}%` }}
           />
         </div>

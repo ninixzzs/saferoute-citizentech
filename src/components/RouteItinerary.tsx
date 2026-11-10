@@ -30,7 +30,7 @@ export const RouteItinerary: React.FC<RouteItineraryProps> = ({
       : -1;
 
   const renderIcon = (instruction: string, modifier?: string, isActive?: boolean) => {
-    const cls = `w-4 h-4 ${isActive ? 'text-white' : 'text-neutral-600 dark:text-neutral-300'}`;
+    const cls = `w-4 h-4 ${isActive ? 'text-white dark:text-neutral-950' : 'text-neutral-600 dark:text-neutral-300'}`;
     if (instruction.toLowerCase().includes('chegada')) return <Flag className={cls} />;
     if (modifier?.includes('left')) return <CornerUpLeft className={cls} />;
     if (modifier?.includes('right')) return <CornerUpRight className={cls} />;
@@ -104,7 +104,7 @@ export const RouteItinerary: React.FC<RouteItineraryProps> = ({
                   <div
                     className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                       isActive
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-neutral-800 dark:bg-neutral-200 text-white dark:text-neutral-950'
                         : 'bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800'
                     }`}
                   >

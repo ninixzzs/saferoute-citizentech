@@ -96,7 +96,7 @@ export const AccessibilityMenu: React.FC<AccessibilityMenuProps> = ({
         aria-label="Opções de acessibilidade e tema"
         className="px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200 text-xs font-medium transition-colors flex items-center gap-1.5 shadow-2xs"
       >
-        <Accessibility className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+        <Accessibility className="w-3.5 h-3.5 text-neutral-900 dark:text-white" />
         <span className="hidden sm:inline">Acessibilidade</span>
         <ChevronDown className={`w-3 h-3 text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
@@ -110,7 +110,7 @@ export const AccessibilityMenu: React.FC<AccessibilityMenuProps> = ({
         >
           <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-2.5">
             <div className="flex items-center gap-2">
-              <Accessibility className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <Accessibility className="w-4 h-4 text-neutral-900 dark:text-white" />
               <span className="text-xs font-bold uppercase tracking-wider">
                 Acessibilidade & Tema
               </span>
@@ -200,10 +200,10 @@ export const AccessibilityMenu: React.FC<AccessibilityMenuProps> = ({
               </span>
               <span
                 className={`w-9 h-5 rounded-full transition-colors p-0.5 flex items-center ${
-                  highContrast ? 'bg-blue-600 justify-end' : 'bg-neutral-300 dark:bg-neutral-700 justify-start'
+                  highContrast ? 'bg-neutral-950 dark:bg-white justify-end' : 'bg-neutral-300 dark:bg-neutral-700 justify-start'
                 }`}
               >
-                <span className="w-4 h-4 rounded-full bg-white shadow-xs" />
+                <span className={`w-4 h-4 rounded-full shadow-xs ${highContrast ? 'bg-white dark:bg-neutral-950' : 'bg-white'}`} />
               </span>
             </button>
           </div>

@@ -40,7 +40,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 flex items-center justify-between gap-2 sm:gap-3">
         {/* Brand */}
         <div className="flex items-center gap-2 shrink-0">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600 dark:bg-white text-white dark:text-neutral-950 shadow-xs">
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-xs">
             <Shield className="w-4 h-4" />
           </div>
           <div className="flex items-center gap-2">
@@ -55,7 +55,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Center Status */}
         <div className="hidden md:flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400 font-mono">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-white"></span>
+          <span className="w-1.5 h-1.5 rounded-full bg-neutral-900 dark:bg-white"></span>
           <span>Defesa Civil SP &bull; Monitoramento Ativo</span>
         </div>
 

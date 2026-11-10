@@ -174,7 +174,6 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
   onSelectRouteRef.current = onSelectRoute;
 
   const [mapType, setMapType] = useState<'street' | 'satellite'>('street');
-  const [usingSimStreets, setUsingSimStreets] = useState<boolean>(false);
 
   // Build built-in SP simulated street grid & street name badges (0 external key dependency)
   const renderSimulatedStreets = (map: L.Map) => {
@@ -182,26 +181,23 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     simStreetsLayerRef.current.clearLayers();
 
     SP_SIMULATED_ROADS.forEach((road) => {
-      // Road casing
       L.polyline(road.coords, {
-        color: '#cbd5e1',
+        color: '#d4d4d4',
         weight: road.major ? 9 : 6,
         opacity: 0.9,
         lineCap: 'round',
       }).addTo(simStreetsLayerRef.current!);
 
-      // Road surface
       L.polyline(road.coords, {
-        color: road.major ? '#fef3c7' : '#ffffff',
+        color: '#ffffff',
         weight: road.major ? 6 : 4,
         opacity: 0.95,
         lineCap: 'round',
       }).addTo(simStreetsLayerRef.current!);
 
-      // Street name label badge at midpoint
       const mid = road.coords[Math.floor(road.coords.length / 2)];
       const labelIcon = L.divIcon({
-        html: `<div style="background:rgba(255,255,255,0.92);color:#1e293b;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;border:1px solid #cbd5e1;box-shadow:0 1px 4px rgba(0,0,0,0.12);white-space:nowrap;pointer-events:none;">${road.name}</div>`,
+        html: `<div style="background:rgba(255,255,255,0.95);color:#171717;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;border:1px solid #d4d4d4;box-shadow:0 1px 4px rgba(0,0,0,0.12);white-space:nowrap;pointer-events:none;">${road.name}</div>`,
         className: 'sp-sim-street-label',
         iconSize: [120, 20],
         iconAnchor: [60, 10],
@@ -210,7 +206,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     });
 
     if (mapContainerRef.current) {
-      map.getContainer().style.backgroundColor = '#eef2f6';
+      map.getContainer().style.backgroundColor = '#f5f5f5';
     }
   };
 
@@ -288,7 +284,6 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     if (simStreetsLayerRef.current) {
       simStreetsLayerRef.current.clearLayers();
     }
-    setUsingSimStreets(false);
 
     if (mapType === 'satellite') {
       const satLayer = L.tileLayer(
@@ -321,8 +316,6 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
       streetLayer.on('tileerror', () => {
         errorCount += 1;
         if (errorCount >= 3) {
-          // Automatic seamless fallback to built-in SP simulated street grid + real avenue names
-          setUsingSimStreets(true);
           renderSimulatedStreets(map);
         }
       });
@@ -375,10 +368,10 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     const isSafe = selectedRoute.type === 'segura';
     const mainColor = isSafe
       ? mapType === 'street'
-        ? '#4f46e5'
-        : '#2563eb'
-      : '#475569';
-    const casingColor = mapType === 'street' ? 'rgba(255, 255, 255, 0.94)' : 'rgba(0, 0, 0, 0.55)';
+        ? '#111827'
+        : '#ffffff'
+      : '#525252';
+    const casingColor = mapType === 'street' ? 'rgba(255, 255, 255, 0.96)' : 'rgba(0, 0, 0, 0.65)';
 
     const casingLine = L.polyline(selectedRoute.path, {
       color: casingColor,
@@ -403,7 +396,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     const originIcon = L.divIcon({
       html: `
         <div style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;">
-          <div style="width:16px;height:16px;border-radius:50%;background:#ffffff;border:3.5px solid #4f46e5;box-shadow:0 2px 8px rgba(0,0,0,0.35);"></div>
+          <div style="width:16px;height:16px;border-radius:50%;background:#ffffff;border:3.5px solid #171717;box-shadow:0 2px 8px rgba(0,0,0,0.4);"></div>
         </div>
       `,
       className: 'origin-pin-marker',
@@ -467,9 +460,9 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
 
     dangerZones.forEach((zone) => {
       const circle = L.circle(zone.coordinates, {
-        color: '#d97706',
-        fillColor: '#f59e0b',
-        fillOpacity: mapType === 'street' ? 0.14 : 0.18,
+        color: '#262626',
+        fillColor: '#404040',
+        fillOpacity: mapType === 'street' ? 0.14 : 0.22,
         radius: zone.radiusMeters,
         weight: 1.5,
         dashArray: '5, 5',
@@ -486,7 +479,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
           <div style="color:#404040;margin:4px 0;font-size:11px;">
             ${zone.title}
           </div>
-          <div style="margin-top:6px;padding:6px 8px;background:#f5f5f5;border-left:3px solid #4f46e5;border-radius:4px;font-size:11px;color:#262626;">
+          <div style="margin-top:6px;padding:6px 8px;background:#f5f5f5;border-left:3px solid #171717;border-radius:4px;font-size:11px;color:#262626;">
             <strong>Recomendação:</strong> ${zone.defenseCivilTip}
           </div>
         </div>
@@ -537,40 +530,36 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     });
   }, [incidents]);
 
-  // Life360-Inspired Live User / Vehicle Locator Bubble
+  // Monochrome Life360-Inspired Live Locator Bubble (clean icon, zero text clutter)
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
 
     const bearing = nextPosition ? calculateBearing(currentPosition, nextPosition) : 0;
     const isStreet = mapType === 'street';
-    const accent = isStreet ? '#4f46e5' : '#2563eb';
-    const statusLabel = isNavigating ? `${speedKmH} km/h` : 'Você';
+    const ringColor = isStreet ? '#171717' : '#ffffff';
+    const innerBg = isStreet ? '#171717' : '#171717';
+    const haloBg = isStreet ? 'rgba(23, 23, 23, 0.25)' : 'rgba(255, 255, 255, 0.35)';
 
     const carIcon = L.divIcon({
       html: `
-        <div style="position:relative;width:58px;height:66px;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;">
-          <div style="position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center;">
-            <div class="life360-pulse-ring" style="position:absolute;inset:0;border-radius:50%;background:${isStreet ? 'rgba(79,70,229,0.28)' : 'rgba(37,99,235,0.3)'};"></div>
-            <div style="position:absolute;inset:0;transform:rotate(${bearing}deg);transition:transform 0.6s ease-out;display:flex;align-items:flex-start;justify-content:center;">
-              <div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:12px solid ${accent};margin-top:-7px;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.35));"></div>
-            </div>
-            <div style="width:30px;height:30px;border-radius:50%;background:#ffffff;border:3px solid ${accent};box-shadow:0 3px 10px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;z-index:2;">
-              <div style="width:18px;height:18px;border-radius:50%;background:${accent};display:flex;align-items:center;justify-content:center;color:white;">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="#ffffff" style="transform:rotate(${bearing}deg);transition:transform 0.6s ease-out;">
-                  <polygon points="12,2 20,21 12,17 4,21"/>
-                </svg>
-              </div>
-            </div>
+        <div style="position:relative;width:46px;height:46px;display:flex;align-items:center;justify-content:center;pointer-events:none;">
+          <div class="life360-pulse-ring" style="position:absolute;inset:0;border-radius:50%;background:${haloBg};"></div>
+          <div style="position:absolute;inset:0;transform:rotate(${bearing}deg);transition:transform 0.6s ease-out;display:flex;align-items:flex-start;justify-content:center;">
+            <div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:12px solid ${ringColor};margin-top:-7px;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.35));"></div>
           </div>
-          <div style="margin-top:1px;padding:1px 6px;border-radius:999px;background:#ffffff;color:#111827;font-family:ui-monospace,monospace;font-size:9px;font-weight:800;border:1.5px solid ${accent};box-shadow:0 2px 6px rgba(0,0,0,0.25);white-space:nowrap;">
-            ${statusLabel}
+          <div style="width:30px;height:30px;border-radius:50%;background:#ffffff;border:3px solid ${ringColor};box-shadow:0 3px 10px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:2;">
+            <div style="width:18px;height:18px;border-radius:50%;background:${innerBg};display:flex;align-items:center;justify-content:center;color:white;">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="#ffffff" style="transform:rotate(${bearing}deg);transition:transform 0.6s ease-out;">
+                <polygon points="12,2 20,21 12,17 4,21"/>
+              </svg>
+            </div>
           </div>
         </div>
       `,
       className: 'life360-locator-marker',
-      iconSize: [58, 66],
-      iconAnchor: [29, 25],
+      iconSize: [46, 46],
+      iconAnchor: [23, 23],
     });
 
     if (!carMarkerRef.current) {
@@ -605,13 +594,6 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
 
-      {/* Simulated street badge notice if offline fallback triggered */}
-      {usingSimStreets && (
-        <div className="absolute bottom-24 left-4 z-[390] px-2.5 py-1 rounded-lg bg-white/90 text-neutral-700 text-[10px] font-semibold border border-neutral-300 shadow-sm pointer-events-none">
-          Malha viária simulada de São Paulo ativa
-        </div>
-      )}
-
       {/* Right-side Map Controls */}
       <div
         onMouseDown={(e) => e.stopPropagation()}
@@ -620,17 +602,17 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
         className={`absolute ${topControlOffsetClass} right-3 z-[400] flex flex-col items-end gap-2 pointer-events-auto select-none`}
       >
         <div className="flex items-center gap-1.5">
-          {/* Life360-style Mode Toggle */}
+          {/* Monochrome Mode Toggle */}
           <div className="inline-flex items-center p-0.5 rounded-xl bg-white/95 dark:bg-neutral-950/90 backdrop-blur-md border border-neutral-200 dark:border-white/15 shadow-lg">
             <button
               type="button"
               onClick={() => setMapType('street')}
               className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all ${
                 mapType === 'street'
-                  ? 'bg-indigo-600 text-white shadow-xs'
+                  ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-xs'
                   : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white'
               }`}
-              title="Modo Rua estilo Life360"
+              title="Modo Rua"
             >
               <MapIcon className="w-3 h-3" />
               <span>Rua</span>

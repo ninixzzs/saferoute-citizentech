@@ -101,7 +101,7 @@ export const IncidentReportModal: React.FC<IncidentReportModalProps> = ({
               placeholder="Ex: Furto de celular no semáforo"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-600 focus:outline-none focus:border-blue-500 dark:focus:border-neutral-500"
+              className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-600 focus:outline-none focus:border-neutral-900 dark:focus:border-neutral-400"
             />
           </div>
 
@@ -111,7 +111,7 @@ export const IncidentReportModal: React.FC<IncidentReportModalProps> = ({
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value as IncidentCategory)}
-                className="w-full px-2.5 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500 dark:focus:border-neutral-500"
+                className="w-full px-2.5 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-neutral-400"
               >
                 <option value="furto_celular">Furto de Celular</option>
                 <option value="assalto">Assalto</option>
@@ -125,7 +125,7 @@ export const IncidentReportModal: React.FC<IncidentReportModalProps> = ({
               <select
                 value={neighborhood}
                 onChange={(e) => setNeighborhood(e.target.value)}
-                className="w-full px-2.5 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500 dark:focus:border-neutral-500"
+                className="w-full px-2.5 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-neutral-400"
               >
                 {Object.keys(NEIGHBORHOOD_COORDS).map((nb) => (
                   <option key={nb} value={nb}>{nb}</option>
@@ -139,7 +139,7 @@ export const IncidentReportModal: React.FC<IncidentReportModalProps> = ({
             <select
               value={riskLevel}
               onChange={(e) => setRiskLevel(e.target.value as RiskLevel)}
-              className="w-full px-2.5 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500 dark:focus:border-neutral-500"
+              className="w-full px-2.5 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-neutral-400"
             >
               <option value="moderado">Moderado</option>
               <option value="alto">Alto</option>
@@ -155,7 +155,7 @@ export const IncidentReportModal: React.FC<IncidentReportModalProps> = ({
               placeholder="Ex: Av. Rio Branco x Rua Aurora"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-600 focus:outline-none focus:border-blue-500 dark:focus:border-neutral-500"
+              className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-600 focus:outline-none focus:border-neutral-900 dark:focus:border-neutral-400"
             />
           </div>
 
@@ -167,7 +167,7 @@ export const IncidentReportModal: React.FC<IncidentReportModalProps> = ({
               placeholder="Descreva a ocorrência..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-600 focus:outline-none focus:border-blue-500 dark:focus:border-neutral-500 resize-none"
+              className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-800 rounded-lg text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-600 focus:outline-none focus:border-neutral-900 dark:focus:border-neutral-400 resize-none"
             />
           </div>
 

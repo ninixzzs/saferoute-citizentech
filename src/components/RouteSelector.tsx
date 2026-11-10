@@ -143,7 +143,7 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
       <div className="bg-neutral-50 dark:bg-neutral-950/90 p-4 rounded-2xl border border-neutral-200 dark:border-neutral-800 space-y-3.5 shadow-xs">
         <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 pb-2.5">
           <div className="flex items-center gap-2">
-            <Navigation className="w-4 h-4 text-blue-600 dark:text-white" />
+            <Navigation className="w-4 h-4 text-neutral-900 dark:text-white" />
             <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-900 dark:text-white">
               Planejamento de Rota
             </h3>
@@ -184,7 +184,7 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
                 placeholder="Partida (rua, bairro ou CEP)..."
                 aria-label="Ponto de partida"
                 disabled={isNavigating || isCalculatingRoute}
-                className="w-full pl-9 pr-14 py-2.5 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl text-xs text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:border-blue-500 dark:focus:border-neutral-400 focus:ring-1 focus:ring-blue-500/30 transition-all font-medium disabled:opacity-50"
+                className="w-full pl-9 pr-14 py-2.5 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl text-xs text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:border-neutral-900 dark:focus:border-neutral-300 focus:ring-1 focus:ring-neutral-900/20 dark:focus:ring-white/20 transition-all font-medium disabled:opacity-50"
               />
               <div className="absolute right-2 flex items-center gap-1">
                 {originInput && !isNavigating && (
@@ -207,7 +207,7 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
                     type="button"
                     onClick={handleUseCurrentLocation}
                     disabled={isLocatingGps}
-                    className="p-1 text-neutral-500 hover:text-blue-600 dark:text-neutral-400 dark:hover:text-white transition-colors"
+                    className="p-1 text-neutral-500 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white transition-colors"
                     title="Usar minha localização GPS atual"
                     aria-label="Usar minha localização GPS atual"
                   >
@@ -239,7 +239,7 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
                   placeholder="Destino final (qualquer endereço)..."
                   aria-label="Destino final"
                   disabled={isNavigating || isCalculatingRoute}
-                  className="w-full pl-9 pr-8 py-2.5 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl text-xs text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:border-blue-500 dark:focus:border-neutral-400 focus:ring-1 focus:ring-blue-500/30 transition-all font-medium disabled:opacity-50"
+                  className="w-full pl-9 pr-8 py-2.5 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl text-xs text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:border-neutral-900 dark:focus:border-neutral-300 focus:ring-1 focus:ring-neutral-900/20 dark:focus:ring-white/20 transition-all font-medium disabled:opacity-50"
                 />
                 {destinationInput && !isNavigating && (
                   <button
@@ -353,7 +353,7 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
             </div>
             <div className="w-full h-1.5 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
               <div
-                className="h-full bg-blue-600 transition-all duration-700 rounded-full"
+                className="h-full bg-neutral-950 dark:bg-white transition-all duration-700 rounded-full"
                 style={{ width: `${progressPercentage}%` }}
               />
             </div>

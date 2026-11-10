@@ -190,15 +190,6 @@ export function App() {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
             {/* Hero Title & Description */}
             <div className="space-y-2 max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/70 text-[11px] font-bold text-indigo-700 dark:text-indigo-300">
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    isNavigating ? 'bg-indigo-600 dark:bg-indigo-400 animate-pulse' : 'bg-indigo-500'
-                  }`}
-                />
-                <span>SafeRoute São Paulo &bull; Navegação Preventiva</span>
-              </div>
-
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-950 dark:text-white leading-tight">
                 Rotas que avisam antes do risco.
               </h1>
@@ -214,7 +205,7 @@ export function App() {
               {/* Telemetry Pills */}
               <div className="flex flex-wrap items-center gap-2">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-100/90 dark:bg-neutral-950/80 border border-neutral-200 dark:border-neutral-800 text-xs">
-                  <Route className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                  <Route className="w-3.5 h-3.5 text-neutral-900 dark:text-white" />
                   <span className="font-mono font-bold text-neutral-950 dark:text-white">
                     {selectedRoute.distanceKm} km
                   </span>
@@ -238,7 +229,7 @@ export function App() {
                 <button
                   type="button"
                   onClick={handleTriggerDemoAlert}
-                  className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm flex items-center gap-1.5 transition-all active:scale-98"
+                  className="px-3 py-1.5 rounded-xl bg-neutral-950 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-neutral-950 text-xs font-semibold shadow-sm flex items-center gap-1.5 transition-all active:scale-98"
                   title="Simular recebimento de alerta da Defesa Civil no aparelho"
                 >
                   <MessageSquareWarning className="w-3.5 h-3.5" />
@@ -466,7 +457,7 @@ export function App() {
             className="w-full p-3 rounded-2xl bg-white/95 dark:bg-neutral-900/95 border border-neutral-200 dark:border-neutral-800 shadow-sm flex items-center justify-between gap-3 text-left"
           >
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0">
                 <Navigation className="w-4 h-4" />
               </div>
               <div className="min-w-0">
@@ -577,7 +568,7 @@ export function App() {
             onClick={() => setMobileTab('map')}
             className={`py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold transition-colors ${
               mobileTab === 'map'
-                ? 'text-indigo-600 dark:text-white bg-indigo-50 dark:bg-neutral-800'
+                ? 'text-neutral-950 dark:text-white bg-neutral-100 dark:bg-neutral-800'
                 : 'text-neutral-500 dark:text-neutral-400'
             }`}
           >
@@ -590,7 +581,7 @@ export function App() {
             onClick={() => setMobileTab('routes')}
             className={`py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold transition-colors ${
               mobileTab === 'routes'
-                ? 'text-indigo-600 dark:text-white bg-indigo-50 dark:bg-neutral-800'
+                ? 'text-neutral-950 dark:text-white bg-neutral-100 dark:bg-neutral-800'
                 : 'text-neutral-500 dark:text-neutral-400'
             }`}
           >
@@ -603,7 +594,7 @@ export function App() {
             onClick={() => setMobileTab('itinerary')}
             className={`py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold transition-colors ${
               mobileTab === 'itinerary'
-                ? 'text-indigo-600 dark:text-white bg-indigo-50 dark:bg-neutral-800'
+                ? 'text-neutral-950 dark:text-white bg-neutral-100 dark:bg-neutral-800'
                 : 'text-neutral-500 dark:text-neutral-400'
             }`}
           >
@@ -616,14 +607,14 @@ export function App() {
             onClick={() => setMobileTab('alerts')}
             className={`relative py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold transition-colors ${
               mobileTab === 'alerts'
-                ? 'text-indigo-600 dark:text-white bg-indigo-50 dark:bg-neutral-800'
+                ? 'text-neutral-950 dark:text-white bg-neutral-100 dark:bg-neutral-800'
                 : 'text-neutral-500 dark:text-neutral-400'
             }`}
           >
             <div className="relative">
               <AlertCircle className="w-4 h-4" />
               {allIncidents.length > 0 && (
-                <span className="absolute -top-1.5 -right-2.5 px-1 min-w-[16px] h-4 rounded-full bg-indigo-600 dark:bg-white text-white dark:text-neutral-950 text-[9px] font-mono font-bold flex items-center justify-center">
+                <span className="absolute -top-1.5 -right-2.5 px-1 min-w-[16px] h-4 rounded-full bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 text-[9px] font-mono font-bold flex items-center justify-center">
                   {allIncidents.length}
                 </span>
               )}

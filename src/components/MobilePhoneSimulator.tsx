@@ -206,9 +206,9 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
   const upcomingStreet = activeStep?.street || streetNames[currentStreetIndex] || selectedRoute.name;
 
   const renderTurnIcon = (modifier?: string) => {
-    if (modifier?.includes('left')) return <CornerUpLeft className="w-5 h-5 text-white stroke-[2.5]" />;
-    if (modifier?.includes('right')) return <CornerUpRight className="w-5 h-5 text-white stroke-[2.5]" />;
-    return <ArrowUp className="w-5 h-5 text-white stroke-[2.5]" />;
+    if (modifier?.includes('left')) return <CornerUpLeft className="w-5 h-5 text-neutral-950 stroke-[2.5]" />;
+    if (modifier?.includes('right')) return <CornerUpRight className="w-5 h-5 text-neutral-950 stroke-[2.5]" />;
+    return <ArrowUp className="w-5 h-5 text-neutral-950 stroke-[2.5]" />;
   };
 
   return (
@@ -263,7 +263,7 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
               /* Turn-by-Turn Guidance Header */
               <div className="bg-neutral-900/95 backdrop-blur-md text-white rounded-2xl p-3 shadow-xl flex items-center justify-between gap-3 border border-neutral-800">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shrink-0 shadow-inner">
+                  <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-inner">
                     {renderTurnIcon(activeStep?.modifier)}
                   </div>
                   <div className="min-w-0">
