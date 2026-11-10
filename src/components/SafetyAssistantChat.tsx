@@ -71,6 +71,15 @@ const SP_REGIONS: { label: string; zone: SaoPauloZone; prompt: string }[] = [
 ];
 
 const INITIAL_GREETING_TEXT = 'Oi, tudo bem? Qual é o seu nome?';
+const AI_SESSION_KEY = 'saferoute_ai_session_v1';
+
+interface PersistedAiSession {
+  stage: ConversationStage;
+  userName: string;
+  currentFocusPlace?: string;
+  askedFirstTimeAlready: boolean;
+  messages: ChatMessage[];
+}
 
 function createInitialWelcomeMessage(): ChatMessage {
   return {
@@ -80,6 +89,34 @@ function createInitialWelcomeMessage(): ChatMessage {
     text: INITIAL_GREETING_TEXT,
     tips: [],
     nearbyPlaces: [],
+  };
+}
+
+function loadAiSession(): PersistedAiSession {
+  if (typeof window === 'undefined') {
+    return {
+      stage: 'ask_name',
+      userName: '',
+      currentFocusPlace: undefined,
+      askedFirstTimeAlready: false,
+      messages: [createInitialWelcomeMessage()],
+    };
+  }
+  try {
+    const raw = sessionStorage.getItem(AI_SESSION_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as PersistedAiSession;
+      if (parsed && Array.isArray(parsed.messages) && parsed.messages.length > 0) {
+        return parsed;
+      }
+    }
+  } catch {}
+  return {
+    stage: 'ask_name',
+    userName: '',
+    currentFocusPlace: undefined,
+    askedFirstTimeAlready: false,
+    messages: [createInitialWelcomeMessage()],
   };
 }
 
@@ -98,10 +135,17 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
   const [smsSentNotice, setSmsSentNotice] = useState(false);
   const [inputText, setInputText] = useState('');
 
-  // Stateful conversational memory
-  const [stage, setStage] = useState<ConversationStage>('ask_name');
-  const [userName, setUserName] = useState<string>('');
-  const [currentFocusPlace, setCurrentFocusPlace] = useState<string | undefined>(undefined);
+  const initialSession = useMemo(() => loadAiSession(), []);
+
+  // Stateful conversational memory (survives switching tabs)
+  const [stage, setStage] = useState<ConversationStage>(initialSession.stage);
+  const [userName, setUserName] = useState<string>(initialSession.userName);
+  const [currentFocusPlace, setCurrentFocusPlace] = useState<string | undefined>(
+    initialSession.currentFocusPlace
+  );
+  const [askedFirstTimeAlready, setAskedFirstTimeAlready] = useState<boolean>(
+    initialSession.askedFirstTimeAlready
+  );
   const [activeRegion, setActiveRegion] = useState<SaoPauloZone | null>(null);
   const [aiVoiceEnabled, setAiVoiceEnabled] = useState(true);
 
@@ -112,9 +156,7 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
   const [liveTranscript, setLiveTranscript] = useState('');
   const [micErrorNotice, setMicErrorNotice] = useState<string | null>(null);
 
-  const [messages, setMessages] = useState<ChatMessage[]>(() => [
-    createInitialWelcomeMessage(),
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>(initialSession.messages);
 
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -139,6 +181,20 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
   useEffect(() => {
     pickWarmFemalePortugueseVoice();
   }, []);
+
+  // Persist active conversation session across tab switches
+  useEffect(() => {
+    try {
+      const payload: PersistedAiSession = {
+        stage,
+        userName,
+        currentFocusPlace,
+        askedFirstTimeAlready,
+        messages: messages.slice(-30),
+      };
+      sessionStorage.setItem(AI_SESSION_KEY, JSON.stringify(payload));
+    } catch {}
+  }, [stage, userName, currentFocusPlace, askedFirstTimeAlready, messages]);
 
   // Scoped internal chat scroll
   useEffect(() => {
@@ -219,6 +275,7 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
       stage: effectiveStage,
       userName: userName || undefined,
       currentFocusPlace,
+      askedFirstTimeAlready,
     });
 
     if (reply.detectedName) {
@@ -226,6 +283,9 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
     }
     if (reply.detectedPlace) {
       setCurrentFocusPlace(reply.detectedPlace);
+    }
+    if (reply.askFirstTimePlace) {
+      setAskedFirstTimeAlready(true);
     }
     setStage(reply.nextStage);
 
@@ -256,10 +316,15 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
     setStage('ask_name');
     setUserName('');
     setCurrentFocusPlace(undefined);
+    setAskedFirstTimeAlready(false);
     setActiveRegion(null);
     setInputText('');
     setLiveTranscript('');
-    setMessages([createInitialWelcomeMessage()]);
+    const resetMsgs = [createInitialWelcomeMessage()];
+    setMessages(resetMsgs);
+    try {
+      sessionStorage.removeItem(AI_SESSION_KEY);
+    } catch {}
     if (aiVoiceEnabled) {
       speakCalmReply(INITIAL_GREETING_TEXT);
     }
