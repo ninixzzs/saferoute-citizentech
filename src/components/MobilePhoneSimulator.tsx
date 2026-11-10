@@ -19,12 +19,14 @@ import {
   AlertTriangle,
   ArrowUpDown,
   Gauge,
+  LocateFixed,
 } from 'lucide-react';
 import { DangerZone, NavigationRoute, IncidentReport } from '../types';
 import {
   LocationSuggestion,
   POPULAR_LOCATIONS,
   searchAddressSuggestions,
+  reverseGeocode,
 } from '../services/routingService';
 import { NavigationMap } from './NavigationMap';
 
@@ -98,12 +100,34 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
   const [activeField, setActiveField] = useState<'origin' | 'destination' | null>(null);
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>(POPULAR_LOCATIONS.slice(0, 5));
   const [visibleAlert, setVisibleAlert] = useState<DangerZone | null>(null);
+  const [isLocatingGps, setIsLocatingGps] = useState<boolean>(false);
   const [phoneClock, setPhoneClock] = useState<string>(() =>
     new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   );
 
   const autoDismissTimerRef = useRef<number | null>(null);
   const debounceRef = useRef<number | null>(null);
+
+  const handleUseGpsInPhone = () => {
+    if (isNavigating || isCalculatingRoute || !navigator.geolocation) return;
+    setIsLocatingGps(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const loc = await reverseGeocode(pos.coords.latitude, pos.coords.longitude);
+          setOriginInput(loc.name);
+          if (destInput.trim()) {
+            onCalculateJourney(loc.address, destInput);
+            setIsExpandedPlanner(false);
+          }
+        } finally {
+          setIsLocatingGps(false);
+        }
+      },
+      () => setIsLocatingGps(false),
+      { enableHighAccuracy: true, timeout: 6000 }
+    );
+  };
 
   // Live phone status clock
   useEffect(() => {
@@ -212,9 +236,9 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
   };
 
   return (
-    <div className="flex flex-col items-center justify-center w-full py-2">
-      {/* Smartphone Hardware Frame */}
-      <div className="relative w-full max-w-[390px] h-[750px] rounded-[50px] bg-black border-[10px] border-neutral-900 shadow-[0_30px_80px_rgba(0,0,0,0.95)] overflow-hidden flex flex-col select-none ring-1 ring-white/15">
+    <div className="flex flex-col items-center justify-center w-full py-1 sm:py-2">
+      {/* Smartphone Hardware Frame (Responsive for Mobile + Desktop preview) */}
+      <div className="relative w-full max-w-[390px] h-[640px] sm:h-[750px] rounded-[38px] sm:rounded-[50px] bg-black border-[6px] sm:border-[10px] border-neutral-900 shadow-[0_30px_80px_rgba(0,0,0,0.95)] overflow-hidden flex flex-col select-none ring-1 ring-white/15">
         
         {/* Dynamic Island Pill */}
         <div className="absolute top-2.5 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center w-28 h-6 bg-black pointer-events-none rounded-full">
@@ -379,21 +403,36 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
                         }}
                         onBlur={() => setTimeout(() => setActiveField(null), 220)}
                         placeholder="Ponto de partida..."
-                        className="w-full pl-8 pr-7 py-1.5 bg-neutral-100 rounded-xl text-xs text-neutral-900 placeholder-neutral-400 border border-neutral-200 outline-none focus:border-neutral-400 font-medium"
+                        className="w-full pl-8 pr-14 py-1.5 bg-neutral-100 rounded-xl text-xs text-neutral-900 placeholder-neutral-400 border border-neutral-200 outline-none focus:border-neutral-400 font-medium"
                       />
-                      {originInput && (
+                      <div className="absolute right-2 flex items-center gap-1">
+                        {originInput && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOriginInput('');
+                              setActiveField('origin');
+                              triggerSuggestions('');
+                            }}
+                            className="text-neutral-400 hover:text-neutral-700"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
                         <button
                           type="button"
-                          onClick={() => {
-                            setOriginInput('');
-                            setActiveField('origin');
-                            triggerSuggestions('');
-                          }}
-                          className="absolute right-2 text-neutral-400 hover:text-neutral-700"
+                          onClick={handleUseGpsInPhone}
+                          disabled={isLocatingGps}
+                          className="text-neutral-600 hover:text-neutral-950"
+                          title="Usar minha localização GPS"
                         >
-                          <X className="w-3 h-3" />
+                          {isLocatingGps ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <LocateFixed className="w-3.5 h-3.5" />
+                          )}
                         </button>
-                      )}
+                      </div>
                     </div>
 
                     {/* Destination Field & Swap */}
@@ -562,6 +601,37 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
             className="absolute bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-neutral-200 p-3.5 px-4 space-y-2 shadow-2xl text-neutral-900 select-none"
           >
             <div className="w-8 h-1 bg-neutral-300 rounded-full mx-auto -mt-1"></div>
+
+            {/* 1-Tap Route Switcher Pills inside Phone Simulator */}
+            {!isNavigating && allRoutes.length > 0 && onSelectRoute && (
+              <div className="flex items-center gap-1 overflow-x-auto pb-0.5">
+                {allRoutes.map((route) => {
+                  const isSelected = route.id === selectedRoute.id;
+                  const label =
+                    route.type === 'segura'
+                      ? 'Segura'
+                      : route.type === 'rapida'
+                        ? 'Rápida'
+                        : 'Alternativa';
+                  return (
+                    <button
+                      key={route.id}
+                      type="button"
+                      onClick={() => onSelectRoute(route)}
+                      className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold whitespace-nowrap transition-all flex items-center gap-1 shrink-0 ${
+                        isSelected
+                          ? 'bg-neutral-950 text-white border-neutral-950'
+                          : 'bg-neutral-100 text-neutral-700 border-neutral-200 hover:bg-neutral-200'
+                      }`}
+                    >
+                      {route.type === 'segura' && <ShieldCheck className="w-3 h-3" />}
+                      <span>{label}</span>
+                      <span className="font-mono opacity-80">{route.durationMin}m</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             <div className="flex items-center justify-between">
               <div>

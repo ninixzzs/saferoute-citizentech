@@ -213,8 +213,40 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
       <div
         onMouseDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
-        className="absolute bottom-4 left-4 right-4 z-[400] bg-white/95 dark:bg-neutral-950/92 backdrop-blur-xl border border-neutral-200 dark:border-neutral-800 rounded-2xl p-3.5 px-4 shadow-2xl text-neutral-900 dark:text-white select-none"
+        className="absolute bottom-4 left-4 right-4 z-[400] bg-white/95 dark:bg-neutral-950/92 backdrop-blur-xl border border-neutral-200 dark:border-neutral-800 rounded-2xl p-3.5 px-4 shadow-2xl text-neutral-900 dark:text-white select-none space-y-2.5"
       >
+        {/* 1-Tap Route Switcher Pills (Google Maps / Uber style) */}
+        {!isNavigating && allRoutes.length > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+            {allRoutes.map((route) => {
+              const isSelected = route.id === selectedRoute.id;
+              const shortLabel =
+                route.type === 'segura'
+                  ? 'Segura'
+                  : route.type === 'rapida'
+                    ? 'Rápida'
+                    : 'Alternativa';
+              return (
+                <button
+                  key={route.id}
+                  type="button"
+                  onClick={() => onSelectRoute(route)}
+                  className={`px-3 py-1 rounded-xl border text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 ${
+                    isSelected
+                      ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border-neutral-950 dark:border-white shadow-xs'
+                      : 'bg-neutral-100 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600'
+                  }`}
+                >
+                  {route.type === 'segura' && <ShieldCheck className="w-3.5 h-3.5" />}
+                  <span>{shortLabel}</span>
+                  <span className="font-mono opacity-80">{route.durationMin}m</span>
+                  <span className="font-mono text-[10px] opacity-70">({route.safetyScore})</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2.5 flex-wrap tabular-nums">

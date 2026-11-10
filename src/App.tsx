@@ -6,6 +6,7 @@ import { IncidentList } from './components/IncidentList';
 import { IncidentReportModal } from './components/IncidentReportModal';
 import { SafetyTipsDrawer } from './components/SafetyTipsDrawer';
 import { MobilePhoneSimulator } from './components/MobilePhoneSimulator';
+import { MobileMapExperience } from './components/MobileMapExperience';
 import { ExpandedMapWorkspace } from './components/ExpandedMapWorkspace';
 import { Footer } from './components/Footer';
 
@@ -88,7 +89,6 @@ export function App() {
   // Workspace states
   const [viewMode, setViewMode] = useState<'map' | 'phone'>('map');
   const [sidebarTab, setSidebarTab] = useState<'routes' | 'itinerary' | 'alerts'>('routes');
-  const [mobileTab, setMobileTab] = useState<'map' | 'routes' | 'itinerary' | 'alerts'>('map');
   const [focusPoint, setFocusPoint] = useState<{ coords: [number, number]; ts: number } | null>(null);
   const [simulatedAlertZone, setSimulatedAlertZone] = useState<DangerZone | null>(null);
 
@@ -133,15 +133,6 @@ export function App() {
 
   const handleFocusIncident = (coords: [number, number]) => {
     setFocusPoint({ coords, ts: Date.now() });
-    setMobileTab('map');
-  };
-
-  const handleMobileCalculateJourney = async (orig: string, dest: string) => {
-    const res = await calculateJourney(orig, dest, dangerZones);
-    if (res) {
-      setMobileTab('map');
-    }
-    return res;
   };
 
   const handleTriggerDemoAlert = () => {
@@ -181,29 +172,29 @@ export function App() {
       />
 
       {/* Main Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-5 pb-24 lg:pb-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-5">
         {/* Hero Header Section with Requested Title & Description */}
         <section
           aria-label="Apresentação do SafeRoute"
-          className="rounded-3xl bg-white/90 dark:bg-neutral-900/85 border border-neutral-200 dark:border-neutral-800 backdrop-blur-xl p-5 sm:p-6 shadow-sm"
+          className="rounded-3xl bg-white/90 dark:bg-neutral-900/85 border border-neutral-200 dark:border-neutral-800 backdrop-blur-xl p-4 sm:p-6 shadow-sm"
         >
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3.5 sm:gap-5">
             {/* Hero Title & Description */}
-            <div className="space-y-2 max-w-2xl">
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-950 dark:text-white leading-tight">
+            <div className="space-y-1.5 sm:space-y-2 max-w-2xl">
+              <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-neutral-950 dark:text-white leading-tight">
                 Rotas que avisam antes do risco.
               </h1>
 
-              <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
+              <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
                 O SafeRoute compara o caminho mais rápido com um desvio seguro e manda uma mensagem
                 no celular quando você chega perto de uma área de risco em São Paulo.
               </p>
             </div>
 
-            {/* Interactive Quick Actions & Desktop View Mode Switcher */}
-            <div className="flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end gap-3 shrink-0 tabular-nums select-none">
-              {/* Telemetry Pills */}
-              <div className="flex flex-wrap items-center gap-2">
+            {/* Interactive Quick Actions & Universal Map/Phone Switcher (Mobile + Desktop) */}
+            <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-2.5 sm:gap-3 shrink-0 tabular-nums select-none">
+              {/* Desktop Telemetry Pills */}
+              <div className="hidden lg:flex flex-wrap items-center gap-2">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-100/90 dark:bg-neutral-950/80 border border-neutral-200 dark:border-neutral-800 text-xs">
                   <Route className="w-3.5 h-3.5 text-neutral-900 dark:text-white" />
                   <span className="font-mono font-bold text-neutral-950 dark:text-white">
@@ -224,52 +215,52 @@ export function App() {
                 </div>
               </div>
 
-              {/* Action Controls: Test Alert + Desktop Map/Phone Switcher */}
+              {/* Action Controls: Test Alert + Responsive Map/Phone Switcher */}
               <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleTriggerDemoAlert}
-                  className="px-3 py-1.5 rounded-xl bg-neutral-950 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-neutral-950 text-xs font-semibold shadow-sm flex items-center gap-1.5 transition-all active:scale-98"
-                  title="Simular recebimento de alerta da Defesa Civil no aparelho"
-                >
-                  <MessageSquareWarning className="w-3.5 h-3.5" />
-                  <span>Testar Alerta de Risco</span>
-                </button>
-
                 <div
                   role="tablist"
-                  aria-label="Modo de visualização no computador"
-                  className="hidden lg:inline-flex items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800"
+                  aria-label="Modo de visualização"
+                  className="inline-flex flex-1 sm:flex-initial items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800"
                 >
                   <button
                     type="button"
                     role="tab"
                     aria-selected={viewMode === 'map'}
                     onClick={() => setViewMode('map')}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                    className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
                       viewMode === 'map'
                         ? 'bg-white dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-xs ring-1 ring-neutral-200 dark:ring-neutral-700'
                         : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
                     }`}
                   >
                     <Map className="w-3.5 h-3.5" />
-                    <span>Mapa Amplo</span>
+                    <span>Mapa</span>
                   </button>
                   <button
                     type="button"
                     role="tab"
                     aria-selected={viewMode === 'phone'}
                     onClick={() => setViewMode('phone')}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                    className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
                       viewMode === 'phone'
                         ? 'bg-white dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-xs ring-1 ring-neutral-200 dark:ring-neutral-700'
                         : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
                     }`}
                   >
                     <Smartphone className="w-3.5 h-3.5" />
-                    <span>Simulador Celular</span>
+                    <span>Modo Celular</span>
                   </button>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={handleTriggerDemoAlert}
+                  className="px-3 py-2 rounded-xl bg-neutral-950 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-neutral-950 text-xs font-semibold shadow-sm flex items-center justify-center gap-1.5 transition-all active:scale-98"
+                  title="Simular recebimento de alerta da Defesa Civil no aparelho"
+                >
+                  <MessageSquareWarning className="w-3.5 h-3.5" />
+                  <span>Testar Alerta</span>
+                </button>
               </div>
             </div>
           </div>
@@ -448,34 +439,10 @@ export function App() {
           </aside>
         </div>
 
-        {/* MOBILE APP EXPERIENCE (< lg) */}
-        <div className="lg:hidden space-y-3">
-          {/* Quick Trip Pill on Mobile */}
-          <button
-            type="button"
-            onClick={() => setMobileTab('routes')}
-            className="w-full p-3 rounded-2xl bg-white/95 dark:bg-neutral-900/95 border border-neutral-200 dark:border-neutral-800 shadow-sm flex items-center justify-between gap-3 text-left"
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0">
-                <Navigation className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs font-bold text-neutral-950 dark:text-white truncate">
-                  {originLocation.name} &rarr; {destinationLocation.name}
-                </div>
-                <div className="text-[11px] text-neutral-500 font-mono tabular-nums">
-                  {selectedRoute.durationMin} min &bull; {selectedRoute.distanceKm} km &bull; Segurança {selectedRoute.safetyScore}/100
-                </div>
-              </div>
-            </div>
-            <span className="px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-[11px] font-bold text-neutral-700 dark:text-neutral-200 shrink-0">
-              Alterar
-            </span>
-          </button>
-
-          {mobileTab === 'map' && (
-            <ExpandedMapWorkspace
+        {/* MOBILE APP EXPERIENCE (< lg): Uber / Waze / Google Maps Flow + Optional Phone Prototype */}
+        <div className="lg:hidden">
+          {viewMode === 'map' ? (
+            <MobileMapExperience
               currentPosition={currentPosition}
               nextPosition={nextPosition}
               selectedRoute={selectedRoute}
@@ -483,13 +450,33 @@ export function App() {
               onSelectRoute={selectRoute}
               originLocation={originLocation}
               destinationLocation={destinationLocation}
+              onCalculateJourney={(orig, dest) => calculateJourney(orig, dest, dangerZones)}
+              onSwapLocations={() => swapOriginAndDestination(dangerZones)}
+              onResetPresetRoutes={resetToPresetRoutes}
+              isCalculatingRoute={isCalculatingRoute}
               dangerZones={dangerZones}
               incidents={incidents}
+              allIncidentsCount={allIncidents.length}
+              loadingIncidents={loading}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+              selectedRisk={selectedRisk}
+              onRiskChange={setSelectedRisk}
+              onConfirmIncident={confirmIncident}
+              onUpdateIncidentStatus={(id, status) => updateIncident(id, { status })}
+              onDeleteIncident={deleteIncident}
+              onResetIncidents={resetData}
+              onFocusIncident={handleFocusIncident}
+              onOpenReportModal={() => setIsReportModalOpen(true)}
               isNavigating={isNavigating}
               isPaused={isPaused}
               speedKmH={speedKmH}
               progressPercentage={progressPercentage}
               activeAlertZone={effectiveAlertZone}
+              voiceEnabled={voiceEnabled}
+              onToggleVoice={() => setVoiceEnabled(!voiceEnabled)}
               onStart={startNavigation}
               onPause={pauseNavigation}
               onResume={resumeNavigation}
@@ -500,129 +487,42 @@ export function App() {
               simSpeed={simSpeed}
               onToggleSimSpeed={setSimSpeed}
             />
-          )}
-
-          {mobileTab === 'routes' && (
-            <div className="p-4 rounded-2xl bg-white/95 dark:bg-neutral-900/95 border border-neutral-200 dark:border-neutral-800 shadow-lg">
-              <RouteSelector
-                routes={routes}
-                selectedRouteId={selectedRoute.id}
-                onSelectRoute={(r) => {
-                  selectRoute(r);
-                  setMobileTab('map');
-                }}
-                isNavigating={isNavigating}
-                progressPercentage={progressPercentage}
-                originLocation={originLocation}
-                destinationLocation={destinationLocation}
-                onCalculateJourney={handleMobileCalculateJourney}
-                onSwapLocations={() => swapOriginAndDestination(dangerZones)}
-                isCalculatingRoute={isCalculatingRoute}
-                onResetPresetRoutes={resetToPresetRoutes}
-                simSpeed={simSpeed}
-                onToggleSimSpeed={setSimSpeed}
-              />
-            </div>
-          )}
-
-          {mobileTab === 'itinerary' && (
-            <div className="p-4 rounded-2xl bg-white/95 dark:bg-neutral-900/95 border border-neutral-200 dark:border-neutral-800 shadow-lg">
-              <RouteItinerary
-                selectedRoute={selectedRoute}
-                isNavigating={isNavigating}
-                progressPercentage={progressPercentage}
-              />
-            </div>
-          )}
-
-          {mobileTab === 'alerts' && (
-            <div className="p-4 rounded-2xl bg-white/95 dark:bg-neutral-900/95 border border-neutral-200 dark:border-neutral-800 shadow-lg">
-              <IncidentList
-                incidents={incidents}
-                loading={loading}
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                selectedCategory={selectedCategory}
-                onCategoryChange={setSelectedCategory}
-                selectedRisk={selectedRisk}
-                onRiskChange={setSelectedRisk}
-                onConfirm={confirmIncident}
-                onUpdateStatus={(id, status) => updateIncident(id, { status })}
-                onDelete={deleteIncident}
-                onResetData={resetData}
-                onFocusIncident={handleFocusIncident}
-              />
-            </div>
+          ) : (
+            <MobilePhoneSimulator
+              currentPosition={currentPosition}
+              nextPosition={nextPosition}
+              selectedRoute={selectedRoute}
+              allRoutes={routes}
+              onSelectRoute={selectRoute}
+              dangerZones={dangerZones}
+              incidents={incidents}
+              isNavigating={isNavigating}
+              isPaused={isPaused}
+              speedKmH={speedKmH}
+              progressPercentage={progressPercentage}
+              activeAlertZone={effectiveAlertZone}
+              voiceEnabled={voiceEnabled}
+              onToggleVoice={() => setVoiceEnabled(!voiceEnabled)}
+              onStart={startNavigation}
+              onPause={pauseNavigation}
+              onResume={resumeNavigation}
+              onReset={handleResetAll}
+              onAcceptReroute={handleAcceptReroute}
+              onDismissAlert={handleDismissEffectiveAlert}
+              onOpenReportModal={() => setIsReportModalOpen(true)}
+              originLocation={originLocation}
+              destinationLocation={destinationLocation}
+              onCalculateJourney={(orig, dest) => calculateJourney(orig, dest, dangerZones)}
+              onSwapLocations={() => swapOriginAndDestination(dangerZones)}
+              isCalculatingRoute={isCalculatingRoute}
+              onResetPresetRoutes={resetToPresetRoutes}
+              simSpeed={simSpeed}
+              onToggleSimSpeed={setSimSpeed}
+              focusPoint={focusPoint}
+            />
           )}
         </div>
       </main>
-
-      {/* Mobile Bottom Navigation Bar (< lg) */}
-      <nav
-        aria-label="Navegação principal no smartphone"
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-neutral-950/95 backdrop-blur-xl border-t border-neutral-200 dark:border-neutral-800 px-2 py-1.5 shadow-[0_-8px_30px_rgba(0,0,0,0.12)]"
-      >
-        <div className="grid grid-cols-4 gap-1 max-w-md mx-auto">
-          <button
-            type="button"
-            onClick={() => setMobileTab('map')}
-            className={`py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold transition-colors ${
-              mobileTab === 'map'
-                ? 'text-neutral-950 dark:text-white bg-neutral-100 dark:bg-neutral-800'
-                : 'text-neutral-500 dark:text-neutral-400'
-            }`}
-          >
-            <Map className="w-4 h-4" />
-            <span>Mapa</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setMobileTab('routes')}
-            className={`py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold transition-colors ${
-              mobileTab === 'routes'
-                ? 'text-neutral-950 dark:text-white bg-neutral-100 dark:bg-neutral-800'
-                : 'text-neutral-500 dark:text-neutral-400'
-            }`}
-          >
-            <Navigation className="w-4 h-4" />
-            <span>Rotas</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setMobileTab('itinerary')}
-            className={`py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold transition-colors ${
-              mobileTab === 'itinerary'
-                ? 'text-neutral-950 dark:text-white bg-neutral-100 dark:bg-neutral-800'
-                : 'text-neutral-500 dark:text-neutral-400'
-            }`}
-          >
-            <ListChecks className="w-4 h-4" />
-            <span>Passos</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setMobileTab('alerts')}
-            className={`relative py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold transition-colors ${
-              mobileTab === 'alerts'
-                ? 'text-neutral-950 dark:text-white bg-neutral-100 dark:bg-neutral-800'
-                : 'text-neutral-500 dark:text-neutral-400'
-            }`}
-          >
-            <div className="relative">
-              <AlertCircle className="w-4 h-4" />
-              {allIncidents.length > 0 && (
-                <span className="absolute -top-1.5 -right-2.5 px-1 min-w-[16px] h-4 rounded-full bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 text-[9px] font-mono font-bold flex items-center justify-center">
-                  {allIncidents.length}
-                </span>
-              )}
-            </div>
-            <span>Alertas</span>
-          </button>
-        </div>
-      </nav>
 
       {/* Modals */}
       <IncidentReportModal
