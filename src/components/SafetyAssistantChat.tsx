@@ -8,7 +8,6 @@ import {
   Sparkles,
   Check,
   ExternalLink,
-  Compass,
   Zap,
   Mic,
   MicOff,
@@ -21,7 +20,6 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { DangerZone, IncidentReport, NavigationRoute } from '../types';
-import { SaoPauloZone } from '../data/saoPauloLocations';
 import { LocationSuggestion } from '../services/routingService';
 import {
   buildPreTripSmsMessage,
@@ -60,15 +58,6 @@ interface ChatMessage {
   suggestedDestination?: string;
   showQuickDestinations?: boolean;
 }
-
-const SP_REGIONS: { label: string; zone: SaoPauloZone; prompt: string }[] = [
-  { label: 'Centro', zone: 'Centro', prompt: 'Como está a segurança no Centro de SP?' },
-  { label: 'Zona Sul', zone: 'Zona Sul', prompt: 'Como está a Zona Sul agora?' },
-  { label: 'Zona Oeste', zone: 'Zona Oeste', prompt: 'Como está a Zona Oeste de São Paulo?' },
-  { label: 'Zona Leste', zone: 'Zona Leste', prompt: 'Como está a Zona Leste agora?' },
-  { label: 'Zona Norte', zone: 'Zona Norte', prompt: 'Como está a Zona Norte de SP?' },
-  { label: 'Marginais', zone: 'Marginais e Pontes', prompt: 'Como estão as Marginais e Pontes?' },
-];
 
 const INITIAL_GREETING_TEXT = 'Oi, tudo bem? Qual é o seu nome?';
 const AI_SESSION_KEY = 'saferoute_ai_session_v1';
@@ -146,7 +135,7 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
   const [askedFirstTimeAlready, setAskedFirstTimeAlready] = useState<boolean>(
     initialSession.askedFirstTimeAlready
   );
-  const [activeRegion, setActiveRegion] = useState<SaoPauloZone | null>(null);
+  const [panelTab, setPanelTab] = useState<'chat' | 'sms'>('chat');
   const [aiVoiceEnabled, setAiVoiceEnabled] = useState(true);
 
   // Live Floating Voice Orb Mode (Siri / ChatGPT / Gemini style)
@@ -241,23 +230,9 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
     });
   };
 
-  const askAssistant = (
-    question: string,
-    options?: { regionTag?: SaoPauloZone; speakResponse?: boolean }
-  ) => {
+  const askAssistant = (question: string, options?: { speakResponse?: boolean }) => {
     const clean = question.trim();
     if (!clean) return;
-
-    if (options?.regionTag) {
-      setActiveRegion(options.regionTag);
-    }
-
-    const effectiveStage: ConversationStage =
-      options?.regionTag && stage === 'ask_name'
-        ? 'ready'
-        : options?.regionTag && stage === 'ask_destination'
-          ? 'ready'
-          : stage;
 
     const userMsg: ChatMessage = {
       id: `u-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -272,7 +247,7 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
       allRoutes,
       dangerZones,
       incidents,
-      stage: effectiveStage,
+      stage,
       userName: userName || undefined,
       currentFocusPlace,
       askedFirstTimeAlready,
@@ -317,7 +292,7 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
     setUserName('');
     setCurrentFocusPlace(undefined);
     setAskedFirstTimeAlready(false);
-    setActiveRegion(null);
+    setPanelTab('chat');
     setInputText('');
     setLiveTranscript('');
     const resetMsgs = [createInitialWelcomeMessage()];
@@ -492,14 +467,6 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
     'Praça da Sé',
   ];
 
-  const quickReadyQuestions = [
-    'Lugares conhecidos por perto?',
-    'Comparar rota segura vs rápida',
-    'Como funciona a acessibilidade?',
-    'Telefones de emergência?',
-    'Ver texto do SMS',
-  ];
-
   const inputPlaceholder =
     stage === 'ask_name'
       ? 'Digite ou fale o seu nome...'
@@ -511,10 +478,10 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* 1. Prominent Executive AI Spotlight Banner & Voice Chat Console */}
+      {/* Clean Dedicated AI Console & SMS Switcher */}
       <div className="rounded-3xl bg-white dark:bg-neutral-950 border-2 border-neutral-950 dark:border-white/25 shadow-[0_14px_36px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col">
-        {/* Inverted Monochrome Spotlight Header */}
-        <div className="p-4 bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 space-y-2.5">
+        {/* Monochrome Header */}
+        <div className="p-4 bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-white dark:bg-neutral-950 text-neutral-950 dark:text-white flex items-center justify-center shrink-0 shadow-sm">
@@ -526,7 +493,7 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
                 </h3>
                 <p className="text-[11px] opacity-80 flex items-center gap-1">
                   <Zap className="w-3 h-3 shrink-0" />
-                  <span>Voz feminina calma &bull; Todas as regiões de SP</span>
+                  <span>Voz feminina calma &bull; Resposta imediata</span>
                 </p>
               </div>
             </div>
@@ -571,39 +538,50 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
             </div>
           </div>
 
-          {/* All Regions of São Paulo 1-Tap Explorer */}
-          <div className="pt-1 space-y-1.5">
-            <div className="text-[10px] font-bold uppercase tracking-wider opacity-75 flex items-center gap-1">
-              <Compass className="w-3 h-3" />
-              <span>Regiões de São Paulo:</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {SP_REGIONS.map((reg) => {
-                const isActive = activeRegion === reg.zone;
-                return (
-                  <button
-                    key={reg.zone}
-                    type="button"
-                    onClick={() => askAssistant(reg.prompt, { regionTag: reg.zone })}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all active:scale-95 ${
-                      isActive
-                        ? 'bg-white dark:bg-neutral-950 text-neutral-950 dark:text-white border-white dark:border-neutral-950 shadow-xs'
-                        : 'bg-white/10 dark:bg-neutral-950/5 text-white dark:text-neutral-950 border-white/20 dark:border-neutral-950/20 hover:bg-white/20 dark:hover:bg-neutral-950/15'
-                    }`}
-                  >
-                    {reg.label}
-                  </button>
-                );
-              })}
-            </div>
+          {/* Focused Sub-tab Switcher: Conversa IA | SMS Pré-Viagem */}
+          <div
+            role="tablist"
+            aria-label="Alternar entre conversa com IA e SMS pré-viagem"
+            className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-white/10 dark:bg-neutral-950/10 border border-white/15 dark:border-neutral-950/15"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={panelTab === 'chat'}
+              onClick={() => setPanelTab('chat')}
+              className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                panelTab === 'chat'
+                  ? 'bg-white dark:bg-neutral-950 text-neutral-950 dark:text-white shadow-xs'
+                  : 'text-white/80 dark:text-neutral-950/70 hover:text-white dark:hover:text-neutral-950'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Conversa IA</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={panelTab === 'sms'}
+              onClick={() => setPanelTab('sms')}
+              className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                panelTab === 'sms'
+                  ? 'bg-white dark:bg-neutral-950 text-neutral-950 dark:text-white shadow-xs'
+                  : 'text-white/80 dark:text-neutral-950/70 hover:text-white dark:hover:text-neutral-950'
+              }`}
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>SMS Pré-Viagem</span>
+            </button>
           </div>
         </div>
 
-        {/* Instant Conversation Thread */}
-        <div
-          ref={chatScrollRef}
-          className="p-3.5 space-y-3 max-h-[22rem] overflow-y-auto bg-neutral-50/70 dark:bg-neutral-900/50"
-        >
+        {panelTab === 'chat' ? (
+          <>
+            {/* Instant Conversation Thread */}
+            <div
+              ref={chatScrollRef}
+              className="p-3.5 space-y-3 min-h-[16rem] max-h-[26rem] overflow-y-auto bg-neutral-50/70 dark:bg-neutral-900/50"
+            >
           {messages.map((msg) => (
             <div
               key={msg.id}
@@ -744,117 +722,102 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
               </div>
             </div>
           ))}
-        </div>
+            </div>
 
-        {/* Context-Aware Quick Question Chips (only shown after destination/onboarding starts) */}
-        {stage === 'ready' && (
-          <div className="px-3.5 py-2 border-t border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex items-center gap-1.5 overflow-x-auto">
-            {quickReadyQuestions.map((q) => (
+            {/* Voice Orb + Input Composer */}
+            <form
+              onSubmit={handleSubmit}
+              className="p-3 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/80 flex items-center gap-2"
+            >
               <button
-                key={q}
                 type="button"
-                onClick={() => askAssistant(q)}
-                className="px-2.5 py-1.5 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-900 dark:hover:border-white text-[11px] font-semibold text-neutral-900 dark:text-neutral-100 whitespace-nowrap shrink-0 transition-colors"
+                onClick={handleOpenVoiceOrb}
+                aria-label="Abrir Orbe de Voz para conversar falando"
+                title="Conversar com o Orbe Flutuante da IA"
+                className="p-2.5 rounded-xl border bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border-neutral-950 dark:border-white font-bold text-xs flex items-center justify-center shrink-0 hover:opacity-90 active:scale-95 transition-all shadow-xs"
               >
-                {q}
+                <Mic className="w-4 h-4" />
               </button>
-            ))}
-          </div>
-        )}
 
-        {/* Voice Orb + Input Composer */}
-        <form
-          onSubmit={handleSubmit}
-          className="p-3 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/80 flex items-center gap-2"
-        >
-          <button
-            type="button"
-            onClick={handleOpenVoiceOrb}
-            aria-label="Abrir Orbe de Voz para conversar falando"
-            title="Conversar com o Orbe Flutuante da IA"
-            className="p-2.5 rounded-xl border bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border-neutral-950 dark:border-white font-bold text-xs flex items-center justify-center shrink-0 hover:opacity-90 active:scale-95 transition-all shadow-xs"
-          >
-            <Mic className="w-4 h-4" />
-          </button>
+              <input
+                ref={inputRef}
+                type="text"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder={inputPlaceholder}
+                aria-label="Responder ou perguntar ao assistente preventivo"
+                className="flex-1 min-w-0 px-3.5 py-2.5 rounded-xl bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-xs text-neutral-950 dark:text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-950 dark:focus:border-white"
+              />
 
-          <input
-            ref={inputRef}
-            type="text"
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            placeholder={inputPlaceholder}
-            aria-label="Responder ou perguntar ao assistente preventivo"
-            className="flex-1 min-w-0 px-3.5 py-2.5 rounded-xl bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-xs text-neutral-950 dark:text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-950 dark:focus:border-white"
-          />
+              <button
+                type="submit"
+                disabled={!inputText.trim()}
+                className="px-4 py-2.5 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 disabled:opacity-40 transition-opacity font-bold text-xs flex items-center gap-1.5 shrink-0"
+                aria-label="Enviar mensagem para a IA"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Enviar</span>
+              </button>
+            </form>
+          </>
+        ) : (
+          <div className="p-4 bg-neutral-50 dark:bg-neutral-900/60 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200 dark:border-neutral-800 pb-2">
+              <div className="flex items-center gap-2">
+                <Smartphone className="w-4 h-4 text-neutral-950 dark:text-white shrink-0" />
+                <span className="text-xs font-bold uppercase tracking-wider text-neutral-950 dark:text-white">
+                  SMS Pré-Viagem &middot; Antes de Iniciar
+                </span>
+              </div>
+              <span className="px-2 py-0.5 rounded-md bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 text-[10px] font-bold uppercase tracking-tight">
+                {preTripSms.toneLabel}
+              </span>
+            </div>
 
-          <button
-            type="submit"
-            disabled={!inputText.trim()}
-            className="px-4 py-2.5 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 disabled:opacity-40 transition-opacity font-bold text-xs flex items-center gap-1.5 shrink-0"
-            aria-label="Enviar mensagem para a IA"
-          >
-            <Send className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Enviar</span>
-          </button>
-        </form>
-      </div>
+            <div className="p-3.5 rounded-2xl rounded-tl-sm bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-2xs space-y-1.5">
+              <div className="flex items-center justify-between text-[10px] font-mono text-neutral-500">
+                <span>Remetente: SafeRoute · 40199</span>
+                <span>Orientação tranquila</span>
+              </div>
+              <p className="text-xs sm:text-sm text-neutral-800 dark:text-neutral-200 leading-relaxed">
+                {preTripSms.smsText}
+              </p>
+            </div>
 
-      {/* 2. Calm Pre-Trip SMS Card */}
-      <div className="p-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200 dark:border-neutral-800 pb-2">
-          <div className="flex items-center gap-2">
-            <Smartphone className="w-4 h-4 text-neutral-950 dark:text-white shrink-0" />
-            <span className="text-xs font-bold uppercase tracking-wider text-neutral-950 dark:text-white">
-              SMS Pré-Viagem &middot; Antes de Iniciar
-            </span>
-          </div>
-          <span className="px-2 py-0.5 rounded-md bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 text-[10px] font-bold uppercase tracking-tight">
-            {preTripSms.toneLabel}
-          </span>
-        </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="tel"
+                value={phoneInput}
+                onChange={(e) => setPhoneInput(e.target.value)}
+                placeholder="Seu celular opcional (ex: 11 99999-9999)"
+                aria-label="Número de celular opcional para prévia de SMS"
+                className="flex-1 min-w-[160px] px-3 py-2 rounded-xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:border-neutral-900 dark:focus:border-neutral-400"
+              />
 
-        <div className="p-3 rounded-2xl rounded-tl-sm bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-2xs space-y-1.5">
-          <div className="flex items-center justify-between text-[10px] font-mono text-neutral-500">
-            <span>Remetente: SafeRoute · 40199</span>
-            <span>Orientação tranquila</span>
-          </div>
-          <p className="text-xs sm:text-sm text-neutral-800 dark:text-neutral-200 leading-relaxed">
-            {preTripSms.smsText}
-          </p>
-        </div>
+              <button
+                type="button"
+                onClick={handleSimulateSms}
+                className="px-3 py-2 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 text-xs font-bold flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+              >
+                {smsSentNotice ? <Check className="w-3.5 h-3.5" /> : <MessageSquare className="w-3.5 h-3.5" />}
+                <span>{smsSentNotice ? 'SMS Simulado!' : 'Testar SMS'}</span>
+              </button>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="tel"
-            value={phoneInput}
-            onChange={(e) => setPhoneInput(e.target.value)}
-            placeholder="Seu celular opcional (ex: 11 99999-9999)"
-            aria-label="Número de celular opcional para prévia de SMS"
-            className="flex-1 min-w-[160px] px-3 py-2 rounded-xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-xs text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:border-neutral-900 dark:focus:border-neutral-400"
-          />
+              <a
+                href={smsHref}
+                className="px-3 py-2 rounded-xl bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white text-xs font-semibold flex items-center gap-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors"
+                title="Abrir texto pronto no aplicativo de SMS do celular"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Abrir no SMS</span>
+              </a>
+            </div>
 
-          <button
-            type="button"
-            onClick={handleSimulateSms}
-            className="px-3 py-2 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 text-xs font-bold flex items-center gap-1.5 hover:opacity-90 transition-opacity"
-          >
-            {smsSentNotice ? <Check className="w-3.5 h-3.5" /> : <MessageSquare className="w-3.5 h-3.5" />}
-            <span>{smsSentNotice ? 'SMS Simulado!' : 'Testar SMS'}</span>
-          </button>
-
-          <a
-            href={smsHref}
-            className="px-3 py-2 rounded-xl bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white text-xs font-semibold flex items-center gap-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors"
-            title="Abrir texto pronto no aplicativo de SMS do celular"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-            <span>Abrir no SMS</span>
-          </a>
-        </div>
-
-        {smsSentNotice && (
-          <div className="text-[11px] font-medium text-neutral-800 dark:text-neutral-200 bg-neutral-200/70 dark:bg-neutral-800 px-3 py-1.5 rounded-xl">
-            Prévia enviada{phoneInput.trim() ? ` para ${phoneInput}` : ' no painel'} com tom informativo e sem alarmismo.
+            {smsSentNotice && (
+              <div className="text-[11px] font-medium text-neutral-800 dark:text-neutral-200 bg-neutral-200/70 dark:bg-neutral-800 px-3 py-1.5 rounded-xl">
+                Prévia enviada{phoneInput.trim() ? ` para ${phoneInput}` : ' no painel'} com tom informativo e sem alarmismo.
+              </div>
+            )}
           </div>
         )}
       </div>

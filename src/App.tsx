@@ -91,8 +91,10 @@ export function App() {
 
   // Workspace states
   const [viewMode, setViewMode] = useState<'map' | 'phone'>('map');
+  const [mobileView, setMobileView] = useState<'map' | 'phone' | 'ai'>('map');
   const [sidebarTab, setSidebarTab] = useState<'routes' | 'itinerary' | 'alerts' | 'messages'>('routes');
   const [assistantFocusTrigger, setAssistantFocusTrigger] = useState(0);
+  const mobileInfoTab = sidebarTab === 'messages' ? 'routes' : sidebarTab;
   const [focusPoint, setFocusPoint] = useState<{ coords: [number, number]; ts: number } | null>(null);
   const [simulatedAlertZone, setSimulatedAlertZone] = useState<DangerZone | null>(null);
 
@@ -154,10 +156,11 @@ export function App() {
 
   const handleOpenAssistant = () => {
     setSidebarTab('messages');
+    setMobileView('ai');
     setAssistantFocusTrigger((n) => n + 1);
     if (window.innerWidth < 1024) {
       setTimeout(() => {
-        document.getElementById('info-hub-mobile')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById('mobile-ai-tab')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 60);
     }
   };
@@ -232,19 +235,20 @@ export function App() {
                 </div>
               </div>
 
-              {/* Action Controls: Test Alert + Responsive Map/Phone Switcher */}
+              {/* Action Controls: Desktop Map/Phone Switcher + Mobile Map/Phone/AI Tab Switcher */}
               <div className="flex flex-wrap items-center gap-2">
+                {/* Desktop Switcher (Untouched >= lg) */}
                 <div
                   role="tablist"
                   aria-label="Modo de visualização"
-                  className="inline-flex flex-1 sm:flex-initial items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
+                  className="hidden lg:inline-flex items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
                 >
                   <button
                     type="button"
                     role="tab"
                     aria-selected={viewMode === 'map'}
                     onClick={() => setViewMode('map')}
-                    className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
                       viewMode === 'map'
                         ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-xs'
                         : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
@@ -258,7 +262,7 @@ export function App() {
                     role="tab"
                     aria-selected={viewMode === 'phone'}
                     onClick={() => setViewMode('phone')}
-                    className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
                       viewMode === 'phone'
                         ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-xs'
                         : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
@@ -266,6 +270,56 @@ export function App() {
                   >
                     <Smartphone className="w-3.5 h-3.5" />
                     <span>Modo Celular</span>
+                  </button>
+                </div>
+
+                {/* Mobile 3-Tab Switcher (< lg): Dedicated isolated IA tab */}
+                <div
+                  role="tablist"
+                  aria-label="Abas principais no celular"
+                  className="grid grid-cols-3 lg:hidden w-full sm:w-auto items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={mobileView === 'map'}
+                    onClick={() => setMobileView('map')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
+                      mobileView === 'map'
+                        ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-xs'
+                        : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
+                    }`}
+                  >
+                    <Map className="w-3.5 h-3.5" />
+                    <span>Mapa</span>
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={mobileView === 'phone'}
+                    onClick={() => setMobileView('phone')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
+                      mobileView === 'phone'
+                        ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-xs'
+                        : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
+                    }`}
+                  >
+                    <Smartphone className="w-3.5 h-3.5" />
+                    <span>Celular</span>
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={mobileView === 'ai'}
+                    onClick={() => setMobileView('ai')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
+                      mobileView === 'ai'
+                        ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-xs'
+                        : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>IA</span>
                   </button>
                 </div>
 
@@ -282,8 +336,8 @@ export function App() {
             </div>
           </div>
 
-          {/* Prominent Featured AI Assistant & All-São-Paulo Coverage Strip */}
-          <div className="mt-3.5 pt-3.5 border-t border-neutral-200/80 dark:border-neutral-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {/* Prominent Featured AI Assistant & All-São-Paulo Coverage Strip (Desktop >= lg; mobile uses dedicated IA tab above) */}
+          <div className="hidden lg:flex mt-3.5 pt-3.5 border-t border-neutral-200/80 dark:border-neutral-800/80 flex-row items-center justify-between gap-3">
             <div className="flex items-start sm:items-center gap-2.5 min-w-0">
               <div className="w-8 h-8 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0 shadow-xs">
                 <Sparkles className="w-4 h-4" />
@@ -517,212 +571,201 @@ export function App() {
           </aside>
         </div>
 
-        {/* MOBILE APP EXPERIENCE (< lg): Interactive Stage + Separated Details/Steps/Alerts above Footer */}
+        {/* MOBILE APP EXPERIENCE (< lg): Dedicated AI tab OR Interactive Stage + 3-Tab Hub */}
         <div className="lg:hidden space-y-5">
-          <div id="mobile-stage">
-            {viewMode === 'map' ? (
-              <MobileMapExperience
-                currentPosition={currentPosition}
-                nextPosition={nextPosition}
-                selectedRoute={selectedRoute}
-                allRoutes={routes}
-                onSelectRoute={selectRoute}
+          {mobileView === 'ai' ? (
+            <section id="mobile-ai-tab" aria-label="Assistente IA SafeRoute">
+              <SafetyAssistantChat
                 originLocation={originLocation}
                 destinationLocation={destinationLocation}
-                onCalculateJourney={(orig, dest) => calculateJourney(orig, dest, dangerZones)}
-                onSwapLocations={() => swapOriginAndDestination(dangerZones)}
-                onResetPresetRoutes={resetToPresetRoutes}
-                isCalculatingRoute={isCalculatingRoute}
-                dangerZones={dangerZones}
-                incidents={incidents}
-                onOpenReportModal={() => setIsReportModalOpen(true)}
-                isNavigating={isNavigating}
-                isPaused={isPaused}
-                speedKmH={speedKmH}
-                progressPercentage={progressPercentage}
-                activeAlertZone={effectiveAlertZone}
-                voiceEnabled={voiceEnabled}
-                onToggleVoice={() => setVoiceEnabled(!voiceEnabled)}
-                onStart={startNavigation}
-                onPause={pauseNavigation}
-                onResume={resumeNavigation}
-                onReset={handleResetAll}
-                onAcceptReroute={handleAcceptReroute}
-                onDismissAlert={handleDismissEffectiveAlert}
-                focusPoint={focusPoint}
-                simSpeed={simSpeed}
-                onToggleSimSpeed={setSimSpeed}
-              />
-            ) : (
-              <MobilePhoneSimulator
-                currentPosition={currentPosition}
-                nextPosition={nextPosition}
                 selectedRoute={selectedRoute}
                 allRoutes={routes}
-                onSelectRoute={selectRoute}
                 dangerZones={dangerZones}
                 incidents={incidents}
-                isNavigating={isNavigating}
-                isPaused={isPaused}
-                speedKmH={speedKmH}
-                progressPercentage={progressPercentage}
-                activeAlertZone={effectiveAlertZone}
-                voiceEnabled={voiceEnabled}
-                onToggleVoice={() => setVoiceEnabled(!voiceEnabled)}
-                onStart={startNavigation}
-                onPause={pauseNavigation}
-                onResume={resumeNavigation}
-                onReset={handleResetAll}
-                onAcceptReroute={handleAcceptReroute}
-                onDismissAlert={handleDismissEffectiveAlert}
-                onOpenReportModal={() => setIsReportModalOpen(true)}
-                originLocation={originLocation}
-                destinationLocation={destinationLocation}
-                onCalculateJourney={(orig, dest) => calculateJourney(orig, dest, dangerZones)}
-                onSwapLocations={() => swapOriginAndDestination(dangerZones)}
-                isCalculatingRoute={isCalculatingRoute}
-                onResetPresetRoutes={resetToPresetRoutes}
-                simSpeed={simSpeed}
-                onToggleSimSpeed={setSimSpeed}
-                focusPoint={focusPoint}
+                onSwitchToSafeRoute={handleAcceptReroute}
+                onSelectCustomDestination={(destName) =>
+                  calculateJourney(originLocation.name, destName, dangerZones)
+                }
+                focusInputTrigger={assistantFocusTrigger}
               />
-            )}
-          </div>
+            </section>
+          ) : (
+            <>
+              <div id="mobile-stage">
+                {mobileView === 'map' ? (
+                  <MobileMapExperience
+                    currentPosition={currentPosition}
+                    nextPosition={nextPosition}
+                    selectedRoute={selectedRoute}
+                    allRoutes={routes}
+                    onSelectRoute={selectRoute}
+                    originLocation={originLocation}
+                    destinationLocation={destinationLocation}
+                    onCalculateJourney={(orig, dest) => calculateJourney(orig, dest, dangerZones)}
+                    onSwapLocations={() => swapOriginAndDestination(dangerZones)}
+                    onResetPresetRoutes={resetToPresetRoutes}
+                    isCalculatingRoute={isCalculatingRoute}
+                    dangerZones={dangerZones}
+                    incidents={incidents}
+                    onOpenReportModal={() => setIsReportModalOpen(true)}
+                    isNavigating={isNavigating}
+                    isPaused={isPaused}
+                    speedKmH={speedKmH}
+                    progressPercentage={progressPercentage}
+                    activeAlertZone={effectiveAlertZone}
+                    voiceEnabled={voiceEnabled}
+                    onToggleVoice={() => setVoiceEnabled(!voiceEnabled)}
+                    onStart={startNavigation}
+                    onPause={pauseNavigation}
+                    onResume={resumeNavigation}
+                    onReset={handleResetAll}
+                    onAcceptReroute={handleAcceptReroute}
+                    onDismissAlert={handleDismissEffectiveAlert}
+                    focusPoint={focusPoint}
+                    simSpeed={simSpeed}
+                    onToggleSimSpeed={setSimSpeed}
+                  />
+                ) : (
+                  <MobilePhoneSimulator
+                    currentPosition={currentPosition}
+                    nextPosition={nextPosition}
+                    selectedRoute={selectedRoute}
+                    allRoutes={routes}
+                    onSelectRoute={selectRoute}
+                    dangerZones={dangerZones}
+                    incidents={incidents}
+                    isNavigating={isNavigating}
+                    isPaused={isPaused}
+                    speedKmH={speedKmH}
+                    progressPercentage={progressPercentage}
+                    activeAlertZone={effectiveAlertZone}
+                    voiceEnabled={voiceEnabled}
+                    onToggleVoice={() => setVoiceEnabled(!voiceEnabled)}
+                    onStart={startNavigation}
+                    onPause={pauseNavigation}
+                    onResume={resumeNavigation}
+                    onReset={handleResetAll}
+                    onAcceptReroute={handleAcceptReroute}
+                    onDismissAlert={handleDismissEffectiveAlert}
+                    onOpenReportModal={() => setIsReportModalOpen(true)}
+                    originLocation={originLocation}
+                    destinationLocation={destinationLocation}
+                    onCalculateJourney={(orig, dest) => calculateJourney(orig, dest, dangerZones)}
+                    onSwapLocations={() => swapOriginAndDestination(dangerZones)}
+                    isCalculatingRoute={isCalculatingRoute}
+                    onResetPresetRoutes={resetToPresetRoutes}
+                    simSpeed={simSpeed}
+                    onToggleSimSpeed={setSimSpeed}
+                    focusPoint={focusPoint}
+                  />
+                )}
+              </div>
 
-          {/* Separated High-Contrast Details / Steps / Alerts / AI Card Above Footer (for both Mapa and Modo Celular) */}
-          <section
-            id="info-hub-mobile"
-            aria-label="Detalhes da rota, passo a passo, alertas e assistente IA"
-            className="rounded-[28px] bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-[0_14px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_18px_48px_rgba(0,0,0,0.5)] overflow-hidden"
-          >
-            <div
-              role="tablist"
-              aria-label="Detalhes, passo a passo, alertas e mensagens"
-              className="grid grid-cols-2 sm:grid-cols-4 p-1.5 gap-1 bg-neutral-100 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 select-none"
-            >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={sidebarTab === 'routes'}
-                onClick={() => setSidebarTab('routes')}
-                className={`py-2.5 px-1.5 rounded-2xl text-xs font-bold flex flex-wrap items-center justify-center gap-1 text-center leading-tight transition-all ${
-                  sidebarTab === 'routes'
-                    ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
-                    : 'text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200/70 dark:hover:bg-neutral-800'
-                }`}
+              {/* Clean 3-Tab Details / Steps / Alerts Card Above Footer */}
+              <section
+                id="info-hub-mobile"
+                aria-label="Detalhes da rota, passo a passo e alertas"
+                className="rounded-[28px] bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-[0_14px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_18px_48px_rgba(0,0,0,0.5)] overflow-hidden"
               >
-                <Navigation className="w-3.5 h-3.5 shrink-0" />
-                <span>Detalhes</span>
-              </button>
+                <div
+                  role="tablist"
+                  aria-label="Detalhes, passo a passo e alertas"
+                  className="grid grid-cols-3 p-1.5 gap-1 bg-neutral-100 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 select-none"
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={mobileInfoTab === 'routes'}
+                    onClick={() => setSidebarTab('routes')}
+                    className={`py-2.5 px-1.5 rounded-2xl text-xs font-bold flex flex-wrap items-center justify-center gap-1 text-center leading-tight transition-all ${
+                      mobileInfoTab === 'routes'
+                        ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
+                        : 'text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200/70 dark:hover:bg-neutral-800'
+                    }`}
+                  >
+                    <Navigation className="w-3.5 h-3.5 shrink-0" />
+                    <span>Detalhes</span>
+                  </button>
 
-              <button
-                type="button"
-                role="tab"
-                aria-selected={sidebarTab === 'itinerary'}
-                onClick={() => setSidebarTab('itinerary')}
-                className={`py-2.5 px-1.5 rounded-2xl text-xs font-bold flex flex-wrap items-center justify-center gap-1 text-center leading-tight transition-all ${
-                  sidebarTab === 'itinerary'
-                    ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
-                    : 'text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200/70 dark:hover:bg-neutral-800'
-                }`}
-              >
-                <ListChecks className="w-3.5 h-3.5 shrink-0" />
-                <span>Passos</span>
-              </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={mobileInfoTab === 'itinerary'}
+                    onClick={() => setSidebarTab('itinerary')}
+                    className={`py-2.5 px-1.5 rounded-2xl text-xs font-bold flex flex-wrap items-center justify-center gap-1 text-center leading-tight transition-all ${
+                      mobileInfoTab === 'itinerary'
+                        ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
+                        : 'text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200/70 dark:hover:bg-neutral-800'
+                    }`}
+                  >
+                    <ListChecks className="w-3.5 h-3.5 shrink-0" />
+                    <span>Passos</span>
+                  </button>
 
-              <button
-                type="button"
-                role="tab"
-                aria-selected={sidebarTab === 'alerts'}
-                onClick={() => setSidebarTab('alerts')}
-                className={`py-2.5 px-1.5 rounded-2xl text-xs font-bold flex flex-wrap items-center justify-center gap-1 text-center leading-tight transition-all ${
-                  sidebarTab === 'alerts'
-                    ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
-                    : 'text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200/70 dark:hover:bg-neutral-800'
-                }`}
-              >
-                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                <span>Alertas ({allIncidents.length})</span>
-              </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={mobileInfoTab === 'alerts'}
+                    onClick={() => setSidebarTab('alerts')}
+                    className={`py-2.5 px-1.5 rounded-2xl text-xs font-bold flex flex-wrap items-center justify-center gap-1 text-center leading-tight transition-all ${
+                      mobileInfoTab === 'alerts'
+                        ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
+                        : 'text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200/70 dark:hover:bg-neutral-800'
+                    }`}
+                  >
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Alertas ({allIncidents.length})</span>
+                  </button>
+                </div>
 
-              <button
-                type="button"
-                role="tab"
-                aria-selected={sidebarTab === 'messages'}
-                onClick={() => setSidebarTab('messages')}
-                className={`py-2.5 px-1.5 rounded-2xl text-xs font-bold flex flex-wrap items-center justify-center gap-1 text-center leading-tight transition-all ${
-                  sidebarTab === 'messages'
-                    ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
-                    : 'text-neutral-950 dark:text-white bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-200/70 dark:hover:bg-neutral-800'
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                <span>IA &amp; SMS</span>
-              </button>
-            </div>
+                <div className="p-4">
+                  {mobileInfoTab === 'routes' && (
+                    <RouteSelector
+                      routes={routes}
+                      selectedRouteId={selectedRoute.id}
+                      onSelectRoute={selectRoute}
+                      isNavigating={isNavigating}
+                      progressPercentage={progressPercentage}
+                      originLocation={originLocation}
+                      destinationLocation={destinationLocation}
+                      onCalculateJourney={(orig, dest) => calculateJourney(orig, dest, dangerZones)}
+                      onSwapLocations={() => swapOriginAndDestination(dangerZones)}
+                      isCalculatingRoute={isCalculatingRoute}
+                      onResetPresetRoutes={resetToPresetRoutes}
+                      simSpeed={simSpeed}
+                      onToggleSimSpeed={setSimSpeed}
+                    />
+                  )}
 
-            <div className="p-4">
-              {sidebarTab === 'routes' && (
-                <RouteSelector
-                  routes={routes}
-                  selectedRouteId={selectedRoute.id}
-                  onSelectRoute={selectRoute}
-                  isNavigating={isNavigating}
-                  progressPercentage={progressPercentage}
-                  originLocation={originLocation}
-                  destinationLocation={destinationLocation}
-                  onCalculateJourney={(orig, dest) => calculateJourney(orig, dest, dangerZones)}
-                  onSwapLocations={() => swapOriginAndDestination(dangerZones)}
-                  isCalculatingRoute={isCalculatingRoute}
-                  onResetPresetRoutes={resetToPresetRoutes}
-                  simSpeed={simSpeed}
-                  onToggleSimSpeed={setSimSpeed}
-                />
-              )}
+                  {mobileInfoTab === 'itinerary' && (
+                    <RouteItinerary
+                      selectedRoute={selectedRoute}
+                      isNavigating={isNavigating}
+                      progressPercentage={progressPercentage}
+                    />
+                  )}
 
-              {sidebarTab === 'itinerary' && (
-                <RouteItinerary
-                  selectedRoute={selectedRoute}
-                  isNavigating={isNavigating}
-                  progressPercentage={progressPercentage}
-                />
-              )}
-
-              {sidebarTab === 'alerts' && (
-                <IncidentList
-                  incidents={incidents}
-                  loading={loading}
-                  searchQuery={searchQuery}
-                  onSearchChange={setSearchQuery}
-                  selectedCategory={selectedCategory}
-                  onCategoryChange={setSelectedCategory}
-                  selectedRisk={selectedRisk}
-                  onRiskChange={setSelectedRisk}
-                  onConfirm={confirmIncident}
-                  onUpdateStatus={(id, status) => updateIncident(id, { status })}
-                  onDelete={deleteIncident}
-                  onResetData={resetData}
-                  onFocusIncident={handleFocusIncident}
-                />
-              )}
-
-              {sidebarTab === 'messages' && (
-                <SafetyAssistantChat
-                  originLocation={originLocation}
-                  destinationLocation={destinationLocation}
-                  selectedRoute={selectedRoute}
-                  allRoutes={routes}
-                  dangerZones={dangerZones}
-                  incidents={incidents}
-                  onSwitchToSafeRoute={handleAcceptReroute}
-                  onSelectCustomDestination={(destName) =>
-                    calculateJourney(originLocation.name, destName, dangerZones)
-                  }
-                  focusInputTrigger={assistantFocusTrigger}
-                />
-              )}
-            </div>
-          </section>
+                  {mobileInfoTab === 'alerts' && (
+                    <IncidentList
+                      incidents={incidents}
+                      loading={loading}
+                      searchQuery={searchQuery}
+                      onSearchChange={setSearchQuery}
+                      selectedCategory={selectedCategory}
+                      onCategoryChange={setSelectedCategory}
+                      selectedRisk={selectedRisk}
+                      onRiskChange={setSelectedRisk}
+                      onConfirm={confirmIncident}
+                      onUpdateStatus={(id, status) => updateIncident(id, { status })}
+                      onDelete={deleteIncident}
+                      onResetData={resetData}
+                      onFocusIncident={handleFocusIncident}
+                    />
+                  )}
+                </div>
+              </section>
+            </>
+          )}
         </div>
       </main>
 
