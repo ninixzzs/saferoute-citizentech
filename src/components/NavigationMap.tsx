@@ -164,7 +164,6 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
   const simStreetsLayerRef = useRef<L.LayerGroup | null>(null);
 
   const baseTileLayerRef = useRef<L.TileLayer | null>(null);
-  const roadsOverlayLayerRef = useRef<L.TileLayer | null>(null);
   const labelsTileLayerRef = useRef<L.TileLayer | null>(null);
 
   const isNavigatingRef = useRef<boolean>(isNavigating);
@@ -273,10 +272,6 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
       map.removeLayer(baseTileLayerRef.current);
       baseTileLayerRef.current = null;
     }
-    if (roadsOverlayLayerRef.current) {
-      map.removeLayer(roadsOverlayLayerRef.current);
-      roadsOverlayLayerRef.current = null;
-    }
     if (labelsTileLayerRef.current) {
       map.removeLayer(labelsTileLayerRef.current);
       labelsTileLayerRef.current = null;
@@ -292,18 +287,12 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
       ).addTo(map);
       satLayer.bringToBack();
 
-      const transLayer = L.tileLayer(
-        'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',
-        { maxZoom: 19, opacity: 0.75 }
-      ).addTo(map);
-
       const labelsLayer = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
         { maxZoom: 19, opacity: 0.95 }
       ).addTo(map);
 
       baseTileLayerRef.current = satLayer;
-      roadsOverlayLayerRef.current = transLayer;
       labelsTileLayerRef.current = labelsLayer;
     } else {
       // Esri World Street Map: ZERO API key, clean streets + street names + parks + avenues
