@@ -138,13 +138,26 @@ saferoute-citizentech/
 
 ---
 
-## 6. Operações de CRUD com API Externa
+## 6. Integração com Banco de Dados Supabase & Fallback Offline
 
-A persistência foi desenvolvida para operar tanto online quanto offline:
-- **CREATE**: Envio de `POST` para `https://jsonplaceholder.typicode.com/posts` com payload da ocorrência; inclusão no array local e salvamento em `localStorage`.
-- **READ**: Requisição assíncrona inicial com consolidação entre alertas oficiais da Defesa Civil/SSP e relatos dos usuários.
-- **UPDATE**: Envio de `PATCH` para a API externa e atualização do status (`ativo`, `em_verificacao`, `resolvido`) ou incremento das confirmações cívicas.
-- **DELETE**: Envio de `DELETE` para a API externa e expurgo imediato do registro na interface e no armazenamento persistido.
+A aplicação integra-se nativamente com o **Supabase** via `@supabase/supabase-js`:
+- **Cliente Supabase:** Módulo [`src/services/supabase.ts`](file:///C:/Users/User/.gemini/antigravity/scratch/saferoute-citizentech/src/services/supabase.ts) inicializado com variáveis de ambiente (`VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`).
+- **Tabela `incidents`:**
+  - `id` (text, primary key)
+  - `title` (text)
+  - `category` (text)
+  - `description` (text)
+  - `neighborhood` (text)
+  - `address` (text)
+  - `latitude` (float)
+  - `longitude` (float)
+  - `risk_level` (text)
+  - `status` (text)
+  - `confirmations_count` (int)
+  - `reported_by` (text)
+  - `created_at` (timestamptz)
+- **Persistência Resiliente Offline-First:** Caso o projeto Supabase não esteja configurado ou sem conexão, a aplicação opera perfeitamente com fallback em cache local (`localStorage`), sem jamais quebrar a interface do usuário.
+- **Arquivo `.env.example`:** Disponibilizado na raiz com o SQL de criação da tabela para configuração em 1 clique.
 
 ---
 

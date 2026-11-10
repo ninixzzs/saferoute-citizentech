@@ -1,10 +1,9 @@
 import { IncidentReport, DangerZone } from '../types';
 import { INITIAL_INCIDENT_REPORTS, INITIAL_DANGER_ZONES } from '../data/mockData';
+import { supabase, isSupabaseConfigured } from './supabase';
 
-const LOCAL_STORAGE_KEY = 'saferoute_incident_reports_v1';
-const EXTERNAL_API_URL = 'https://jsonplaceholder.typicode.com/posts';
+const LOCAL_STORAGE_KEY = 'saferoute_incident_reports_v2';
 
-// Helper to calculate distance in meters between two lat/lng points using Haversine formula
 export function calculateDistanceMeters(
   lat1: number,
   lon1: number,
@@ -26,75 +25,114 @@ export function calculateDistanceMeters(
 }
 
 export const incidentApi = {
-  // READ: List all incident reports
+  // READ: List all incident reports (Supabase -> LocalStorage fallback)
   async getAll(): Promise<IncidentReport[]> {
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('incidents')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          const mapped: IncidentReport[] = data.map((item: any) => ({
+            id: item.id,
+            title: item.title,
+            category: item.category,
+            description: item.description,
+            neighborhood: item.neighborhood,
+            address: item.address,
+            coordinates: [item.latitude, item.longitude],
+            riskLevel: item.risk_level,
+            timestamp: new Date(item.created_at || Date.now()).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
+            status: item.status,
+            confirmationsCount: item.confirmations_count || 1,
+            reportedBy: item.reported_by || 'Cidadão',
+            isUserCreated: true,
+          }));
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mapped));
+          return mapped;
+        }
+      } catch (err) {
+        console.warn('Supabase fetch failed, falling back to local data:', err);
+      }
+    }
+
+    // Local fallback
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (stored) {
         return JSON.parse(stored);
       }
-      // If not yet in localStorage, initialize with default SP incidents
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(INITIAL_INCIDENT_REPORTS));
       return INITIAL_INCIDENT_REPORTS;
-    } catch (err) {
-      console.warn('Fallback to initial reports due to storage error:', err);
+    } catch {
       return INITIAL_INCIDENT_REPORTS;
     }
   },
 
-  // CREATE: Post a new citizen safety report to external API + local storage
-  async create(reportData: Omit<IncidentReport, 'id' | 'timestamp' | 'confirmationsCount' | 'status'>): Promise<IncidentReport> {
+  // CREATE: Post report to Supabase + LocalStorage
+  async create(
+    reportData: Omit<IncidentReport, 'id' | 'timestamp' | 'confirmationsCount' | 'status'>
+  ): Promise<IncidentReport> {
+    const newId = `inc-${Date.now()}`;
     const newReport: IncidentReport = {
       ...reportData,
-      id: `inc-${Date.now()}`,
+      id: newId,
       timestamp: 'Agora mesmo',
       status: 'ativo',
       confirmationsCount: 1,
       isUserCreated: true,
     };
 
-    // Try posting to real external REST API (JSONPlaceholder simulates public backend)
-    try {
-      await fetch(EXTERNAL_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('incidents').insert({
+          id: newId,
           title: newReport.title,
-          body: `${newReport.category} | ${newReport.description} | ${newReport.address}`,
-          userId: 1,
-        }),
-      });
-    } catch (apiError) {
-      console.warn('External API call failed, persisting locally:', apiError);
+          category: newReport.category,
+          description: newReport.description,
+          neighborhood: newReport.neighborhood,
+          address: newReport.address,
+          latitude: newReport.coordinates[0],
+          longitude: newReport.coordinates[1],
+          risk_level: newReport.riskLevel,
+          status: newReport.status,
+          confirmations_count: 1,
+          reported_by: newReport.reportedBy,
+        });
+      } catch (err) {
+        console.warn('Supabase insert error:', err);
+      }
     }
 
-    // Persist in local storage
     const current = await this.getAll();
     const updated = [newReport, ...current];
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
     return newReport;
   },
 
-  // UPDATE: Edit incident status or details
+  // UPDATE: Status or confirmations
   async update(id: string, patch: Partial<IncidentReport>): Promise<IncidentReport> {
-    // Try external API PUT/PATCH simulation
-    try {
-      await fetch(`${EXTERNAL_API_URL}/1`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patch),
-      });
-    } catch (e) {
-      console.warn('External API PATCH failed:', e);
+    if (isSupabaseConfigured) {
+      try {
+        const payload: any = {};
+        if (patch.status) payload.status = patch.status;
+        if (patch.confirmationsCount !== undefined) {
+          payload.confirmations_count = patch.confirmationsCount;
+        }
+        await supabase.from('incidents').update(payload).eq('id', id);
+      } catch (err) {
+        console.warn('Supabase update error:', err);
+      }
     }
 
     const current = await this.getAll();
     const index = current.findIndex((item) => item.id === id);
-    if (index === -1) {
-      throw new Error(`Incidente com ID ${id} não encontrado.`);
-    }
+    if (index === -1) throw new Error('Incidente não encontrado');
 
     const updatedItem = { ...current[index], ...patch };
     current[index] = updatedItem;
@@ -102,14 +140,14 @@ export const incidentApi = {
     return updatedItem;
   },
 
-  // DELETE: Remove or resolve an alert report
+  // DELETE
   async delete(id: string): Promise<boolean> {
-    try {
-      await fetch(`${EXTERNAL_API_URL}/1`, {
-        method: 'DELETE',
-      });
-    } catch (e) {
-      console.warn('External API DELETE error:', e);
+    if (isSupabaseConfigured) {
+      try {
+        await supabase.from('incidents').delete().eq('id', id);
+      } catch (err) {
+        console.warn('Supabase delete error:', err);
+      }
     }
 
     const current = await this.getAll();
@@ -118,27 +156,25 @@ export const incidentApi = {
     return true;
   },
 
-  // UPVOTE / CONFIRM: Citizen confirmation of danger
+  // CONFIRM
   async confirm(id: string): Promise<IncidentReport> {
     const current = await this.getAll();
     const target = current.find((item) => item.id === id);
     if (!target) throw new Error('Incidente não encontrado');
 
-    const updated = await this.update(id, {
+    return this.update(id, {
       confirmationsCount: target.confirmationsCount + 1,
     });
-    return updated;
   },
 
-  // Reset to initial mock database
   async resetToDefault(): Promise<IncidentReport[]> {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(INITIAL_INCIDENT_REPORTS));
     return INITIAL_INCIDENT_REPORTS;
-  }
+  },
 };
 
 export const defenseCivilApi = {
   async getOfficialZones(): Promise<DangerZone[]> {
     return INITIAL_DANGER_ZONES;
-  }
+  },
 };

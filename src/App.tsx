@@ -11,10 +11,12 @@ import { useSafetyAlerts } from './hooks/useSafetyAlerts';
 import { useRouteNavigation } from './hooks/useRouteNavigation';
 import { useVoiceGuidance } from './hooks/useVoiceGuidance';
 import { useGeofenceAlert } from './hooks/useGeofenceAlert';
+import { isSupabaseConfigured } from './services/supabase';
 import { DangerZone } from './types';
+import { Database } from 'lucide-react';
 
 export function App() {
-  // 1. Safety Alerts Hook (CRUD + State)
+  // 1. Safety Alerts Hook (CRUD + Supabase/Local State)
   const {
     incidents,
     allIncidents,
@@ -91,6 +93,22 @@ export function App() {
         onOpenTipsDrawer={() => setIsTipsDrawerOpen(true)}
         activeIncidentsCount={allIncidents.length}
       />
+
+      {/* Supabase status strip */}
+      <div className="border-b border-neutral-900 bg-neutral-950 py-1.5 px-4 text-center">
+        <div className="max-w-6xl mx-auto flex items-center justify-between text-[11px] text-neutral-500 font-mono">
+          <div className="flex items-center gap-1.5">
+            <Database className="w-3.5 h-3.5 text-neutral-400" />
+            <span>
+              Banco de Dados:{' '}
+              <strong className="text-neutral-300">
+                {isSupabaseConfigured ? 'Supabase Conectado' : 'Supabase Client Ativo (Local Cache)'}
+              </strong>
+            </span>
+          </div>
+          <span className="hidden sm:inline">Defesa Civil SP &bull; Monitoramento Ativo</span>
+        </div>
+      </div>
 
       {/* Main Container */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6">
