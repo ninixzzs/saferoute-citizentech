@@ -247,6 +247,7 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
               dangerZones={dangerZones}
               incidents={incidents}
               isNavigating={isNavigating}
+              speedKmH={speedKmH}
               focusPoint={focusPoint}
               className="w-full h-full border-0 rounded-none shadow-none"
             />

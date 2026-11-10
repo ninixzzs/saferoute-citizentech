@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { DangerZone, IncidentReport, NavigationRoute } from '../types';
-import { Layers, Crosshair, Plus, Minus, Maximize2, Minimize2 } from 'lucide-react';
+import { Crosshair, Plus, Minus, Maximize2, Minimize2, Map as MapIcon, Satellite } from 'lucide-react';
 
 interface NavigationMapProps {
   currentPosition: [number, number];
@@ -12,6 +12,7 @@ interface NavigationMapProps {
   dangerZones: DangerZone[];
   incidents: IncidentReport[];
   isNavigating: boolean;
+  speedKmH?: number;
   onZoneClick?: (zone: DangerZone) => void;
   focusPoint?: { coords: [number, number]; ts: number } | null;
   topControlOffsetClass?: string;
@@ -47,6 +48,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
   dangerZones,
   incidents,
   isNavigating,
+  speedKmH = 0,
   onZoneClick,
   focusPoint = null,
   topControlOffsetClass = 'top-16',
@@ -74,7 +76,8 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
   const onSelectRouteRef = useRef(onSelectRoute);
   onSelectRouteRef.current = onSelectRoute;
 
-  const [mapType, setMapType] = useState<'satellite' | 'street'>('satellite');
+  // Default to Life360-inspired Street Mode ('street'), toggleable to 'satellite'
+  const [mapType, setMapType] = useState<'street' | 'satellite'>('street');
 
   // Initialize Map
   useEffect(() => {
@@ -89,21 +92,13 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
       zoomAnimation: true,
     });
 
-    const satLayer = L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      { maxZoom: 19 }
+    // Clean pastel Mapbox/Life360-style street layer by default
+    const streetLayer = L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+      { maxZoom: 19, subdomains: 'abcd' }
     );
-
-    const labelsLayer = L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-      { maxZoom: 19, opacity: 0.92 }
-    );
-
-    satLayer.addTo(map);
-    labelsLayer.addTo(map);
-
-    baseTileLayerRef.current = satLayer;
-    labelsTileLayerRef.current = labelsLayer;
+    streetLayer.addTo(map);
+    baseTileLayerRef.current = streetLayer;
 
     zonesLayerGroupRef.current = L.layerGroup().addTo(map);
     altRoutesLayerRef.current = L.layerGroup().addTo(map);
@@ -145,7 +140,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     return () => clearTimeout(t);
   }, [isFullscreen]);
 
-  // Handle Map Type Switch (Satélite vs Ruas)
+  // Handle Map Type Switch (Modo Rua Life360 vs Satélite)
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -205,7 +200,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
         .filter((r) => r.id !== selectedRoute.id && r.path.length > 1)
         .forEach((alt) => {
           const altLine = L.polyline(alt.path, {
-            color: '#94a3b8',
+            color: mapType === 'street' ? '#94a3b8' : '#cbd5e1',
             weight: 4.5,
             opacity: 0.65,
             dashArray: '6, 6',
@@ -224,17 +219,22 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     }
 
     const isSafe = selectedRoute.type === 'segura';
-    const mainColor = isSafe ? '#2563eb' : '#475569';
-    const glowColor = 'rgba(0, 0, 0, 0.5)';
+    // Signature Life360 indigo-violet on Street Mode, cobalt blue on Satellite
+    const mainColor = isSafe
+      ? mapType === 'street'
+        ? '#4f46e5'
+        : '#2563eb'
+      : '#475569';
+    const casingColor = mapType === 'street' ? 'rgba(255, 255, 255, 0.92)' : 'rgba(0, 0, 0, 0.55)';
 
-    const glowLine = L.polyline(selectedRoute.path, {
-      color: glowColor,
+    const casingLine = L.polyline(selectedRoute.path, {
+      color: casingColor,
       weight: 9.5,
-      opacity: 0.85,
+      opacity: 0.9,
       lineCap: 'round',
       lineJoin: 'round',
     }).addTo(map);
-    routeGlowRef.current = glowLine;
+    routeGlowRef.current = casingLine;
 
     const mainLine = L.polyline(selectedRoute.path, {
       color: mainColor,
@@ -245,17 +245,17 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     }).addTo(map);
     routePolylineRef.current = mainLine;
 
-    // Origin Pin
+    // Origin Pin (Life360 clean white bubble with indigo/dark ring)
     const originCoords = selectedRoute.path[0];
     const originIcon = L.divIcon({
       html: `
-        <div style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;">
-          <div style="width:15px;height:15px;border-radius:50%;background:#ffffff;border:3px solid #0f172a;box-shadow:0 2px 6px rgba(0,0,0,0.5);"></div>
+        <div style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;">
+          <div style="width:16px;height:16px;border-radius:50%;background:#ffffff;border:3.5px solid #4f46e5;box-shadow:0 2px 8px rgba(0,0,0,0.35);"></div>
         </div>
       `,
       className: 'origin-pin-marker',
-      iconSize: [22, 22],
-      iconAnchor: [11, 11],
+      iconSize: [24, 24],
+      iconAnchor: [12, 12],
     });
     const originMarker = L.marker(originCoords, { icon: originIcon }).addTo(map);
     originMarker.bindPopup(`
@@ -270,11 +270,11 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     const destCoords = selectedRoute.path[selectedRoute.path.length - 1];
     const destIcon = L.divIcon({
       html: `
-        <div style="position:relative;width:32px;height:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.6));">
+        <div style="position:relative;width:32px;height:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.45));">
           <div style="width:26px;height:26px;background:#111827;border:2.5px solid #ffffff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;">
             <div style="width:8px;height:8px;background:white;border-radius:50%;transform:rotate(45deg);"></div>
           </div>
-          <div style="width:8px;height:3px;background:rgba(0,0,0,0.5);border-radius:50%;filter:blur(1px);margin-top:2px;"></div>
+          <div style="width:8px;height:3px;background:rgba(0,0,0,0.4);border-radius:50%;filter:blur(1px);margin-top:2px;"></div>
         </div>
       `,
       className: 'dest-pin-marker',
@@ -296,7 +296,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
         map.flyToBounds(bounds, { padding: [55, 55], duration: 1.0 });
       } catch {}
     }
-  }, [selectedRoute, allRoutes, isNavigating]);
+  }, [selectedRoute, allRoutes, isNavigating, mapType]);
 
   // Focus specific coordinate when user clicks an incident
   useEffect(() => {
@@ -305,7 +305,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     map.flyTo(focusPoint.coords, 16, { duration: 0.9 });
   }, [focusPoint]);
 
-  // Update Danger Zones
+  // Update Danger Zones (Soft Amber Life360 Zone Rings)
   useEffect(() => {
     const layerGroup = zonesLayerGroupRef.current;
     if (!layerGroup) return;
@@ -314,9 +314,9 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
 
     dangerZones.forEach((zone) => {
       const circle = L.circle(zone.coordinates, {
-        color: '#f59e0b',
+        color: '#d97706',
         fillColor: '#f59e0b',
-        fillOpacity: 0.16,
+        fillOpacity: mapType === 'street' ? 0.14 : 0.18,
         radius: zone.radiusMeters,
         weight: 1.5,
         dashArray: '5, 5',
@@ -333,7 +333,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
           <div style="color:#404040;margin:4px 0;font-size:11px;">
             ${zone.title}
           </div>
-          <div style="margin-top:6px;padding:6px 8px;background:#f5f5f5;border-left:3px solid #171717;border-radius:4px;font-size:11px;color:#262626;">
+          <div style="margin-top:6px;padding:6px 8px;background:#f5f5f5;border-left:3px solid #4f46e5;border-radius:4px;font-size:11px;color:#262626;">
             <strong>Recomendação:</strong> ${zone.defenseCivilTip}
           </div>
         </div>
@@ -344,7 +344,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
 
       circle.addTo(layerGroup);
     });
-  }, [dangerZones, onZoneClick]);
+  }, [dangerZones, onZoneClick, mapType]);
 
   // Update Incident Markers
   useEffect(() => {
@@ -356,7 +356,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     incidents.forEach((inc) => {
       const customIcon = L.divIcon({
         html: `
-          <div style="background:#0f172a;width:24px;height:24px;border-radius:50%;border:2px solid #ffffff;box-shadow:0 2px 6px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;color:white;cursor:pointer;">
+          <div style="background:#111827;width:24px;height:24px;border-radius:50%;border:2px solid #ffffff;box-shadow:0 2px 6px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;color:white;cursor:pointer;">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <path d="M12 9v4"/>
               <path d="M12 17h.01"/>
@@ -384,27 +384,44 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     });
   }, [incidents]);
 
-  // Update Car Navigation Puck with Real Directional Bearing
+  // Life360-Inspired Live User / Vehicle Locator Bubble with Pulsing Aura & Heading
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
 
     const bearing = nextPosition ? calculateBearing(currentPosition, nextPosition) : 0;
+    const isStreet = mapType === 'street';
+    const accent = isStreet ? '#4f46e5' : '#2563eb';
+    const statusLabel = isNavigating ? `${speedKmH} km/h` : 'Você';
 
     const carIcon = L.divIcon({
       html: `
-        <div style="position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center;transform:rotate(${bearing}deg);transition:transform 0.6s ease-out;">
-          <div style="position:absolute;width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-bottom:30px solid rgba(37,99,235,0.35);top:-11px;pointer-events:none;"></div>
-          <div style="width:26px;height:26px;border-radius:50%;background:#2563eb;border:3px solid #ffffff;box-shadow:0 3px 8px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;color:white;z-index:2;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="#ffffff">
-              <polygon points="12,2 20,21 12,17 4,21"/>
-            </svg>
+        <div style="position:relative;width:58px;height:66px;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;">
+          <div style="position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center;">
+            <!-- Pulsing Life360 safety aura -->
+            <div class="life360-pulse-ring" style="position:absolute;inset:0;border-radius:50%;background:${isStreet ? 'rgba(79,70,229,0.28)' : 'rgba(37,99,235,0.3)'};"></div>
+            <!-- Directional heading cone -->
+            <div style="position:absolute;inset:0;transform:rotate(${bearing}deg);transition:transform 0.6s ease-out;display:flex;align-items:flex-start;justify-content:center;">
+              <div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:12px solid ${accent};margin-top:-7px;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.35));"></div>
+            </div>
+            <!-- Central Life360 Avatar Bubble -->
+            <div style="width:30px;height:30px;border-radius:50%;background:#ffffff;border:3px solid ${accent};box-shadow:0 3px 10px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;z-index:2;">
+              <div style="width:18px;height:18px;border-radius:50%;background:${accent};display:flex;align-items:center;justify-content:center;color:white;">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="#ffffff" style="transform:rotate(${bearing}deg);transition:transform 0.6s ease-out;">
+                  <polygon points="12,2 20,21 12,17 4,21"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <!-- Life360 Live Pill Badge -->
+          <div style="margin-top:1px;padding:1px 6px;border-radius:999px;background:#ffffff;color:#111827;font-family:ui-monospace,monospace;font-size:9px;font-weight:800;border:1.5px solid ${accent};box-shadow:0 2px 6px rgba(0,0,0,0.25);white-space:nowrap;">
+            ${statusLabel}
           </div>
         </div>
       `,
-      className: 'car-navigation-marker',
-      iconSize: [44, 44],
-      iconAnchor: [22, 22],
+      className: 'life360-locator-marker',
+      iconSize: [58, 66],
+      iconAnchor: [29, 25],
     });
 
     if (!carMarkerRef.current) {
@@ -417,7 +434,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     if (isNavigating) {
       map.panTo(currentPosition, { animate: true, duration: 0.9 });
     }
-  }, [currentPosition, nextPosition, isNavigating]);
+  }, [currentPosition, nextPosition, isNavigating, speedKmH, mapType]);
 
   const handleRecenter = () => {
     const map = mapInstanceRef.current;
@@ -439,7 +456,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
 
-      {/* Right-side Map Controls (isolated from map drag events) */}
+      {/* Right-side Map Controls: Life360 Street Mode / Satellite + Zoom + Recenter */}
       <div
         onMouseDown={(e) => e.stopPropagation()}
         onDoubleClick={(e) => e.stopPropagation()}
@@ -447,21 +464,41 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
         className={`absolute ${topControlOffsetClass} right-3 z-[400] flex flex-col items-end gap-2 pointer-events-auto select-none`}
       >
         <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => setMapType(mapType === 'satellite' ? 'street' : 'satellite')}
-            className="px-2.5 py-1.5 rounded-xl bg-black/85 hover:bg-black text-white text-[11px] font-semibold backdrop-blur-md border border-white/20 shadow-lg flex items-center gap-1.5 transition-all active:scale-95"
-            title="Alternar entre Satélite e Mapa de Ruas"
-          >
-            <Layers className="w-3.5 h-3.5 text-neutral-300" />
-            <span>{mapType === 'satellite' ? 'Satélite' : 'Ruas'}</span>
-          </button>
+          {/* Life360-style Mode Toggle */}
+          <div className="inline-flex items-center p-0.5 rounded-xl bg-white/95 dark:bg-neutral-950/90 backdrop-blur-md border border-neutral-200 dark:border-white/15 shadow-lg">
+            <button
+              type="button"
+              onClick={() => setMapType('street')}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all ${
+                mapType === 'street'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white'
+              }`}
+              title="Modo Rua estilo Life360"
+            >
+              <MapIcon className="w-3 h-3" />
+              <span>Rua</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMapType('satellite')}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all ${
+                mapType === 'satellite'
+                  ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-950 shadow-xs'
+                  : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white'
+              }`}
+              title="Visualização por Satélite"
+            >
+              <Satellite className="w-3 h-3" />
+              <span>Satélite</span>
+            </button>
+          </div>
 
           {onToggleFullscreen && (
             <button
               type="button"
               onClick={onToggleFullscreen}
-              className="w-8 h-8 rounded-xl bg-black/85 hover:bg-black text-white backdrop-blur-md border border-white/20 shadow-lg flex items-center justify-center transition-all active:scale-95"
+              className="w-8 h-8 rounded-xl bg-white/95 dark:bg-neutral-950/90 hover:bg-neutral-100 dark:hover:bg-neutral-900 text-neutral-900 dark:text-white backdrop-blur-md border border-neutral-200 dark:border-white/15 shadow-lg flex items-center justify-center transition-all active:scale-95"
               title={isFullscreen ? 'Sair da tela cheia' : 'Expandir mapa em tela cheia'}
               aria-label={isFullscreen ? 'Sair da tela cheia' : 'Expandir mapa em tela cheia'}
             >
@@ -470,11 +507,11 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
           )}
         </div>
 
-        <div className="flex flex-col rounded-xl overflow-hidden bg-black/85 backdrop-blur-md border border-white/20 shadow-lg">
+        <div className="flex flex-col rounded-xl overflow-hidden bg-white/95 dark:bg-neutral-950/90 backdrop-blur-md border border-neutral-200 dark:border-white/15 shadow-lg">
           <button
             type="button"
             onClick={() => mapInstanceRef.current?.zoomIn()}
-            className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 transition-colors border-b border-white/10"
+            className="w-8 h-8 flex items-center justify-center text-neutral-900 dark:text-white hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors border-b border-neutral-200 dark:border-white/10"
             title="Aumentar zoom"
             aria-label="Aumentar zoom"
           >
@@ -483,7 +520,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
           <button
             type="button"
             onClick={() => mapInstanceRef.current?.zoomOut()}
-            className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 transition-colors"
+            className="w-8 h-8 flex items-center justify-center text-neutral-900 dark:text-white hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors"
             title="Diminuir zoom"
             aria-label="Diminuir zoom"
           >
@@ -494,7 +531,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
         <button
           type="button"
           onClick={handleRecenter}
-          className="w-8 h-8 rounded-full bg-black/85 hover:bg-black text-white backdrop-blur-md border border-white/20 shadow-lg flex items-center justify-center transition-all active:scale-90"
+          className="w-8 h-8 rounded-full bg-white/95 dark:bg-neutral-950/90 hover:bg-neutral-100 dark:hover:bg-neutral-900 text-neutral-900 dark:text-white backdrop-blur-md border border-neutral-200 dark:border-white/15 shadow-lg flex items-center justify-center transition-all active:scale-90"
           title="Centralizar mapa no trajeto"
           aria-label="Centralizar mapa no trajeto"
         >

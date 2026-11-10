@@ -112,7 +112,7 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
       className={
         isFullscreen
           ? 'fixed inset-0 z-50 w-screen h-screen bg-neutral-950 select-none'
-          : 'relative w-full h-[580px] lg:h-[670px] rounded-3xl overflow-hidden border border-neutral-200 dark:border-neutral-800 shadow-2xl bg-neutral-900 select-none'
+          : 'relative w-full h-[58vh] min-h-[420px] sm:h-[580px] lg:h-[680px] rounded-2xl sm:rounded-3xl overflow-hidden border border-neutral-200 dark:border-neutral-800 shadow-2xl bg-neutral-900 select-none'
       }
     >
       {/* Main Interactive Map */}
@@ -125,6 +125,7 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
         dangerZones={dangerZones}
         incidents={incidents}
         isNavigating={isNavigating}
+        speedKmH={speedKmH}
         focusPoint={focusPoint}
         topControlOffsetClass="top-4"
         isFullscreen={isFullscreen}
