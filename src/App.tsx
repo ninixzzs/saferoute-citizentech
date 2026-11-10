@@ -8,6 +8,7 @@ import { SafetyTipsDrawer } from './components/SafetyTipsDrawer';
 import { MobilePhoneSimulator } from './components/MobilePhoneSimulator';
 import { MobileMapExperience } from './components/MobileMapExperience';
 import { ExpandedMapWorkspace } from './components/ExpandedMapWorkspace';
+import { SafetyAssistantChat } from './components/SafetyAssistantChat';
 import { Footer } from './components/Footer';
 
 import { useSafetyAlerts } from './hooks/useSafetyAlerts';
@@ -25,6 +26,7 @@ import {
   ListChecks,
   Navigation,
   MessageSquareWarning,
+  MessageSquare,
 } from 'lucide-react';
 
 export function App() {
@@ -88,7 +90,7 @@ export function App() {
 
   // Workspace states
   const [viewMode, setViewMode] = useState<'map' | 'phone'>('map');
-  const [sidebarTab, setSidebarTab] = useState<'routes' | 'itinerary' | 'alerts'>('routes');
+  const [sidebarTab, setSidebarTab] = useState<'routes' | 'itinerary' | 'alerts' | 'messages'>('routes');
   const [focusPoint, setFocusPoint] = useState<{ coords: [number, number]; ts: number } | null>(null);
   const [simulatedAlertZone, setSimulatedAlertZone] = useState<DangerZone | null>(null);
 
@@ -346,20 +348,20 @@ export function App() {
             <div
               role="tablist"
               aria-label="Seções de informação"
-              className="grid grid-cols-3 p-1.5 gap-1 bg-neutral-100/90 dark:bg-neutral-900/90 border-b border-neutral-200 dark:border-neutral-800 select-none"
+              className="grid grid-cols-4 p-1.5 gap-1 bg-neutral-100/90 dark:bg-neutral-900/90 border-b border-neutral-200 dark:border-neutral-800 select-none"
             >
               <button
                 type="button"
                 role="tab"
                 aria-selected={sidebarTab === 'routes'}
                 onClick={() => setSidebarTab('routes')}
-                className={`py-2.5 px-2 rounded-2xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
+                className={`py-2.5 px-1.5 rounded-2xl text-xs font-semibold flex items-center justify-center gap-1 transition-all duration-200 ${
                   sidebarTab === 'routes'
                     ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
                     : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
                 }`}
               >
-                <Navigation className="w-3.5 h-3.5" />
+                <Navigation className="w-3.5 h-3.5 shrink-0" />
                 <span>Rotas</span>
               </button>
 
@@ -368,14 +370,14 @@ export function App() {
                 role="tab"
                 aria-selected={sidebarTab === 'itinerary'}
                 onClick={() => setSidebarTab('itinerary')}
-                className={`py-2.5 px-2 rounded-2xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
+                className={`py-2.5 px-1.5 rounded-2xl text-xs font-semibold flex items-center justify-center gap-1 transition-all duration-200 ${
                   sidebarTab === 'itinerary'
                     ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
                     : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
                 }`}
               >
-                <ListChecks className="w-3.5 h-3.5" />
-                <span>Passo a Passo</span>
+                <ListChecks className="w-3.5 h-3.5 shrink-0" />
+                <span>Passos</span>
               </button>
 
               <button
@@ -383,14 +385,29 @@ export function App() {
                 role="tab"
                 aria-selected={sidebarTab === 'alerts'}
                 onClick={() => setSidebarTab('alerts')}
-                className={`py-2.5 px-2 rounded-2xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
+                className={`py-2.5 px-1.5 rounded-2xl text-xs font-semibold flex items-center justify-center gap-1 transition-all duration-200 ${
                   sidebarTab === 'alerts'
                     ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
                     : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
                 }`}
               >
-                <AlertCircle className="w-3.5 h-3.5" />
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                 <span>Alertas ({allIncidents.length})</span>
+              </button>
+
+              <button
+                type="button"
+                role="tab"
+                aria-selected={sidebarTab === 'messages'}
+                onClick={() => setSidebarTab('messages')}
+                className={`py-2.5 px-1.5 rounded-2xl text-xs font-semibold flex items-center justify-center gap-1 transition-all duration-200 ${
+                  sidebarTab === 'messages'
+                    ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
+                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
+                }`}
+              >
+                <MessageSquare className="w-3.5 h-3.5 shrink-0" />
+                <span>Mensagens</span>
               </button>
             </div>
 
@@ -436,6 +453,18 @@ export function App() {
                   onDelete={deleteIncident}
                   onResetData={resetData}
                   onFocusIncident={handleFocusIncident}
+                />
+              )}
+
+              {sidebarTab === 'messages' && (
+                <SafetyAssistantChat
+                  originLocation={originLocation}
+                  destinationLocation={destinationLocation}
+                  selectedRoute={selectedRoute}
+                  allRoutes={routes}
+                  dangerZones={dangerZones}
+                  incidents={incidents}
+                  onSwitchToSafeRoute={handleAcceptReroute}
                 />
               )}
             </div>
@@ -521,8 +550,8 @@ export function App() {
           >
             <div
               role="tablist"
-              aria-label="Detalhes, passo a passo e alertas"
-              className="grid grid-cols-3 p-1.5 gap-1 bg-neutral-100 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 select-none"
+              aria-label="Detalhes, passo a passo, alertas e mensagens"
+              className="grid grid-cols-2 sm:grid-cols-4 p-1.5 gap-1 bg-neutral-100 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 select-none"
             >
               <button
                 type="button"
@@ -568,6 +597,21 @@ export function App() {
                 <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                 <span>Alertas ({allIncidents.length})</span>
               </button>
+
+              <button
+                type="button"
+                role="tab"
+                aria-selected={sidebarTab === 'messages'}
+                onClick={() => setSidebarTab('messages')}
+                className={`py-2.5 px-1.5 rounded-2xl text-xs font-bold flex flex-wrap items-center justify-center gap-1 text-center leading-tight transition-all ${
+                  sidebarTab === 'messages'
+                    ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
+                    : 'text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200/70 dark:hover:bg-neutral-800'
+                }`}
+              >
+                <MessageSquare className="w-3.5 h-3.5 shrink-0" />
+                <span>Mensagens</span>
+              </button>
             </div>
 
             <div className="p-4">
@@ -612,6 +656,18 @@ export function App() {
                   onDelete={deleteIncident}
                   onResetData={resetData}
                   onFocusIncident={handleFocusIncident}
+                />
+              )}
+
+              {sidebarTab === 'messages' && (
+                <SafetyAssistantChat
+                  originLocation={originLocation}
+                  destinationLocation={destinationLocation}
+                  selectedRoute={selectedRoute}
+                  allRoutes={routes}
+                  dangerZones={dangerZones}
+                  incidents={incidents}
+                  onSwitchToSafeRoute={handleAcceptReroute}
                 />
               )}
             </div>
