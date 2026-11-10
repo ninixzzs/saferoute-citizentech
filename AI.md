@@ -43,9 +43,12 @@ O desenvolvimento foi conduzido em estreita colaboração entre a Tech Lead **Ni
 > *"Implemente a lógica de navegação simulada e detecção de geofencing através de Custom Hooks dedicados com useState e useEffect, desacoplando a camada de mapa da camada de estado."*
 - **Resultado da IA**: Criação de `useSafetyAlerts`, `useRouteNavigation`, `useGeofenceAlert` e `useVoiceGuidance`.
 
-#### Prompt 4: CRUD com API Externa e Persistência Offline-First
-> *"A aplicação precisa de um CRUD completo de ocorrências com uma API REST externa, mantendo fallback de persistência local para não depender de conectividade instável."*
-- **Resultado da IA**: Módulo `src/services/api.ts` com integração HTTP (`fetch`) simulando chamadas POST, GET, PATCH e DELETE via JSONPlaceholder / REST endpoints e sincronização com `localStorage`.
+### 2.2. Design System Minimalista (Preto, Cinza e Branco)
+A aplicação adota uma estética sóbria e funcional orientada a produtos de missão crítica e segurança cívica:
+- Paleta monocromática de alto contraste (preto puro, cinzas neutros e branco).
+- Eliminação de gradientes e efeitos saturados genéricos.
+- Mapa com renderização de vias e cruzamentos em alta nitidez (OpenStreetMap).
+- Notificações estruturadas no padrão de mensagens nativas de sistema dentro da tela do dispositivo móvel.
 
 ---
 

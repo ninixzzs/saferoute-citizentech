@@ -1,7 +1,6 @@
 import React from 'react';
 import { NavigationRoute } from '../types';
-import { SafetyScoreBadge } from './SafetyScoreBadge';
-import { Clock, MapPin, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Clock, MapPin, Check } from 'lucide-react';
 
 interface RouteSelectorProps {
   routes: NavigationRoute[];
@@ -17,17 +16,17 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
   isNavigating,
 }) => {
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-300">
-          Opções de Trajeto (São Paulo)
+    <div className="space-y-2.5">
+      <div className="flex items-center justify-between border-b border-neutral-800 pb-2">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+          Trajetos Disponíveis (SP)
         </h3>
-        <span className="text-xs text-slate-400">
-          {routes.length} rotas analisadas
+        <span className="text-[11px] text-neutral-500 font-mono">
+          {routes.length} opções
         </span>
       </div>
 
-      <div className="grid grid-cols-1 gap-2.5">
+      <div className="space-y-2">
         {routes.map((route) => {
           const isSelected = route.id === selectedRouteId;
           const isSafe = route.type === 'segura';
@@ -36,62 +35,48 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
             <div
               key={route.id}
               onClick={() => !isNavigating && onSelectRoute(route)}
-              className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
+              className={`p-3 rounded-xl border transition-all cursor-pointer ${
                 isSelected
-                  ? isSafe
-                    ? 'bg-emerald-950/30 border-emerald-500/60 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500/30'
-                    : 'bg-amber-950/20 border-amber-500/60 shadow-lg shadow-amber-500/10 ring-1 ring-amber-500/30'
-                  : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900'
-              } ${isNavigating ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  ? 'bg-neutral-900 border-neutral-300 ring-1 ring-neutral-400/20'
+                  : 'bg-neutral-950 border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/50'
+              } ${isNavigating ? 'opacity-60 cursor-not-allowed' : ''}`}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-slate-100">
+                    <span className="font-semibold text-xs text-white">
                       {route.name}
                     </span>
                     {isSafe && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500 text-slate-950 uppercase tracking-wider">
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-neutral-100 text-neutral-950 uppercase tracking-tight">
                         Recomendado
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-slate-400 font-mono">
+                  <div className="flex items-center gap-3 text-[11px] text-neutral-400 font-mono">
                     <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      <Clock className="w-3 h-3 text-neutral-500" />
                       {route.durationMin} min
                     </span>
                     <span className="flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                      <MapPin className="w-3 h-3 text-neutral-500" />
                       {route.distanceKm} km
                     </span>
                   </div>
                 </div>
 
-                <SafetyScoreBadge score={route.safetyScore} size="sm" />
+                {/* Score tag */}
+                <div className="text-right">
+                  <span className="text-xs font-mono font-bold text-neutral-200">
+                    {route.safetyScore}/100
+                  </span>
+                  <span className="block text-[10px] text-neutral-500">segurança</span>
+                </div>
               </div>
 
-              <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+              <p className="text-[11px] text-neutral-400 mt-2 leading-relaxed">
                 {route.description}
               </p>
-
-              {/* Highlights */}
-              <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex flex-wrap gap-1.5">
-                {route.highlights.map((h, i) => (
-                  <span
-                    key={i}
-                    className={`text-[11px] px-2 py-0.5 rounded-md ${
-                      h.includes('⚠️')
-                        ? 'bg-red-500/10 text-red-300 border border-red-500/20'
-                        : isSafe
-                        ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
-                        : 'bg-slate-800 text-slate-300 border border-slate-700'
-                    }`}
-                  >
-                    {h}
-                  </span>
-                ))}
-              </div>
             </div>
           );
         })}

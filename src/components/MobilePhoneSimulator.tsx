@@ -7,21 +7,16 @@ import {
   X,
   ShieldAlert,
   ShieldCheck,
-  Navigation,
-  Compass,
-  AlertTriangle,
   Play,
   Pause,
   RotateCcw,
   Clock,
-  MapPin,
   Mic,
-  Crosshair,
-  Bell
+  Bell,
+  Plus
 } from 'lucide-react';
 import { DangerZone, NavigationRoute, IncidentReport } from '../types';
 import { NavigationMap } from './NavigationMap';
-import { SafetyScoreBadge } from './SafetyScoreBadge';
 
 interface MobilePhoneSimulatorProps {
   currentPosition: [number, number];
@@ -33,7 +28,6 @@ interface MobilePhoneSimulatorProps {
   speedKmH: number;
   progressPercentage: number;
   activeAlertZone: DangerZone | null;
-  nearestZone: { zone: DangerZone; distance: number } | null;
   voiceEnabled: boolean;
   onToggleVoice: () => void;
   onStart: () => void;
@@ -55,7 +49,6 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
   speedKmH,
   progressPercentage,
   activeAlertZone,
-  nearestZone,
   voiceEnabled,
   onToggleVoice,
   onStart,
@@ -66,39 +59,38 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
   onDismissAlert,
   onOpenReportModal,
 }) => {
-  const [simulatedAlertActive, setSimulatedAlertActive] = useState<boolean>(false);
-  const isSafeRoute = selectedRoute.type === 'segura';
+  // Test alert state
+  const [manualAlert, setManualAlert] = useState<boolean>(false);
 
-  // Active danger zone: either from real geofence or user manual test trigger
-  const effectiveAlert = activeAlertZone || (simulatedAlertActive ? dangerZones[0] : null);
+  const effectiveAlert = activeAlertZone || (manualAlert ? dangerZones[0] : null);
+  const isSafe = selectedRoute.type === 'segura';
 
   return (
-    <div className="flex flex-col items-center justify-center w-full py-2">
-      {/* Smartphone Chassis Frame */}
-      <div className="relative w-full max-w-[390px] h-[780px] rounded-[52px] bg-[#101318] border-[10px] border-[#222834] shadow-[0_30px_70px_-15px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.08)] overflow-hidden flex flex-col select-none ring-1 ring-slate-800">
+    <div className="flex flex-col items-center justify-center w-full py-4">
+      {/* Smartphone Hardware Frame */}
+      <div className="relative w-full max-w-[380px] h-[760px] rounded-[48px] bg-black border-[10px] border-[#1f1f1f] shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col select-none ring-1 ring-neutral-800">
         
-        {/* Dynamic Island / Top Camera & Speaker Pill */}
-        <div className="absolute top-2.5 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center w-28 h-6 bg-black rounded-full shadow-md pointer-events-none">
-          <div className="w-2.5 h-2.5 rounded-full bg-slate-900 border border-slate-800 mr-2.5"></div>
-          <div className="w-9 h-1.5 rounded-full bg-slate-950"></div>
+        {/* Dynamic Island / Speaker Pill */}
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center w-28 h-5 bg-black rounded-full pointer-events-none">
+          <div className="w-2.5 h-2.5 rounded-full bg-[#171717] mr-2"></div>
+          <div className="w-10 h-1 rounded-full bg-[#1c1c1c]"></div>
         </div>
 
         {/* System Status Bar */}
-        <div className="relative z-40 w-full px-8 pt-3 pb-1 flex items-center justify-between text-[11px] font-semibold text-slate-800 bg-white/70 backdrop-blur-md">
+        <div className="relative z-40 w-full px-7 pt-2.5 pb-1 flex items-center justify-between text-[11px] font-semibold text-neutral-800 bg-white/80 backdrop-blur-md border-b border-neutral-200">
           <span className="font-mono">21:30</span>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-mono font-bold tracking-tight">5G</span>
-            {/* Battery outline */}
-            <div className="w-5 h-2.5 rounded-xs border border-slate-700 p-0.5 flex items-center">
-              <div className="w-full h-full bg-slate-800 rounded-2xs"></div>
+          <div className="flex items-center gap-1.5 font-mono text-[10px]">
+            <span>5G</span>
+            <div className="w-4 h-2 rounded-xs border border-neutral-800 p-0.5 flex items-center">
+              <div className="w-full h-full bg-neutral-800"></div>
             </div>
           </div>
         </div>
 
-        {/* SCREEN INNER VIEWPORT */}
-        <div className="relative flex-1 w-full h-full overflow-hidden bg-[#e8eaed]">
-
-          {/* 1. MAP BACKGROUND LAYER (Fills 100% of phone screen) */}
+        {/* Screen Viewport */}
+        <div className="relative flex-1 w-full h-full overflow-hidden bg-neutral-100">
+          
+          {/* 1. Map Layer (100% of the screen) */}
           <div className="absolute inset-0 w-full h-full z-0">
             <NavigationMap
               currentPosition={currentPosition}
@@ -106,44 +98,41 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
               dangerZones={dangerZones}
               incidents={incidents}
               isNavigating={isNavigating}
-              className="w-full h-full min-h-full border-0 rounded-none shadow-none"
-              defaultTheme="google-light"
-              showLegend={false}
+              className="w-full h-full border-0 rounded-none shadow-none"
             />
           </div>
 
-          {/* 2. TOP OVERLAY LAYER (Google Maps Navigation Header OR Search Bar) */}
+          {/* 2. Top Google Maps Navigation Header OR Search Bar */}
           <div className="absolute top-0 left-0 right-0 z-30 p-2.5 space-y-2 pointer-events-auto">
             {isNavigating ? (
-              /* Turn-by-Turn Maneuver Green Card */
-              <div className="bg-[#0f5132] border border-[#146c43] text-white rounded-2xl p-3 shadow-xl flex items-center justify-between gap-3">
+              /* Navigation maneuver card */
+              <div className="bg-[#1b5e20] text-white rounded-xl p-3 shadow-md flex items-center justify-between gap-3 border border-[#2e7d32]">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-                    <CornerUpRight className="w-6 h-6 text-white stroke-[2.5]" />
+                  <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
+                    <CornerUpRight className="w-5 h-5 text-white stroke-[2.5]" />
                   </div>
                   <div>
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-xl font-black tracking-tight">Em 200 m</span>
-                      <span className="text-xs text-emerald-200 font-medium">vire à direita</span>
+                      <span className="text-lg font-bold leading-tight">Em 200 m</span>
+                      <span className="text-[11px] text-neutral-200">vire à direita</span>
                     </div>
-                    <p className="text-xs font-semibold text-white/95 line-clamp-1">
-                      {effectiveAlert ? effectiveAlert.neighborhood : 'Rua dos Gusmões x Av. Rio Branco'}
+                    <p className="text-xs font-medium text-white/90 line-clamp-1">
+                      {effectiveAlert ? effectiveAlert.neighborhood : 'Rua dos Gusmões &bull; Santa Ifigênia'}
                     </p>
                   </div>
                 </div>
 
-                {/* Right controls */}
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={onToggleVoice}
-                    className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                    className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
                     title="Voz"
                   >
-                    {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-white/60" />}
+                    {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-white/50" />}
                   </button>
                   <button
                     onClick={onReset}
-                    className="p-2 rounded-full bg-black/25 hover:bg-black/40 text-white transition-colors"
+                    className="p-1.5 rounded-lg bg-black/20 hover:bg-black/30 text-white transition-colors"
                     title="Encerrar"
                   >
                     <X className="w-4 h-4" />
@@ -151,174 +140,185 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
                 </div>
               </div>
             ) : (
-              /* Google Maps Idle Search Bar */
-              <div className="bg-white/95 backdrop-blur-md rounded-2xl p-2.5 px-3.5 shadow-lg border border-slate-200 flex items-center justify-between gap-2 text-slate-700">
-                <div className="flex items-center gap-2.5 flex-1">
-                  <Search className="w-4 h-4 text-blue-600 shrink-0" />
-                  <span className="text-xs font-medium text-slate-500">
-                    Para onde você quer ir? (São Paulo)
+              /* Idle Search Bar */
+              <div className="bg-white rounded-xl p-2.5 px-3 shadow-md border border-neutral-200 flex items-center justify-between gap-2 text-neutral-800">
+                <div className="flex items-center gap-2 flex-1">
+                  <Search className="w-4 h-4 text-neutral-600 shrink-0" />
+                  <span className="text-xs text-neutral-500 font-medium">
+                    Pesquisar destino em São Paulo
                   </span>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <Mic className="w-4 h-4 text-slate-400" />
-                  <div className="w-7 h-7 rounded-full bg-amber-500 text-slate-950 font-bold text-xs flex items-center justify-center shadow-xs">
-                    N
-                  </div>
-                </div>
+                <Mic className="w-4 h-4 text-neutral-400" />
               </div>
             )}
 
-            {/* 3. DYNAMIC HAZARD HEADS-UP NOTIFICATION (Alert Dropdown on Phone Screen) */}
+            {/* 3. NATIVE MOBILE SYSTEM NOTIFICATION (Simulates push notification message inside the phone) */}
             {effectiveAlert && (
-              <div className="animate-in slide-in-from-top-4 duration-300 rounded-2xl bg-white border-2 border-red-600 shadow-2xl p-3.5 space-y-2 text-slate-900">
-                <div className="flex items-start justify-between gap-2 border-b border-red-100 pb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-red-100 text-red-600">
-                      <ShieldAlert className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-red-600 block font-mono">
-                        ALERTA DEFESA CIVIL SP &bull; ATENÇÃO
-                      </span>
-                      <h4 className="text-xs font-extrabold text-slate-900 leading-tight">
-                        {effectiveAlert.title}
-                      </h4>
-                    </div>
+              <div className="animate-in slide-in-from-top-3 duration-200 rounded-2xl bg-neutral-900/95 text-white border border-neutral-700 shadow-2xl p-3.5 space-y-2 backdrop-blur-md">
+                {/* Notification App Header */}
+                <div className="flex items-center justify-between text-[10px] text-neutral-400 border-b border-neutral-800 pb-1.5">
+                  <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-neutral-300">
+                    <ShieldAlert className="w-3.5 h-3.5 text-red-500" />
+                    <span>Defesa Civil SP</span>
+                    <span>&bull;</span>
+                    <span className="font-normal lowercase">agora</span>
                   </div>
                   <button
                     onClick={() => {
                       if (activeAlertZone) onDismissAlert(activeAlertZone.id);
-                      setSimulatedAlertActive(false);
+                      setManualAlert(false);
                     }}
-                    className="p-1 rounded text-slate-400 hover:text-slate-700"
+                    className="text-neutral-400 hover:text-white"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-slate-800 leading-relaxed">
-                  <strong className="text-amber-800">Dica prática:</strong> {effectiveAlert.defenseCivilTip}
+                {/* Message Title & Body */}
+                <div>
+                  <h4 className="text-xs font-bold text-white leading-tight">
+                    Alerta de Segurança: {effectiveAlert.neighborhood}
+                  </h4>
+                  <p className="text-[11px] text-neutral-300 mt-1 leading-relaxed">
+                    {effectiveAlert.defenseCivilTip}
+                  </p>
                 </div>
 
-                {!isSafeRoute && (
-                  <button
-                    onClick={() => {
-                      onAcceptReroute();
-                      setSimulatedAlertActive(false);
-                    }}
-                    className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-1.5"
-                  >
-                    <ShieldCheck className="w-4 h-4" />
-                    <span>Desviar para Rota Segura (+4 min)</span>
-                  </button>
+                {/* Action Button inside Message */}
+                {!isSafe ? (
+                  <div className="pt-1 flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        onAcceptReroute();
+                        setManualAlert(false);
+                      }}
+                      className="flex-1 py-1.5 px-3 rounded-lg bg-white text-neutral-950 font-bold text-xs hover:bg-neutral-200 transition-colors"
+                    >
+                      Desviar para Rota Segura (+4 min)
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (activeAlertZone) onDismissAlert(activeAlertZone.id);
+                        setManualAlert(false);
+                      }}
+                      className="py-1.5 px-2.5 rounded-lg bg-neutral-800 text-neutral-300 hover:text-white text-xs transition-colors"
+                    >
+                      Dispensar
+                    </button>
+                  </div>
+                ) : (
+                  <div className="text-[11px] text-emerald-400 font-medium">
+                    Rota Segura ativa. Você está desviando desta área.
+                  </div>
                 )}
               </div>
             )}
           </div>
 
-          {/* 4. GOOGLE MAPS FLOATING CONTROLS (Middle Screen) */}
-          <div className="absolute right-3 top-28 z-20 flex flex-col gap-2">
+          {/* 4. Quick Action Floating Buttons (Right Side) */}
+          <div className="absolute right-3 top-24 z-20 flex flex-col gap-2 pointer-events-auto">
+            {/* Test Trigger Button */}
             <button
-              onClick={() => setSimulatedAlertActive(!simulatedAlertActive)}
-              className={`w-10 h-10 rounded-full shadow-lg border flex items-center justify-center transition-all ${
+              onClick={() => setManualAlert(!manualAlert)}
+              className={`w-9 h-9 rounded-full shadow-md border flex items-center justify-center transition-colors ${
                 effectiveAlert
-                  ? 'bg-red-600 text-white border-red-700 ring-2 ring-red-400/50'
-                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                  ? 'bg-neutral-900 text-red-400 border-neutral-700'
+                  : 'bg-white text-neutral-700 border-neutral-200 hover:bg-neutral-100'
               }`}
-              title="Disparar teste de alerta de risco"
+              title="Testar notificação de risco"
             >
               <Bell className="w-4 h-4" />
             </button>
 
+            {/* Report Button */}
             <button
               onClick={onOpenReportModal}
-              className="w-10 h-10 rounded-full bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 shadow-lg flex items-center justify-center transition-colors"
-              title="Reportar ocorrência"
+              className="w-9 h-9 rounded-full bg-white text-neutral-700 hover:bg-neutral-100 border border-neutral-200 shadow-md flex items-center justify-center transition-colors"
+              title="Registrar ocorrência"
             >
-              <AlertTriangle className="w-4 h-4 text-amber-600" />
+              <Plus className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Speedometer (Bottom-Left above sheet) */}
+          {/* Speedometer (Bottom-Left) */}
           {isNavigating && (
-            <div className="absolute bottom-36 left-3 z-20 flex flex-col items-center pointer-events-none">
-              <div className="w-12 h-12 rounded-full bg-white/95 border border-slate-300 shadow-xl flex flex-col items-center justify-center backdrop-blur-md">
-                <span className="text-sm font-black font-mono text-slate-900 leading-none">
+            <div className="absolute bottom-32 left-3 z-20 flex flex-col items-center pointer-events-none">
+              <div className="w-11 h-11 rounded-full bg-white border border-neutral-300 shadow-md flex flex-col items-center justify-center">
+                <span className="text-xs font-black font-mono text-neutral-900 leading-none">
                   {speedKmH}
                 </span>
-                <span className="text-[9px] uppercase font-mono text-slate-500">km/h</span>
-              </div>
-              <div className="mt-1 w-8 h-4 rounded-full bg-red-600 text-white font-black text-[9px] flex items-center justify-center shadow">
-                50
+                <span className="text-[8px] uppercase font-mono text-neutral-500">km/h</span>
               </div>
             </div>
           )}
 
-          {/* 5. BOTTOM NAVIGATION SHEET (Signature Google Maps Navigation Footer) */}
-          <div className="absolute bottom-0 left-0 right-0 z-30 bg-white border-t border-slate-200 p-3.5 px-4 space-y-2.5 shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.15)] text-slate-900">
-            {/* Grab handle */}
-            <div className="w-10 h-1 bg-slate-300 rounded-full mx-auto -mt-1"></div>
+          {/* 5. Bottom Navigation Sheet */}
+          <div className="absolute bottom-0 left-0 right-0 z-30 bg-white border-t border-neutral-200 p-3.5 px-4 space-y-2.5 shadow-lg text-neutral-900">
+            {/* Handle */}
+            <div className="w-8 h-1 bg-neutral-300 rounded-full mx-auto -mt-1"></div>
 
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black font-mono text-[#0f9d58]">
+                  <span className="text-xl font-bold font-mono text-neutral-900">
                     {selectedRoute.durationMin} min
                   </span>
-                  <span className="text-xs text-slate-500 font-mono">
+                  <span className="text-xs text-neutral-500 font-mono">
                     ({selectedRoute.distanceKm} km)
                   </span>
                 </div>
-                <div className="text-[11px] text-slate-600 flex items-center gap-1.5 mt-0.5">
-                  <Clock className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Chegada prevista às <strong>19:54</strong></span>
+                <div className="text-[11px] text-neutral-500 flex items-center gap-1.5 mt-0.5">
+                  <Clock className="w-3 h-3 text-neutral-400" />
+                  <span>Chegada: <strong>19:54</strong></span>
                 </div>
               </div>
 
-              <SafetyScoreBadge score={selectedRoute.safetyScore} size="sm" />
-            </div>
-
-            {/* Trajeto label strip */}
-            <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
-              <span className="font-semibold text-slate-800 line-clamp-1">
-                {selectedRoute.name}
-              </span>
-              <span className="text-[11px] font-mono text-slate-500 shrink-0">
-                {progressPercentage}%
+              {/* Safety Score Tag */}
+              <span className={`px-2 py-1 rounded-md text-xs font-mono font-bold ${
+                isSafe
+                  ? 'bg-neutral-100 text-neutral-900 border border-neutral-300'
+                  : 'bg-red-50 text-red-700 border border-red-200'
+              }`}>
+                Segurança: {selectedRoute.safetyScore}/100
               </span>
             </div>
 
-            {/* Main Action buttons */}
+            {/* Route Name */}
+            <div className="text-xs text-neutral-600 truncate border-t border-neutral-100 pt-1.5">
+              {selectedRoute.name}
+            </div>
+
+            {/* Navigation Controls */}
             <div className="flex items-center gap-2 pt-0.5">
               {!isNavigating ? (
                 <button
                   onClick={onStart}
-                  className="flex-1 py-3 px-4 rounded-xl bg-[#1a73e8] hover:bg-[#1557b0] text-white font-extrabold text-xs sm:text-sm shadow-md shadow-blue-500/20 transition-all flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-xs shadow transition-colors flex items-center justify-center gap-2"
                 >
-                  <Play className="w-4 h-4 fill-current" />
+                  <Play className="w-3.5 h-3.5 fill-current" />
                   <span>Iniciar Trajeto</span>
                 </button>
               ) : isPaused ? (
                 <button
                   onClick={onResume}
-                  className="flex-1 py-3 px-4 rounded-xl bg-[#0f9d58] hover:bg-[#0c8046] text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-xs transition-colors flex items-center justify-center gap-2"
                 >
-                  <Play className="w-4 h-4 fill-current" />
+                  <Play className="w-3.5 h-3.5 fill-current" />
                   <span>Retomar</span>
                 </button>
               ) : (
                 <button
                   onClick={onPause}
-                  className="flex-1 py-3 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-xs transition-colors flex items-center justify-center gap-2"
                 >
-                  <Pause className="w-4 h-4 fill-current" />
+                  <Pause className="w-3.5 h-3.5 fill-current" />
                   <span>Pausar</span>
                 </button>
               )}
 
               <button
                 onClick={onReset}
-                className="p-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition-colors"
+                className="p-2.5 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-700 border border-neutral-300 transition-colors"
                 title="Reiniciar rota"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -326,18 +326,18 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
             </div>
           </div>
 
-          {/* Home indicator bar at bottom */}
-          <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-32 h-1 bg-slate-400 rounded-full z-40"></div>
+          {/* Bottom Home Indicator */}
+          <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-28 h-1 bg-neutral-400 rounded-full z-40"></div>
         </div>
       </div>
 
-      {/* Helper text */}
-      <div className="mt-3 text-center max-w-sm text-xs text-slate-400 space-y-1">
-        <p className="font-semibold text-slate-200">
-          Interface Google Maps com Alertas da Defesa Civil SP
+      {/* Helper text below phone */}
+      <div className="mt-3 text-center max-w-sm text-xs text-neutral-400 space-y-0.5">
+        <p className="font-medium text-neutral-300">
+          Protótipo de Navegação &bull; Defesa Civil SP
         </p>
-        <p className="text-[11px] text-slate-500">
-          Clique no botão de sino no celular ou em &ldquo;Iniciar Trajeto&rdquo; para simular o alerta de perigo em tempo real.
+        <p className="text-[11px] text-neutral-500">
+          A notificação de perigo desce na tela automaticamente ao entrar na zona crítica ou via botão de teste.
         </p>
       </div>
     </div>

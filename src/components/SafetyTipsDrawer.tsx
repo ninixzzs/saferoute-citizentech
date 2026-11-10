@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, ShieldAlert, PhoneCall, AlertTriangle, CloudRain, Smartphone, Lock } from 'lucide-react';
+import { X, ShieldAlert, PhoneCall } from 'lucide-react';
 import { DEFESA_CIVIL_SAFETY_GUIDES } from '../data/mockData';
 
 interface SafetyTipsDrawerProps {
@@ -11,97 +11,52 @@ export const SafetyTipsDrawer: React.FC<SafetyTipsDrawerProps> = ({ isOpen, onCl
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-md bg-slate-900 border-l border-slate-800 h-full overflow-y-auto p-6 flex flex-col shadow-2xl">
-        {/* Drawer Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
-              <ShieldAlert className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-extrabold text-base text-white">
-                Protocolos Defesa Civil SP
-              </h3>
-              <p className="text-xs text-slate-400">
-                Guia prático de prevenção & autoproteção urbana
-              </p>
-            </div>
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/70 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="w-full max-w-sm bg-neutral-900 border-l border-neutral-800 h-full overflow-y-auto p-5 flex flex-col text-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-neutral-300" />
+            <h3 className="font-bold text-sm">Diretrizes Defesa Civil SP</h3>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="text-neutral-400 hover:text-white">
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Emergency Contacts Direct Dial */}
-        <div className="my-5 p-4 rounded-xl bg-red-950/40 border border-red-500/30 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase text-red-300 flex items-center gap-1.5">
-              <PhoneCall className="w-3.5 h-3.5" /> Telefones de Emergência SP
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-            <a
-              href="tel:190"
-              className="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 flex items-center justify-between"
-            >
-              <span>Polícia Militar</span>
-              <strong className="text-amber-400">190</strong>
-            </a>
-            <a
-              href="tel:199"
-              className="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 flex items-center justify-between"
-            >
-              <span>Defesa Civil SP</span>
-              <strong className="text-blue-400">199</strong>
-            </a>
-            <a
-              href="tel:153"
-              className="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 flex items-center justify-between"
-            >
-              <span>Guarda Civil (GCM)</span>
-              <strong className="text-emerald-400">153</strong>
-            </a>
-            <a
-              href="tel:181"
-              className="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 flex items-center justify-between"
-            >
+        {/* Emergency phones */}
+        <div className="my-4 p-3 rounded-xl bg-neutral-950 border border-neutral-800 space-y-2">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-1.5">
+            <PhoneCall className="w-3 h-3" /> Emergência
+          </span>
+          <div className="grid grid-cols-2 gap-1.5 text-xs font-mono">
+            <div className="p-2 rounded bg-neutral-900 flex justify-between">
+              <span>PM</span>
+              <strong className="text-white">190</strong>
+            </div>
+            <div className="p-2 rounded bg-neutral-900 flex justify-between">
+              <span>Defesa Civil</span>
+              <strong className="text-white">199</strong>
+            </div>
+            <div className="p-2 rounded bg-neutral-900 flex justify-between">
+              <span>GCM</span>
+              <strong className="text-white">153</strong>
+            </div>
+            <div className="p-2 rounded bg-neutral-900 flex justify-between">
               <span>Disque Denúncia</span>
-              <strong className="text-purple-400">181</strong>
-            </a>
+              <strong className="text-white">181</strong>
+            </div>
           </div>
         </div>
 
-        {/* Safety Protocol Guides */}
-        <div className="space-y-4 flex-1">
+        {/* Guides */}
+        <div className="space-y-3 flex-1 text-xs">
           {DEFESA_CIVIL_SAFETY_GUIDES.map((guide) => (
-            <div
-              key={guide.id}
-              className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <h4 className="font-bold text-sm text-slate-100 flex items-center gap-2">
-                  {guide.category === 'furto_celular' ? (
-                    <Smartphone className="w-4 h-4 text-amber-400" />
-                  ) : guide.category === 'assalto' ? (
-                    <Lock className="w-4 h-4 text-red-400" />
-                  ) : (
-                    <CloudRain className="w-4 h-4 text-blue-400" />
-                  )}
-                  <span>{guide.title}</span>
-                </h4>
-                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">
-                  {guide.badge}
-                </span>
-              </div>
-
-              <ul className="space-y-2 text-xs text-slate-300">
+            <div key={guide.id} className="p-3 rounded-xl bg-neutral-950 border border-neutral-800 space-y-2">
+              <h4 className="font-bold text-neutral-200">{guide.title}</h4>
+              <ul className="space-y-1.5 text-[11px] text-neutral-400">
                 {guide.tips.map((tip, idx) => (
-                  <li key={idx} className="flex items-start gap-2">
-                    <span className="text-amber-400 font-bold shrink-0">&bull;</span>
+                  <li key={idx} className="flex items-start gap-1.5">
+                    <span className="text-neutral-500 font-bold">&bull;</span>
                     <span className="leading-relaxed">{tip}</span>
                   </li>
                 ))}
@@ -110,14 +65,8 @@ export const SafetyTipsDrawer: React.FC<SafetyTipsDrawerProps> = ({ isOpen, onCl
           ))}
         </div>
 
-        {/* SMS 40199 Card */}
-        <div className="mt-6 p-4 rounded-xl bg-blue-950/30 border border-blue-500/30 text-xs text-blue-200 space-y-1">
-          <p className="font-bold text-blue-300">
-            Cadastre-se nos alertas SMS oficiais 40199:
-          </p>
-          <p className="text-[11px] text-slate-400">
-            Envie o CEP da sua residência por SMS gratuito para o número <strong>40199</strong> para receber comunicados de tempestades e deslizamentos da Defesa Civil Estadual.
-          </p>
+        <div className="mt-4 p-3 rounded-xl bg-neutral-950 border border-neutral-800 text-[11px] text-neutral-400">
+          Envie o CEP da sua residência por SMS gratuito para <strong>40199</strong> para receber comunicados oficiais da Defesa Civil.
         </div>
       </div>
     </div>
