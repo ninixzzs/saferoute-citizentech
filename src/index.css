@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+}
+
+/* Custom pulsing alert and radar effects */
+@keyframes radar-pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 20px rgba(239, 68, 68, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.radar-warning {
+  animation: radar-pulse 2s infinite;
+}
+
+@keyframes siren-flash {
+  0%, 100% {
+    border-color: rgba(239, 68, 68, 0.9);
+    background-color: rgba(239, 68, 68, 0.15);
+  }
+  50% {
+    border-color: rgba(245, 158, 11, 0.9);
+    background-color: rgba(245, 158, 11, 0.15);
+  }
+}
+
+.emergency-broadcast {
+  animation: siren-flash 1.2s infinite;
+}
+
+/* Leaflet dark theme adjustments */
+.leaflet-container {
+  background-color: #090d16 !important;
+  font-family: inherit;
+}
+
+.leaflet-popup-content-wrapper {
+  background: #0f172a !important;
+  color: #f1f5f9 !important;
+  border-radius: 12px !important;
+  border: 1px solid #334155 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+}
+
+.leaflet-popup-tip {
+  background: #0f172a !important;
+  border: 1px solid #334155 !important;
+}
