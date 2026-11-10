@@ -17,7 +17,8 @@ import {
   Plus,
   Loader2,
   MapPin,
-  Globe
+  Globe,
+  Layers
 } from 'lucide-react';
 import { DangerZone, NavigationRoute, IncidentReport } from '../types';
 import { LocationSuggestion, POPULAR_DESTINATIONS } from '../services/routingService';
@@ -134,34 +135,6 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
 
   return (
     <div className="flex flex-col items-center justify-center w-full py-2">
-      {/* Map Mode Selector */}
-      <div className="flex items-center gap-1.5 bg-neutral-900/90 backdrop-blur-md p-1 rounded-full border border-neutral-800 mb-3 shadow-md">
-        <button
-          type="button"
-          onClick={() => setMapMode('saferoute')}
-          className={`px-3 py-1 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
-            mapMode === 'saferoute'
-              ? 'bg-white text-neutral-950 shadow-sm'
-              : 'text-neutral-400 hover:text-white'
-          }`}
-        >
-          <ShieldCheck className="w-3.5 h-3.5" />
-          <span>Navegador SafeRoute GPS</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setMapMode('google')}
-          className={`px-3 py-1 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
-            mapMode === 'google'
-              ? 'bg-white text-neutral-950 shadow-sm'
-              : 'text-neutral-400 hover:text-white'
-          }`}
-        >
-          <Globe className="w-3.5 h-3.5" />
-          <span>Google Maps Oficial (Embed)</span>
-        </button>
-      </div>
-
       {/* Phone Hardware Mockup */}
       <div className="relative w-full max-w-[390px] h-[750px] rounded-[50px] bg-black border-[10px] border-neutral-900 shadow-[0_25px_60px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col select-none ring-1 ring-neutral-800">
         
@@ -408,17 +381,17 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
 
           {/* 4. Floating Action Buttons inside phone */}
           <div className="absolute right-3 top-24 z-20 flex flex-col gap-2 pointer-events-auto">
-            {/* Toggle Google Maps / SafeRoute */}
+            {/* Toggle Google Maps View Layer */}
             <button
               onClick={() => setMapMode(mapMode === 'google' ? 'saferoute' : 'google')}
               className={`w-9 h-9 rounded-full shadow-md border flex items-center justify-center transition-colors ${
                 mapMode === 'google'
-                  ? 'bg-neutral-950 text-white border-neutral-900'
+                  ? 'bg-neutral-950 text-white border-neutral-900 ring-2 ring-blue-500/50'
                   : 'bg-white text-neutral-800 border-neutral-300 hover:bg-neutral-100'
               }`}
-              title={mapMode === 'google' ? 'Voltar para SafeRoute GPS' : 'Abrir Google Maps Oficial'}
+              title={mapMode === 'google' ? 'Google Maps (Embed Ativo) - Toque para voltar à navegação' : 'Camada Google Maps Oficial'}
             >
-              <Globe className="w-4 h-4" />
+              <Layers className="w-4 h-4" />
             </button>
 
             {/* Quick Test Message Button */}
