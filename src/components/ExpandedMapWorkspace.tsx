@@ -110,7 +110,7 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
     <div
       className={
         isFullscreen
-          ? 'fixed inset-0 z-50 w-screen h-screen bg-neutral-950 select-none'
+          ? 'fixed inset-0 z-[950] w-screen h-screen bg-neutral-950 select-none'
           : 'relative w-full h-[58vh] min-h-[420px] sm:h-[580px] lg:h-[680px] rounded-[28px] overflow-hidden border border-neutral-200/90 dark:border-neutral-800/90 shadow-[0_20px_60px_rgba(0,0,0,0.14)] dark:shadow-[0_24px_64px_rgba(0,0,0,0.65)] bg-neutral-900 select-none'
       }
     >

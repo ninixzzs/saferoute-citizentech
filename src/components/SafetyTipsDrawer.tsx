@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ShieldAlert, PhoneCall } from 'lucide-react';
 import { DEFESA_CIVIL_SAFETY_GUIDES } from '../data/mockData';
 
@@ -8,16 +9,29 @@ interface SafetyTipsDrawerProps {
 }
 
 export const SafetyTipsDrawer: React.FC<SafetyTipsDrawerProps> = ({ isOpen, onClose }) => {
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, onClose]);
 
-  return (
+  if (!isOpen || typeof document === 'undefined') return null;
+
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-label="Diretrizes Defesa Civil SP"
-      className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm animate-in fade-in duration-150"
+      onClick={onClose}
+      className="fixed inset-0 z-[1000] flex justify-end bg-black/75 backdrop-blur-sm animate-in fade-in duration-150"
     >
-      <div className="w-full max-w-sm bg-white dark:bg-neutral-900 border-l border-neutral-200 dark:border-neutral-800 h-full overflow-y-auto p-5 flex flex-col text-neutral-900 dark:text-white shadow-2xl">
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm bg-white dark:bg-neutral-950 border-l border-neutral-200 dark:border-neutral-800 h-full overflow-y-auto p-5 flex flex-col text-neutral-900 dark:text-white shadow-2xl"
+      >
         <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 pb-3">
           <div className="flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-neutral-700 dark:text-neutral-300" />
@@ -78,10 +92,11 @@ export const SafetyTipsDrawer: React.FC<SafetyTipsDrawerProps> = ({ isOpen, onCl
           ))}
         </div>
 
-        <div className="mt-4 p-3 rounded-xl bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-[11px] text-neutral-600 dark:text-neutral-400">
+        <div className="mt-4 p-3 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-[11px] text-neutral-600 dark:text-neutral-400">
           Envie o CEP da sua residência por SMS gratuito para <strong>40199</strong> para receber comunicados oficiais da Defesa Civil.
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

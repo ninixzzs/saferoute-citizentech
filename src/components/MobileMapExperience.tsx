@@ -304,11 +304,12 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
       />
 
       {/* 2. Top Floating Search Pill (with Direct 1-Tap GPS) OR Turn-by-Turn Guidance */}
-      <div
-        onMouseDown={(e) => e.stopPropagation()}
-        onTouchStart={(e) => e.stopPropagation()}
-        className="absolute top-3 left-3 right-3 z-[410] pointer-events-auto"
-      >
+      {!isSearchOpen && !sheetExpanded && (
+        <div
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          className="absolute top-3 left-3 right-3 z-[410] pointer-events-auto"
+        >
         {isNavigating ? (
           <div className="bg-neutral-950/95 backdrop-blur-xl text-white rounded-2xl p-3 shadow-2xl border border-white/15 flex items-center justify-between gap-2.5">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -385,7 +386,8 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
             </button>
           </div>
         )}
-      </div>
+        </div>
+      )}
 
       {/* 3. Top-Left Quick Actions (Aligned cleanly opposite map right controls, zero overlap) */}
       {!isSearchOpen && !sheetExpanded && (
@@ -706,14 +708,15 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
         </div>
       )}
 
-      {/* 5. Uber / Google Maps Expandable Bottom Sheet */}
-      <div
-        onMouseDown={(e) => e.stopPropagation()}
-        onTouchStart={(e) => e.stopPropagation()}
-        className={`absolute bottom-0 left-0 right-0 z-[420] bg-white/96 dark:bg-neutral-950/96 backdrop-blur-xl border-t border-neutral-200 dark:border-neutral-800 rounded-t-[28px] shadow-[0_-12px_40px_rgba(0,0,0,0.22)] transition-all duration-300 flex flex-col ${
-          sheetExpanded ? 'h-[68%]' : 'h-auto'
-        }`}
-      >
+      {/* 5. Uber / Google Maps Expandable Bottom Sheet (hidden when Search overlay is open) */}
+      {!isSearchOpen && (
+        <div
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          className={`absolute bottom-0 left-0 right-0 z-[420] bg-white/96 dark:bg-neutral-950/96 backdrop-blur-xl border-t border-neutral-200 dark:border-neutral-800 rounded-t-[28px] shadow-[0_-12px_40px_rgba(0,0,0,0.22)] transition-all duration-300 flex flex-col ${
+            sheetExpanded ? 'h-[76%]' : 'h-auto'
+          }`}
+        >
         {/* Drag Handle + Quick Section Switcher */}
         <div className="px-4 pt-2 pb-2 border-b border-neutral-100 dark:border-neutral-800/80 space-y-2 shrink-0">
           <button
@@ -972,7 +975,8 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
             )}
           </div>
         )}
-      </div>
+        </div>
+      )}
 
       {/* Expand/Collapse Quick Corner Indicator when Sheet Collapsed */}
       {!sheetExpanded && !isSearchOpen && (

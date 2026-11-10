@@ -291,7 +291,7 @@ export const AccessibilityMenu: React.FC<AccessibilityMenuProps> = ({
       {isOpen &&
         typeof document !== 'undefined' &&
         createPortal(
-          <div className="sm:hidden fixed inset-0 z-[999] flex items-end justify-center">
+          <div className="sm:hidden fixed inset-0 z-[1000] flex items-end justify-center">
             <div
               onClick={() => setIsOpen(false)}
               className="fixed inset-0 bg-black/55 backdrop-blur-xs animate-in fade-in duration-150"
