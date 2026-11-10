@@ -111,9 +111,7 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-white">{inc.title}</span>
-                    <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono uppercase ${
-                      inc.status === 'ativo' ? 'bg-red-950 text-red-400 border border-red-900' : 'bg-neutral-900 text-neutral-400'
-                    }`}>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-neutral-800 text-neutral-300 border border-neutral-700">
                       {inc.status}
                     </span>
                   </div>

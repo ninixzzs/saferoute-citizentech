@@ -138,8 +138,8 @@ export function useRouteNavigation() {
       return;
     }
 
-    // Normal realistic pacing: 2400ms per step for 1x, 1200ms for 2x
-    const stepInterval = simSpeed === '1x' ? 2400 : 1200;
+    // Realistic city driving pacing: 4200ms per step in 1x, 2200ms in 2x
+    const stepInterval = simSpeed === '1x' ? 4200 : 2200;
 
     timerRef.current = window.setInterval(() => {
       setCurrentStepIndex((prevIndex) => {

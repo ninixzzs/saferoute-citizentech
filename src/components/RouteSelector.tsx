@@ -72,7 +72,7 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
       <div className="bg-neutral-950 p-4 rounded-2xl border border-neutral-800 space-y-3.5 shadow-sm">
         <div className="flex items-center justify-between border-b border-neutral-800/80 pb-2.5">
           <div className="flex items-center gap-2">
-            <Navigation className="w-4 h-4 text-emerald-400" />
+            <Navigation className="w-4 h-4 text-white" />
             <h3 className="text-xs font-bold uppercase tracking-wider text-white">
               Planejamento de Trajeto
             </h3>
@@ -101,7 +101,7 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
             {/* Origin Input */}
             <div className="relative flex items-center">
               <div className="absolute left-3 z-10 flex items-center justify-center">
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-950"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-white ring-2 ring-neutral-700"></div>
               </div>
               <input
                 type="text"
@@ -117,7 +117,7 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
             <div className="relative flex items-center gap-2">
               <div className="relative flex-1">
                 <div className="absolute left-3 z-10 flex items-center justify-center">
-                  <div className="w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-red-950"></div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-neutral-400 ring-2 ring-neutral-700"></div>
                 </div>
                 <input
                   type="text"
@@ -246,8 +246,8 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
                         {route.name}
                       </span>
                       {isSafe && (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 uppercase tracking-tight flex items-center gap-1">
-                          <ShieldCheck className="w-3 h-3" />
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-neutral-800 text-neutral-200 border border-neutral-700 uppercase tracking-tight flex items-center gap-1">
+                          <ShieldCheck className="w-3 h-3 text-neutral-300" />
                           <span>Recomendado</span>
                         </span>
                       )}
@@ -266,9 +266,7 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
 
                   {/* Safety Score */}
                   <div className="text-right">
-                    <span className={`text-xs font-mono font-bold ${
-                      route.safetyScore >= 85 ? 'text-emerald-400' : route.safetyScore >= 65 ? 'text-amber-400' : 'text-neutral-300'
-                    }`}>
+                    <span className="text-xs font-mono font-bold text-white">
                       {route.safetyScore}/100
                     </span>
                     <span className="block text-[10px] text-neutral-500 font-sans">segurança</span>

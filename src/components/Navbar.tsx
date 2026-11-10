@@ -38,8 +38,8 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Center Status */}
         <div className="hidden sm:flex items-center gap-2 text-xs text-neutral-400 font-mono">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-          <span>Defesa Civil SP / Monitoramento Ativo</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+          <span>Defesa Civil SP &bull; Monitoramento Ativo</span>
         </div>
 
         {/* Controls */}

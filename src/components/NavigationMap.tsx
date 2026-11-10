@@ -157,14 +157,14 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     if (destinationMarkerRef.current) destinationMarkerRef.current.remove();
 
     const isSafe = selectedRoute.type === 'segura';
-    const mainColor = isSafe ? '#00e676' : '#2979ff';
-    const glowColor = isSafe ? 'rgba(0, 230, 118, 0.35)' : 'rgba(41, 121, 255, 0.35)';
+    const mainColor = isSafe ? '#1a73e8' : '#64748b';
+    const glowColor = 'rgba(0, 0, 0, 0.45)';
 
-    // Glow underlay for high visibility on Satellite
+    // Shadow underlay for high visibility and contrast
     const glowLine = L.polyline(selectedRoute.path, {
       color: glowColor,
-      weight: 12,
-      opacity: 0.7,
+      weight: 9,
+      opacity: 0.8,
       lineCap: 'round',
       lineJoin: 'round',
     }).addTo(map);
@@ -173,38 +173,38 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     // Main line
     const mainLine = L.polyline(selectedRoute.path, {
       color: mainColor,
-      weight: 6,
-      opacity: 0.95,
+      weight: 5.5,
+      opacity: 0.98,
       lineCap: 'round',
       lineJoin: 'round',
     }).addTo(map);
     routePolylineRef.current = mainLine;
 
-    // Origin Start Marker (Green Pin)
+    // Origin Start Marker (Clean White Dot with Shadow)
     const originCoords = selectedRoute.path[0];
     const originHtml = `
-      <div style="position: relative; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.6));">
+      <div style="position: relative; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;">
         <div style="
-          width: 20px;
-          height: 20px;
+          width: 16px;
+          height: 16px;
           border-radius: 50%;
-          background: #10b981;
-          border: 3px solid #ffffff;
-          box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+          background: #ffffff;
+          border: 3px solid #0f172a;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.5);
         "></div>
       </div>
     `;
     const originIcon = L.divIcon({
       html: originHtml,
       className: 'origin-pin-marker',
-      iconSize: [28, 28],
-      iconAnchor: [14, 14],
+      iconSize: [22, 22],
+      iconAnchor: [11, 11],
     });
     const originMarker = L.marker(originCoords, { icon: originIcon }).addTo(map);
     originMarker.bindPopup(`
       <div style="font-family: system-ui, sans-serif; font-size: 12px; color: #171717; padding: 2px;">
-        <strong style="color: #10b981;">🟢 Ponto de Partida</strong>
-        <p style="margin: 3px 0 0; font-size: 11px;">Início da rota calculada</p>
+        <strong>Ponto de Partida</strong>
+        <p style="margin: 3px 0 0; font-size: 11px;">Início do trajeto</p>
       </div>
     `);
     originMarkerRef.current = originMarker;

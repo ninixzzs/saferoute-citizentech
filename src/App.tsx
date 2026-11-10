@@ -4,7 +4,6 @@ import { RouteSelector } from './components/RouteSelector';
 import { IncidentList } from './components/IncidentList';
 import { IncidentReportModal } from './components/IncidentReportModal';
 import { SafetyTipsDrawer } from './components/SafetyTipsDrawer';
-import { DatabaseConfigModal } from './components/DatabaseConfigModal';
 import { MobilePhoneSimulator } from './components/MobilePhoneSimulator';
 import { Footer } from './components/Footer';
 
@@ -12,9 +11,7 @@ import { useSafetyAlerts } from './hooks/useSafetyAlerts';
 import { useRouteNavigation } from './hooks/useRouteNavigation';
 import { useVoiceGuidance } from './hooks/useVoiceGuidance';
 import { useGeofenceAlert } from './hooks/useGeofenceAlert';
-import { getStoredSupabaseConfig } from './services/supabase';
 import { DangerZone } from './types';
-import { Database, Settings2 } from 'lucide-react';
 
 export function App() {
   // 1. Safety Alerts Hook (CRUD + Supabase/Local State)
@@ -67,8 +64,6 @@ export function App() {
   // Modals
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isTipsDrawerOpen, setIsTipsDrawerOpen] = useState(false);
-  const [isDatabaseModalOpen, setIsDatabaseModalOpen] = useState(false);
-  const [supabaseConfig, setSupabaseConfig] = useState(getStoredSupabaseConfig());
 
   // Triggered when entering critical geofence
   const handleEnterCriticalZone = useCallback(
@@ -104,30 +99,6 @@ export function App() {
         onOpenTipsDrawer={() => setIsTipsDrawerOpen(true)}
         activeIncidentsCount={allIncidents.length}
       />
-
-      {/* Database status & config strip */}
-      <div className="border-b border-neutral-900 bg-neutral-950 py-1.5 px-4 text-center">
-        <div className="max-w-6xl mx-auto flex items-center justify-between text-[11px] text-neutral-500 font-mono">
-          <button
-            onClick={() => setIsDatabaseModalOpen(true)}
-            className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer group text-left"
-            title="Clique para configurar o banco de dados (Supabase ou IndexedDB)"
-          >
-            <Database className="w-3.5 h-3.5 text-neutral-400 group-hover:text-emerald-400 transition-colors" />
-            <span>
-              Banco de Dados:{' '}
-              <strong className="text-neutral-300 group-hover:text-white underline underline-offset-2">
-                {supabaseConfig.isConfigured ? 'Supabase Conectado (Nuvem)' : 'IndexedDB Nativo Ativo (Persistente)'}
-              </strong>
-            </span>
-            <span className="text-[10px] bg-neutral-800 text-neutral-400 px-1.5 py-0.5 rounded ml-1 group-hover:bg-neutral-700 transition-colors flex items-center gap-1">
-              <Settings2 className="w-2.5 h-2.5" />
-              <span>Configurar</span>
-            </span>
-          </button>
-          <span className="hidden sm:inline">Defesa Civil SP &bull; Monitoramento Ativo</span>
-        </div>
-      </div>
 
       {/* Main Container */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6">
@@ -216,15 +187,6 @@ export function App() {
       <SafetyTipsDrawer
         isOpen={isTipsDrawerOpen}
         onClose={() => setIsTipsDrawerOpen(false)}
-      />
-
-      <DatabaseConfigModal
-        isOpen={isDatabaseModalOpen}
-        onClose={() => setIsDatabaseModalOpen(false)}
-        onConfigSaved={() => {
-          setSupabaseConfig(getStoredSupabaseConfig());
-          resetData();
-        }}
       />
 
       {/* Footer */}

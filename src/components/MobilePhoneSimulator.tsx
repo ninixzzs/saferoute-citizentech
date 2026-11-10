@@ -184,15 +184,15 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
           <div className="absolute top-0 left-0 right-0 z-30 p-2.5 space-y-2 pointer-events-auto">
             {isNavigating ? (
               /* Turn-by-Turn Guidance Header */
-              <div className="bg-[#1b5e20]/95 backdrop-blur-md text-white rounded-2xl p-3 shadow-xl flex items-center justify-between gap-3 border border-[#2e7d32]">
+              <div className="bg-neutral-900/95 backdrop-blur-md text-white rounded-2xl p-3 shadow-xl flex items-center justify-between gap-3 border border-neutral-800">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center shrink-0 shadow-inner">
+                  <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center shrink-0 shadow-inner">
                     <CornerUpRight className="w-5 h-5 text-white stroke-[2.5]" />
                   </div>
                   <div>
                     <div className="flex items-baseline gap-1.5">
                       <span className="text-lg font-bold leading-tight">Em 200 m</span>
-                      <span className="text-[11px] text-emerald-200">vire à direita</span>
+                      <span className="text-[11px] text-neutral-400">vire à direita</span>
                     </div>
                     <p className="text-xs font-medium text-white/95 line-clamp-1">
                       {selectedRoute.name}
@@ -277,7 +277,7 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
                     {/* Origin field */}
                     <div className="relative flex items-center">
                       <div className="absolute left-2.5 z-10 flex items-center justify-center">
-                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-100"></div>
+                        <div className="w-2.5 h-2.5 rounded-full bg-white ring-2 ring-neutral-400"></div>
                       </div>
                       <input
                         type="text"
@@ -292,7 +292,7 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
                     <div className="relative flex items-center gap-1.5">
                       <div className="relative flex-1">
                         <div className="absolute left-2.5 z-10 flex items-center justify-center">
-                          <div className="w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-red-100"></div>
+                          <div className="w-2.5 h-2.5 rounded-full bg-neutral-400 ring-2 ring-neutral-300"></div>
                         </div>
                         <input
                           type="text"
@@ -352,15 +352,15 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
 
             {/* 3. DEFESA CIVIL PUSH NOTIFICATION BANNER (Clean, Non-Intrusive, Auto-Dismiss) */}
             {visibleAlert && (
-              <div className="animate-in slide-in-from-top-4 duration-300 rounded-2xl bg-white text-neutral-950 border-2 border-neutral-900 shadow-2xl p-3.5 space-y-2">
-                <div className="flex items-center justify-between text-[11px] text-neutral-500 border-b border-neutral-100 pb-1.5">
-                  <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-red-600">
-                    <AlertTriangle className="w-3.5 h-3.5" />
+              <div className="animate-in slide-in-from-top-4 duration-300 rounded-2xl bg-neutral-950 text-white border border-neutral-800 shadow-2xl p-3.5 space-y-2">
+                <div className="flex items-center justify-between text-[11px] text-neutral-400 border-b border-neutral-850 pb-1.5">
+                  <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-neutral-200">
+                    <AlertTriangle className="w-3.5 h-3.5 text-neutral-400" />
                     <span>DEFESA CIVIL SP &bull; ALERTA</span>
                   </div>
                   <button
                     onClick={handleDismiss}
-                    className="text-neutral-400 hover:text-neutral-900 p-0.5 rounded-full"
+                    className="text-neutral-400 hover:text-white p-0.5 rounded-full"
                     title="Fechar alerta"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -368,10 +368,10 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
                 </div>
 
                 <div>
-                  <h4 className="text-xs font-bold text-neutral-950 uppercase tracking-tight">
+                  <h4 className="text-xs font-bold text-white uppercase tracking-tight">
                     {visibleAlert.neighborhood} &bull; {visibleAlert.name}
                   </h4>
-                  <p className="text-xs text-neutral-700 mt-0.5 leading-relaxed font-medium">
+                  <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed font-medium">
                     {visibleAlert.defenseCivilTip}
                   </p>
                 </div>
@@ -380,20 +380,20 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
                   <div className="pt-1 flex items-center gap-2">
                     <button
                       onClick={handleAcceptRerouteAndClose}
-                      className="flex-1 py-1.5 px-3 rounded-xl bg-neutral-950 text-white font-bold text-xs hover:bg-neutral-800 transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                      className="flex-1 py-1.5 px-3 rounded-xl bg-white text-neutral-950 font-bold text-xs hover:bg-neutral-200 transition-colors flex items-center justify-center gap-1.5 shadow-sm"
                     >
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      <ShieldCheck className="w-3.5 h-3.5 text-neutral-900" />
                       <span>Desviar Rota (+4 min)</span>
                     </button>
                     <button
                       onClick={handleDismiss}
-                      className="py-1.5 px-3 rounded-xl bg-neutral-100 text-neutral-700 hover:bg-neutral-200 text-xs font-semibold transition-colors border border-neutral-300"
+                      className="py-1.5 px-3 rounded-xl bg-neutral-900 text-neutral-300 hover:bg-neutral-800 text-xs font-semibold transition-colors border border-neutral-800"
                     >
                       Dispensar
                     </button>
                   </div>
                 ) : (
-                  <div className="text-[11px] text-emerald-800 font-bold bg-emerald-50 border border-emerald-200 p-2 rounded-xl text-center">
+                  <div className="text-[11px] text-neutral-200 font-semibold bg-neutral-900 border border-neutral-800 p-2 rounded-xl text-center">
                     ✓ Desvio Seguro Ativo: trajeto protegido sem zonas críticas.
                   </div>
                 )}
@@ -405,7 +405,7 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
           <div className="absolute right-3 top-36 z-20 flex flex-col gap-2 pointer-events-auto">
             <button
               onClick={onOpenReportModal}
-              className="w-9 h-9 rounded-full bg-white/90 backdrop-blur-md text-neutral-900 hover:bg-white border border-neutral-300 shadow-lg flex items-center justify-center transition-transform active:scale-90"
+              className="w-9 h-9 rounded-full bg-neutral-900/90 backdrop-blur-md text-white hover:bg-neutral-800 border border-neutral-700 shadow-lg flex items-center justify-center transition-transform active:scale-90"
               title="Registrar ocorrência no mapa"
             >
               <Plus className="w-4 h-4" />
@@ -415,8 +415,8 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
           {/* Speedometer (Bottom-Left) */}
           {isNavigating && (
             <div className="absolute bottom-32 left-3 z-20 flex flex-col items-center pointer-events-none animate-in fade-in duration-200">
-              <div className="w-12 h-12 rounded-full bg-black/85 backdrop-blur-md border border-white/20 shadow-xl flex flex-col items-center justify-center text-white">
-                <span className="text-xs font-black font-mono leading-none text-emerald-400">
+              <div className="w-12 h-12 rounded-full bg-neutral-950/90 backdrop-blur-md border border-neutral-700 shadow-xl flex flex-col items-center justify-center text-white">
+                <span className="text-xs font-black font-mono leading-none text-white">
                   {speedKmH}
                 </span>
                 <span className="text-[7px] uppercase font-mono text-neutral-400">km/h</span>
@@ -432,7 +432,7 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xl font-bold font-mono text-[#0f9d58]">
+                  <span className="text-xl font-bold font-mono text-neutral-950">
                     {selectedRoute.durationMin} min
                   </span>
                   <span className="text-xs text-neutral-500 font-mono">
@@ -446,11 +446,7 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
               </div>
 
               {/* Safety score */}
-              <span className={`px-2 py-1 rounded-lg text-xs font-mono font-bold border ${
-                isSafe
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                  : 'bg-neutral-100 text-neutral-900 border-neutral-300'
-              }`}>
+              <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold border bg-neutral-900 text-neutral-100 border-neutral-800">
                 Segurança: {selectedRoute.safetyScore}/100
               </span>
             </div>
