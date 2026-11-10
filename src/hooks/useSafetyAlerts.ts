@@ -7,32 +7,74 @@ export function useSafetyAlerts() {
   const [dangerZones, setDangerZones] = useState<DangerZone[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<Date>(new Date());
 
   // Filters
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<IncidentCategory | 'todos'>('todos');
   const [selectedRisk, setSelectedRisk] = useState<RiskLevel | 'todos'>('todos');
 
-  // Load initial data
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [incidentList, zonesList] = await Promise.all([
-        incidentApi.getAll(),
-        defenseCivilApi.getOfficialZones(),
-      ]);
-      setIncidents(incidentList);
-      setDangerZones(zonesList);
-    } catch (err: any) {
-      setError(err?.message || 'Falha ao carregar dados de segurança.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const mergeIncidentZones = useCallback(
+    (baseZones: DangerZone[], incidentList: IncidentReport[]): DangerZone[] => {
+      const elevated = incidentList
+        .filter((inc) => inc.status !== 'resolvido' && (inc.riskLevel === 'alto' || inc.riskLevel === 'critico'))
+        .map<DangerZone>((inc) => ({
+          id: `zone-${inc.id}`,
+          name: `${inc.neighborhood} — ${inc.title}`,
+          neighborhood: inc.neighborhood,
+          city: 'São Paulo',
+          riskLevel: inc.riskLevel,
+          coordinates: inc.coordinates,
+          radiusMeters: 450,
+          primaryRisk: inc.category,
+          title: inc.title,
+          description: inc.description,
+          defenseCivilTip:
+            'Área recém-reportada com risco elevado. Mantenha vidros fechados, portas travadas e evite expor o celular em semáforos.',
+          safeAlternativeAdvice: 'Utilize vias principais monitoradas e mantenha atenção redobrada.',
+          recentIncidentsCount: Math.max(1, inc.confirmationsCount),
+          source: 'CitizenTech Rede',
+        }));
+
+      const seenIds = new Set(elevated.map((e) => e.id));
+      const baseFiltered = baseZones.filter((z) => !seenIds.has(z.id));
+      return [...elevated, ...baseFiltered];
+    },
+    []
+  );
+
+  // Load initial data (supports silent background sync)
+  const loadData = useCallback(
+    async (silent = false) => {
+      if (!silent) {
+        setLoading(true);
+      }
+      setError(null);
+      try {
+        const [incidentList, zonesList] = await Promise.all([
+          incidentApi.getAll(),
+          defenseCivilApi.getOfficialZones(),
+        ]);
+        setIncidents(incidentList);
+        setDangerZones(mergeIncidentZones(zonesList, incidentList));
+        setLastUpdatedAt(new Date());
+      } catch (err: any) {
+        setError(err?.message || 'Falha ao carregar dados de segurança.');
+      } finally {
+        if (!silent) {
+          setLoading(false);
+        }
+      }
+    },
+    [mergeIncidentZones]
+  );
 
   useEffect(() => {
     loadData();
+    const timer = window.setInterval(() => {
+      loadData(true);
+    }, 20000);
+    return () => window.clearInterval(timer);
   }, [loadData]);
 
   // CRUD operations
@@ -137,6 +179,7 @@ export function useSafetyAlerts() {
     dangerZones,
     loading,
     error,
+    lastUpdatedAt,
     searchQuery,
     setSearchQuery,
     selectedCategory,
@@ -148,6 +191,6 @@ export function useSafetyAlerts() {
     deleteIncident,
     confirmIncident,
     resetData,
-    refresh: loadData,
+    refresh: () => loadData(false),
   };
 }

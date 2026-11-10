@@ -6,9 +6,11 @@ import {
   SaoPauloZone,
   SaoPauloLocationEntry,
 } from '../data/saoPauloLocations';
-import { LocationSuggestion } from './routingService';
+import { PolicePostResult, findNearestPolicePosts } from '../data/policePosts';
+import { LocationSuggestion, geocodeAddress } from './routingService';
 import { calculateDistanceMeters } from './api';
 import { sanitizeUserInput } from './security';
+import { askGoogleGeminiFlash, GeminiHistoryTurn, hasGeminiKeyConfigured } from './geminiClient';
 
 export type ConversationStage = 'ask_name' | 'ask_destination' | 'ready';
 
@@ -20,7 +22,7 @@ export interface NearbyPlaceResult {
 
 export interface AssistantReply {
   id: string;
-  toneLabel: 'Boas-vindas' | 'Tranquilo' | 'Atenção Leve' | 'Cuidado Preventivo';
+  toneLabel: 'Boas-vindas' | 'Tranquilo' | 'Atenção Leve' | 'Cuidado Preventivo' | 'Emergência Calma';
   text: string;
   tips: string[];
   nearbyPlaces: NearbyPlaceResult[];
@@ -32,6 +34,11 @@ export interface AssistantReply {
   askFirstTimePlace?: string;
   suggestedDestination?: string;
   showQuickDestinations?: boolean;
+  isEmergency?: boolean;
+  awaitingEmergencyAddress?: boolean;
+  emergencyPolicePosts?: PolicePostResult[];
+  showEmergencyGpsButton?: boolean;
+  poweredByGemini?: boolean;
 }
 
 export interface AssistantContext {
@@ -45,6 +52,18 @@ export interface AssistantContext {
   userName?: string;
   currentFocusPlace?: string;
   askedFirstTimeAlready?: boolean;
+  awaitingEmergencyAddress?: boolean;
+  currentPosition?: [number, number];
+  history?: GeminiHistoryTurn[];
+}
+
+export interface PreTripBriefing {
+  status: 'calm' | 'attention' | 'caution';
+  toneLabel: string;
+  headline: string;
+  message: string;
+  affectedAreas: string[];
+  recommendSafeRoute: boolean;
 }
 
 function normalizeText(value: string): string {
@@ -340,6 +359,36 @@ export function buildPreTripSmsMessage(context: {
   };
 }
 
+export function detectEmergencyRobbery(rawText: string): boolean {
+  const qNorm = normalizeText(rawText);
+  const emergencyTriggers = [
+    'assalto',
+    'assaltado',
+    'assaltada',
+    'assaltando',
+    'roubo',
+    'roubando',
+    'roubaram',
+    'socorro',
+    'me ajude',
+    'me ajuda',
+    'estou em perigo',
+    'ladrao',
+    'armado',
+    'sequestro',
+    'emergencia urgente',
+  ];
+  return emergencyTriggers.some((term) => containsWholePhrase(qNorm, term) || qNorm.includes(term));
+}
+
+function hasStreetOrPlaceInText(qNorm: string, mentionedSp?: SaoPauloLocationEntry): boolean {
+  if (mentionedSp) return true;
+  if (/(?:rua|r\.|av|avenida|estrada|alameda|praca|viaduto|largo|travessa)\s+[a-z]{3,}/i.test(qNorm)) {
+    return true;
+  }
+  return false;
+}
+
 /**
  * Dynamic, non-blocking conversational safety advisor with memory and direct answers.
  */
@@ -359,6 +408,8 @@ export function generateSafetyAssistantReply(
     userName,
     currentFocusPlace,
     askedFirstTimeAlready,
+    awaitingEmergencyAddress,
+    currentPosition,
   } = context;
 
   const mentionedSp = matchSpLocation(qNorm);
@@ -373,6 +424,47 @@ export function generateSafetyAssistantReply(
     incidents,
     targetPlaceOverride: mentionedSp?.name || currentFocusPlace,
   });
+
+  // PRIORITY 0: EMERGENCY ASSAULT / ROBBERY PROTOCOL (Overrides any stage immediately)
+  const isEmergencyInput = detectEmergencyRobbery(question);
+  const userGaveAddressNow = hasStreetOrPlaceInText(qNorm, mentionedSp);
+
+  if (isEmergencyInput && !userGaveAddressNow && !awaitingEmergencyAddress) {
+    const prefix = userName ? `${userName}, ` : '';
+    return {
+      id: `reply-${Date.now()}`,
+      toneLabel: 'Emergência Calma',
+      text: `${prefix}respire calma e mantenha a tranquilidade, estou aqui com você. Fale ou digite o seu endereço atual (rua, bairro ou referência) que vou procurar os postos policiais mais próximos rápido. Se estiver seguro, ligue 190.`,
+      tips: ['Você também pode tocar em "Enviar meu GPS agora" abaixo para acharmos a delegacia mais próxima imediatamente.'],
+      nearbyPlaces: [],
+      smsPreview: preSms.smsText,
+      nextStage: stage === 'ask_name' ? 'ask_destination' : stage,
+      isEmergency: true,
+      awaitingEmergencyAddress: true,
+      showEmergencyGpsButton: true,
+      emergencyPolicePosts: [],
+    };
+  }
+
+  if (awaitingEmergencyAddress || (isEmergencyInput && userGaveAddressNow)) {
+    const coords: [number, number] =
+      mentionedSp?.coordinates || currentPosition || destination.coordinates;
+    const nearestPosts = findNearestPolicePosts(coords, 3);
+    const areaName = mentionedSp?.name || question;
+    return {
+      id: `reply-${Date.now()}`,
+      toneLabel: 'Emergência Calma',
+      text: `Respire calma${userName ? `, ${userName}` : ''}. Localizei os ${nearestPosts.length} postos policiais mais próximos da região (${areaName}). Se puder falar em segurança, ligue 190 ou siga para a unidade abaixo:`,
+      tips: ['Mantenha a calma e priorize sua integridade física; bens materiais podem ser recuperados.'],
+      nearbyPlaces: [],
+      smsPreview: preSms.smsText,
+      nextStage: stage === 'ask_name' ? 'ask_destination' : stage,
+      isEmergency: true,
+      awaitingEmergencyAddress: false,
+      showEmergencyGpsButton: false,
+      emergencyPolicePosts: nearestPosts,
+    };
+  }
 
   // Meta / conversational question detectors (must never trigger random destination analysis)
   const asksAiIdentity =
@@ -983,3 +1075,151 @@ export function generateSafetyAssistantReply(
     suggestedDestination,
   };
 }
+
+/**
+ * Evaluates destination and route BEFORE navigation starts to send a calm, non-alarmist briefing.
+ */
+export function evaluatePreTripBriefing(params: {
+  route: NavigationRoute;
+  destination: LocationSuggestion;
+  dangerZones: DangerZone[];
+  incidents: IncidentReport[];
+}): PreTripBriefing {
+  const { route, destination, dangerZones, incidents } = params;
+  const destNorm = normalizeText(destination.name);
+
+  const zonesAlongPath = dangerZones.filter((z) => {
+    const nearDest =
+      calculateDistanceMeters(
+        destination.coordinates[0],
+        destination.coordinates[1],
+        z.coordinates[0],
+        z.coordinates[1]
+      ) <= 1200 || containsWholePhrase(destNorm, normalizeText(z.neighborhood));
+
+    const nearPath = route.path.some(
+      (pt) => calculateDistanceMeters(pt[0], pt[1], z.coordinates[0], z.coordinates[1]) <= z.radiusMeters + 250
+    );
+
+    return nearDest || nearPath;
+  });
+
+  const activeIncidentsNear = incidents.filter((inc) => {
+    if (inc.status === 'resolvido') return false;
+    return (
+      calculateDistanceMeters(
+        destination.coordinates[0],
+        destination.coordinates[1],
+        inc.coordinates[0],
+        inc.coordinates[1]
+      ) <= 1000 || containsWholePhrase(destNorm, normalizeText(inc.neighborhood))
+    );
+  });
+
+  const hasCriticalOrHigh =
+    zonesAlongPath.some((z) => z.riskLevel === 'critico' || z.riskLevel === 'alto') ||
+    activeIncidentsNear.some((i) => i.riskLevel === 'critico' || i.riskLevel === 'alto');
+
+  const uniqueAreas = Array.from(
+    new Set([
+      ...zonesAlongPath.map((z) => z.neighborhood),
+      ...activeIncidentsNear.map((i) => i.neighborhood),
+    ])
+  ).slice(0, 3);
+
+  if (hasCriticalOrHigh) {
+    return {
+      status: 'caution',
+      toneLabel: 'Atenção Preventiva (Sem Pânico)',
+      headline: `Aviso tranquilo antes de ir para ${destination.name}`,
+      message: `Identificamos pontos que merecem atenção leve no trajeto (${uniqueAreas.join(', ') || destination.name}). Não há motivo para pânico — mantenha os vidros fechados nos semáforos, deixe o celular abaixo do painel e use a orientação por áudio.`,
+      affectedAreas: uniqueAreas,
+      recommendSafeRoute: route.type !== 'segura',
+    };
+  }
+
+  if (zonesAlongPath.length > 0 || activeIncidentsNear.length > 0) {
+    return {
+      status: 'attention',
+      toneLabel: 'Cuidado Leve',
+      headline: `Trajeto para ${destination.name} com fluxo normal`,
+      message: `Alguns cruzamentos próximos a ${uniqueAreas.join(', ') || destination.name} costumam ter movimento lento. Siga com tranquilidade e vidros fechados nos sinais.`,
+      affectedAreas: uniqueAreas,
+      recommendSafeRoute: route.type !== 'segura',
+    };
+  }
+
+  return {
+    status: 'calm',
+    toneLabel: 'Trajeto Tranquilo',
+    headline: `Saída tranquila para ${destination.name}`,
+    message: `O destino ${destination.name} e o caminho selecionado (${route.durationMin} min) não concentram alertas críticos no momento. Faça uma ótima viagem!`,
+    affectedAreas: [],
+    recommendSafeRoute: false,
+  };
+}
+
+/**
+ * Unified async AI orchestrator combining Emergency Geolocation/Police Dispatch,
+ * Google Gemini Flash (when configured), and coherent local SafeRoute fallback.
+ */
+export async function generateSmartAssistantReply(
+  rawQuestion: string,
+  context: AssistantContext
+): Promise<AssistantReply> {
+  const cleanQuestion = sanitizeUserInput(rawQuestion, 240);
+  const qNorm = normalizeText(cleanQuestion);
+  const isEmergencyInput = detectEmergencyRobbery(cleanQuestion);
+  const mentionedSp = matchSpLocation(qNorm);
+  const userGaveAddressNow = hasStreetOrPlaceInText(qNorm, mentionedSp);
+
+  // If emergency with an explicit typed address not yet matched locally, geocode to find exact closest police posts
+  let resolvedContext = context;
+  let enhancedEmergencyPosts: PolicePostResult[] | undefined;
+
+  if ((context.awaitingEmergencyAddress || (isEmergencyInput && userGaveAddressNow)) && !mentionedSp) {
+    try {
+      const geo = await geocodeAddress(cleanQuestion, context.destination);
+      resolvedContext = {
+        ...context,
+        currentPosition: geo.coordinates,
+      };
+      enhancedEmergencyPosts = findNearestPolicePosts(geo.coordinates, 3);
+    } catch {
+      // Fallback cleanly to currentPosition / destination coordinates
+    }
+  }
+
+  const baseReply = generateSafetyAssistantReply(cleanQuestion, resolvedContext);
+
+  if (enhancedEmergencyPosts && baseReply.isEmergency && !baseReply.awaitingEmergencyAddress) {
+    baseReply.emergencyPolicePosts = enhancedEmergencyPosts;
+  }
+
+  // If Google Gemini Flash API key is configured, enrich response coherently via Gemini Flash
+  // (keeping structured emergency police posts, stage transitions, and route links intact)
+  if (hasGeminiKeyConfigured() && !baseReply.awaitingEmergencyAddress) {
+    const geminiResult = await askGoogleGeminiFlash(cleanQuestion, {
+      userName: baseReply.detectedName || resolvedContext.userName,
+      originName: resolvedContext.origin.name,
+      destinationName: resolvedContext.destination.name,
+      selectedRoute: resolvedContext.selectedRoute,
+      dangerZones: resolvedContext.dangerZones,
+      incidents: resolvedContext.incidents,
+      isEmergency: Boolean(baseReply.isEmergency),
+      nearestPolicePosts: baseReply.emergencyPolicePosts,
+      history: resolvedContext.history || [],
+    });
+
+    if (geminiResult?.text) {
+      return {
+        ...baseReply,
+        text: geminiResult.text,
+        poweredByGemini: true,
+      };
+    }
+  }
+
+  return baseReply;
+}
+

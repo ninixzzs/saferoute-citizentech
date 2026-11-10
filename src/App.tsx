@@ -17,6 +17,7 @@ import { useVoiceGuidance } from './hooks/useVoiceGuidance';
 import { useGeofenceAlert } from './hooks/useGeofenceAlert';
 import { useAccessibility } from './hooks/useAccessibility';
 import { DangerZone } from './types';
+import { evaluatePreTripBriefing, PreTripBriefing } from './services/safetyAssistant';
 import {
   Map,
   Smartphone,
@@ -28,6 +29,10 @@ import {
   MessageSquareWarning,
   Sparkles,
   ArrowRight,
+  RefreshCw,
+  Play,
+  X,
+  MessageCircle,
 } from 'lucide-react';
 
 export function App() {
@@ -49,6 +54,7 @@ export function App() {
     allIncidents,
     dangerZones,
     loading,
+    lastUpdatedAt,
     searchQuery,
     setSearchQuery,
     selectedCategory,
@@ -60,6 +66,7 @@ export function App() {
     deleteIncident,
     confirmIncident,
     resetData,
+    refresh: refreshAlerts,
   } = useSafetyAlerts();
 
   const {
@@ -98,9 +105,10 @@ export function App() {
   const [focusPoint, setFocusPoint] = useState<{ coords: [number, number]; ts: number } | null>(null);
   const [simulatedAlertZone, setSimulatedAlertZone] = useState<DangerZone | null>(null);
 
-  // Modals
+  // Modals & Pre-Trip Safety Briefing
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isTipsDrawerOpen, setIsTipsDrawerOpen] = useState(false);
+  const [pendingTripBriefing, setPendingTripBriefing] = useState<PreTripBriefing | null>(null);
 
   const handleEnterCriticalZone = useCallback(
     (zone: DangerZone) => {
@@ -152,6 +160,24 @@ export function App() {
         `Alerta Defesa Civil: Área de risco próxima em ${targetZone.neighborhood}. ${targetZone.defenseCivilTip}`
       );
     }
+  };
+
+  const handleRequestStartTrip = useCallback(() => {
+    const briefing = evaluatePreTripBriefing({
+      route: selectedRoute,
+      destination: destinationLocation,
+      dangerZones,
+      incidents,
+    });
+    setPendingTripBriefing(briefing);
+    if (voiceEnabled) {
+      speakAlert(briefing.message);
+    }
+  }, [selectedRoute, destinationLocation, dangerZones, incidents, voiceEnabled, speakAlert]);
+
+  const handleConfirmStartTrip = () => {
+    setPendingTripBriefing(null);
+    startNavigation();
   };
 
   const handleOpenAssistant = () => {
@@ -367,6 +393,34 @@ export function App() {
           </div>
         </section>
 
+        {/* Live Always-Updating Danger Zones Ticker (Hidden inside mobile dedicated AI tab for zero clutter) */}
+        <div
+          className={`${
+            mobileView === 'ai' ? 'hidden lg:flex' : 'flex'
+          } items-center justify-between gap-2 px-4 py-2.5 rounded-2xl bg-white/90 dark:bg-neutral-950/85 border border-neutral-200/90 dark:border-neutral-800/90 text-xs shadow-2xs`}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="w-2 h-2 rounded-full bg-neutral-950 dark:bg-white animate-pulse shrink-0" />
+            <span className="font-bold text-neutral-950 dark:text-white truncate">
+              {dangerZones.length} zonas monitoradas em SP
+            </span>
+            <span className="hidden sm:inline text-neutral-500">
+              &bull; {allIncidents.length} ocorrências ativas &bull; Atualizado às{' '}
+              {lastUpdatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={refreshAlerts}
+            className="px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-[11px] font-semibold text-neutral-800 dark:text-neutral-200 flex items-center gap-1 hover:bg-neutral-200 dark:hover:bg-neutral-800 shrink-0 transition-colors"
+            title="Atualizar alertas e áreas monitoradas agora"
+          >
+            <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+            <span>Atualizar</span>
+          </button>
+        </div>
+
         {/* DESKTOP LAYOUT (>= lg): Map Prototype on LEFT (7 cols), Information on RIGHT (5 cols) */}
         <div className="hidden lg:grid lg:grid-cols-12 gap-6 items-start">
           {/* LEFT: Interactive Map Stage / Mobile Prototype (7 cols) */}
@@ -390,7 +444,7 @@ export function App() {
                 speedKmH={speedKmH}
                 progressPercentage={progressPercentage}
                 activeAlertZone={effectiveAlertZone}
-                onStart={startNavigation}
+                onStart={handleRequestStartTrip}
                 onPause={pauseNavigation}
                 onResume={resumeNavigation}
                 onReset={handleResetAll}
@@ -416,7 +470,7 @@ export function App() {
                 activeAlertZone={effectiveAlertZone}
                 voiceEnabled={voiceEnabled}
                 onToggleVoice={() => setVoiceEnabled(!voiceEnabled)}
-                onStart={startNavigation}
+                onStart={handleRequestStartTrip}
                 onPause={pauseNavigation}
                 onResume={resumeNavigation}
                 onReset={handleResetAll}
@@ -432,6 +486,7 @@ export function App() {
                 simSpeed={simSpeed}
                 onToggleSimSpeed={setSimSpeed}
                 focusPoint={focusPoint}
+                onOpenAssistant={handleOpenAssistant}
               />
             )}
           </section>
@@ -560,6 +615,7 @@ export function App() {
                   allRoutes={routes}
                   dangerZones={dangerZones}
                   incidents={incidents}
+                  currentPosition={currentPosition}
                   onSwitchToSafeRoute={handleAcceptReroute}
                   onSelectCustomDestination={(destName) =>
                     calculateJourney(originLocation.name, destName, dangerZones)
@@ -582,6 +638,7 @@ export function App() {
                 allRoutes={routes}
                 dangerZones={dangerZones}
                 incidents={incidents}
+                currentPosition={currentPosition}
                 onSwitchToSafeRoute={handleAcceptReroute}
                 onSelectCustomDestination={(destName) =>
                   calculateJourney(originLocation.name, destName, dangerZones)
@@ -615,7 +672,7 @@ export function App() {
                     activeAlertZone={effectiveAlertZone}
                     voiceEnabled={voiceEnabled}
                     onToggleVoice={() => setVoiceEnabled(!voiceEnabled)}
-                    onStart={startNavigation}
+                    onStart={handleRequestStartTrip}
                     onPause={pauseNavigation}
                     onResume={resumeNavigation}
                     onReset={handleResetAll}
@@ -641,7 +698,7 @@ export function App() {
                     activeAlertZone={effectiveAlertZone}
                     voiceEnabled={voiceEnabled}
                     onToggleVoice={() => setVoiceEnabled(!voiceEnabled)}
-                    onStart={startNavigation}
+                    onStart={handleRequestStartTrip}
                     onPause={pauseNavigation}
                     onResume={resumeNavigation}
                     onReset={handleResetAll}
@@ -657,6 +714,7 @@ export function App() {
                     simSpeed={simSpeed}
                     onToggleSimSpeed={setSimSpeed}
                     focusPoint={focusPoint}
+                    onOpenAssistant={handleOpenAssistant}
                   />
                 )}
               </div>
@@ -780,6 +838,105 @@ export function App() {
         isOpen={isTipsDrawerOpen}
         onClose={() => setIsTipsDrawerOpen(false)}
       />
+
+      {/* Pre-Trip Calm Passenger Safety Notification Modal */}
+      {pendingTripBriefing && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Aviso tranquilo antes de iniciar viagem"
+          className="fixed inset-0 z-[2000] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-in fade-in duration-150"
+        >
+          <div className="w-full max-w-md rounded-3xl bg-white dark:bg-neutral-950 border-2 border-neutral-950 dark:border-white/25 shadow-2xl p-5 space-y-4">
+            <div className="flex items-start justify-between gap-3 border-b border-neutral-200 dark:border-neutral-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-500">
+                    {pendingTripBriefing.toneLabel}
+                  </span>
+                  <h3 className="text-sm font-extrabold text-neutral-950 dark:text-white leading-snug">
+                    {pendingTripBriefing.headline}
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPendingTripBriefing(null)}
+                className="p-1.5 rounded-full bg-neutral-100 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white"
+                aria-label="Fechar aviso"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs sm:text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">
+              {pendingTripBriefing.message}
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-2 pt-1">
+              <button
+                type="button"
+                onClick={handleConfirmStartTrip}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 text-xs font-extrabold flex items-center justify-center gap-1.5 hover:opacity-90 active:scale-98 transition-all shadow-sm"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span>Iniciar Viagem Agora</span>
+              </button>
+
+              {pendingTripBriefing.recommendSafeRoute && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPendingTripBriefing(null);
+                    handleAcceptReroute();
+                  }}
+                  className="py-2.5 px-3.5 rounded-xl border border-neutral-950 dark:border-white text-neutral-950 dark:text-white text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Usar Rota Segura</span>
+                </button>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setPendingTripBriefing(null);
+                handleOpenAssistant();
+              }}
+              className="w-full py-2 px-3 rounded-xl bg-neutral-100 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 text-[11px] font-semibold flex items-center justify-center gap-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Tirar dúvida na IA antes de sair</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Tempting Floating Chatbot Launcher Button */}
+      <button
+        type="button"
+        onClick={handleOpenAssistant}
+        aria-label="Abrir Chatbot SafeRoute IA"
+        className={`${
+          mobileView === 'ai' ? 'hidden lg:flex' : 'flex'
+        } fixed bottom-5 right-5 z-[1100] items-center gap-2.5 px-4 py-3 rounded-full bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border border-white/20 dark:border-neutral-950/20 shadow-[0_14px_38px_rgba(0,0,0,0.38)] hover:scale-105 active:scale-95 transition-all group`}
+      >
+        <div className="relative flex items-center justify-center">
+          <MessageCircle className="w-5 h-5" />
+          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-white dark:bg-neutral-950 ring-2 ring-neutral-950 dark:ring-white animate-pulse" />
+        </div>
+        <div className="text-left leading-tight">
+          <div className="text-xs font-extrabold tracking-tight flex items-center gap-1">
+            <span>SafeRoute IA</span>
+            <Sparkles className="w-3 h-3" />
+          </div>
+          <div className="text-[10px] opacity-75">Perguntar ou Emergência</div>
+        </div>
+      </button>
 
       <Footer />
     </div>
