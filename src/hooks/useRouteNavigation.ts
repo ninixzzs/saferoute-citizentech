@@ -1,18 +1,30 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { NavigationRoute, DangerZone } from '../types';
 import { PRESET_ROUTES } from '../data/mockData';
-import { geocodeAddress, calculateRoutesToDestination, LocationSuggestion } from '../services/routingService';
+import {
+  geocodeAddress,
+  calculateRoutesBetweenPoints,
+  LocationSuggestion,
+  DEFAULT_ORIGIN,
+  DEFAULT_DESTINATION,
+} from '../services/routingService';
 
 export function useRouteNavigation() {
   const [routes, setRoutes] = useState<NavigationRoute[]>(PRESET_ROUTES);
-  const [selectedRoute, setSelectedRoute] = useState<NavigationRoute>(PRESET_ROUTES[0]); // default fast
+  const [selectedRoute, setSelectedRoute] = useState<NavigationRoute>(PRESET_ROUTES[0]);
   const [isNavigating, setIsNavigating] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
   const [currentPosition, setCurrentPosition] = useState<[number, number]>(selectedRoute.path[0]);
   const [speedKmH, setSpeedKmH] = useState<number>(0);
   const [isCalculatingRoute, setIsCalculatingRoute] = useState<boolean>(false);
-  const [currentDestination, setCurrentDestination] = useState<LocationSuggestion | null>(null);
+
+  // Origin & Destination state
+  const [originLocation, setOriginLocation] = useState<LocationSuggestion>(DEFAULT_ORIGIN);
+  const [destinationLocation, setDestinationLocation] = useState<LocationSuggestion>(DEFAULT_DESTINATION);
+
+  // Simulation pacing: '1x' (realistic normal speed) or '2x'
+  const [simSpeed, setSimSpeed] = useState<'1x' | '2x'>('1x');
 
   const timerRef = useRef<number | null>(null);
 
@@ -34,13 +46,13 @@ export function useRouteNavigation() {
     setCurrentPosition(safeRoute.path[0]);
     setIsNavigating(true);
     setIsPaused(false);
-    setSpeedKmH(45);
+    setSpeedKmH(42);
   }, [routes]);
 
   const startNavigation = useCallback(() => {
     setIsNavigating(true);
     setIsPaused(false);
-    setSpeedKmH(42);
+    setSpeedKmH(40);
   }, []);
 
   const pauseNavigation = useCallback(() => {
@@ -50,7 +62,7 @@ export function useRouteNavigation() {
 
   const resumeNavigation = useCallback(() => {
     setIsPaused(false);
-    setSpeedKmH(42);
+    setSpeedKmH(40);
   }, []);
 
   const resetNavigation = useCallback(() => {
@@ -61,24 +73,20 @@ export function useRouteNavigation() {
     setSpeedKmH(0);
   }, [selectedRoute]);
 
-  // Calculate new route dynamically for any user address
-  const calculateRouteForAddress = useCallback(
-    async (destinationAddress: string, dangerZones: DangerZone[]) => {
-      if (!destinationAddress.trim()) return null;
+  // Calculate routes between Origin and Destination
+  const calculateJourney = useCallback(
+    async (originText: string, destinationText: string, dangerZones: DangerZone[]) => {
+      if (!destinationText.trim()) return null;
       setIsCalculatingRoute(true);
       try {
-        const location = await geocodeAddress(destinationAddress);
-        // Start from current position or Paulista / Consolação default
-        const origin: [number, number] = [-23.5587, -46.6601];
-        const newRoutes = await calculateRoutesToDestination(
-          origin,
-          location.coordinates,
-          location.name,
-          dangerZones
-        );
+        const originLoc = await geocodeAddress(originText || 'Avenida Paulista', originLocation);
+        const destLoc = await geocodeAddress(destinationText, destinationLocation);
 
+        const newRoutes = await calculateRoutesBetweenPoints(originLoc, destLoc, dangerZones);
+
+        setOriginLocation(originLoc);
+        setDestinationLocation(destLoc);
         setRoutes(newRoutes);
-        setCurrentDestination(location);
 
         // Select the recommended safe route by default
         const safeRoute = newRoutes.find((r) => r.type === 'segura') || newRoutes[0];
@@ -89,21 +97,32 @@ export function useRouteNavigation() {
         setIsPaused(false);
         setSpeedKmH(0);
 
-        return location;
+        return { origin: originLoc, destination: destLoc, routes: newRoutes };
       } catch (err) {
-        console.error('Erro ao calcular rota:', err);
+        console.error('Erro ao calcular jornada:', err);
         return null;
       } finally {
         setIsCalculatingRoute(false);
       }
     },
-    []
+    [originLocation, destinationLocation]
+  );
+
+  // Invert origin and destination
+  const swapOriginAndDestination = useCallback(
+    async (dangerZones: DangerZone[]) => {
+      const newOrigin = destinationLocation;
+      const newDest = originLocation;
+      return calculateJourney(newOrigin.name, newDest.name, dangerZones);
+    },
+    [originLocation, destinationLocation, calculateJourney]
   );
 
   // Restore preset default routes
   const resetToPresetRoutes = useCallback(() => {
     setRoutes(PRESET_ROUTES);
-    setCurrentDestination(null);
+    setOriginLocation(DEFAULT_ORIGIN);
+    setDestinationLocation(DEFAULT_DESTINATION);
     setSelectedRoute(PRESET_ROUTES[0]);
     setCurrentStepIndex(0);
     setCurrentPosition(PRESET_ROUTES[0].path[0]);
@@ -112,22 +131,23 @@ export function useRouteNavigation() {
     setSpeedKmH(0);
   }, []);
 
-  // Simulation timer loop
+  // Realistic normal speed simulation loop
   useEffect(() => {
     if (!isNavigating || isPaused) {
       if (timerRef.current) clearInterval(timerRef.current);
       return;
     }
 
-    const interval = 2200; // Step every 2.2s
+    // Normal realistic pacing: 2400ms per step for 1x, 1200ms for 2x
+    const stepInterval = simSpeed === '1x' ? 2400 : 1200;
 
     timerRef.current = window.setInterval(() => {
       setCurrentStepIndex((prevIndex) => {
         const nextIndex = prevIndex + 1;
         if (nextIndex < selectedRoute.path.length) {
           setCurrentPosition(selectedRoute.path[nextIndex]);
-          // Vary speed realistically (between 38 and 54 km/h)
-          setSpeedKmH(Math.floor(38 + Math.random() * 16));
+          // Vary speed realistically within normal city limits (36 to 48 km/h)
+          setSpeedKmH(Math.floor(36 + Math.random() * 12));
           return nextIndex;
         } else {
           // Reached destination
@@ -136,12 +156,12 @@ export function useRouteNavigation() {
           return prevIndex;
         }
       });
-    }, interval);
+    }, stepInterval);
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isNavigating, isPaused, selectedRoute]);
+  }, [isNavigating, isPaused, selectedRoute, simSpeed]);
 
   const progressPercentage = Math.round(
     (currentStepIndex / Math.max(1, selectedRoute.path.length - 1)) * 100
@@ -152,12 +172,16 @@ export function useRouteNavigation() {
     selectedRoute,
     selectRoute,
     switchImmediatelyToSafeRoute,
-    calculateRouteForAddress,
+    calculateJourney,
+    swapOriginAndDestination,
     resetToPresetRoutes,
-    currentDestination,
+    originLocation,
+    destinationLocation,
     isCalculatingRoute,
     isNavigating,
     isPaused,
+    simSpeed,
+    setSimSpeed,
     currentStepIndex,
     currentPosition,
     speedKmH,

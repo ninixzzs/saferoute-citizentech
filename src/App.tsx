@@ -42,12 +42,16 @@ export function App() {
     selectedRoute,
     selectRoute,
     switchImmediatelyToSafeRoute,
-    calculateRouteForAddress,
+    calculateJourney,
+    swapOriginAndDestination,
     resetToPresetRoutes,
-    currentDestination,
+    originLocation,
+    destinationLocation,
     isCalculatingRoute,
     isNavigating,
     isPaused,
+    simSpeed,
+    setSimSpeed,
     currentPosition,
     speedKmH,
     progressPercentage,
@@ -150,10 +154,14 @@ export function App() {
               onAcceptReroute={handleAcceptReroute}
               onDismissAlert={dismissAlert}
               onOpenReportModal={() => setIsReportModalOpen(true)}
-              onSearchDestination={(addr) => calculateRouteForAddress(addr, dangerZones)}
+              originLocation={originLocation}
+              destinationLocation={destinationLocation}
+              onCalculateJourney={(orig, dest) => calculateJourney(orig, dest, dangerZones)}
+              onSwapLocations={() => swapOriginAndDestination(dangerZones)}
               isCalculatingRoute={isCalculatingRoute}
-              currentDestination={currentDestination}
               onResetPresetRoutes={resetToPresetRoutes}
+              simSpeed={simSpeed}
+              onToggleSimSpeed={setSimSpeed}
             />
           </div>
 
@@ -166,10 +174,14 @@ export function App() {
                 selectedRouteId={selectedRoute.id}
                 onSelectRoute={selectRoute}
                 isNavigating={isNavigating}
-                onSearchDestination={(addr) => calculateRouteForAddress(addr, dangerZones)}
+                originLocation={originLocation}
+                destinationLocation={destinationLocation}
+                onCalculateJourney={(orig, dest) => calculateJourney(orig, dest, dangerZones)}
+                onSwapLocations={() => swapOriginAndDestination(dangerZones)}
                 isCalculatingRoute={isCalculatingRoute}
-                currentDestination={currentDestination}
                 onResetPresetRoutes={resetToPresetRoutes}
+                simSpeed={simSpeed}
+                onToggleSimSpeed={setSimSpeed}
               />
             </div>
 

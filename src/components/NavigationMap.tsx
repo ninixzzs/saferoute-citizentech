@@ -25,6 +25,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const carMarkerRef = useRef<L.Marker | null>(null);
+  const originMarkerRef = useRef<L.Marker | null>(null);
   const destinationMarkerRef = useRef<L.Marker | null>(null);
   const routePolylineRef = useRef<L.Polyline | null>(null);
   const routeGlowRef = useRef<L.Polyline | null>(null);
@@ -152,6 +153,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
 
     if (routeGlowRef.current) routeGlowRef.current.remove();
     if (routePolylineRef.current) routePolylineRef.current.remove();
+    if (originMarkerRef.current) originMarkerRef.current.remove();
     if (destinationMarkerRef.current) destinationMarkerRef.current.remove();
 
     const isSafe = selectedRoute.type === 'segura';
@@ -178,7 +180,36 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     }).addTo(map);
     routePolylineRef.current = mainLine;
 
-    // Destination Pin
+    // Origin Start Marker (Green Pin)
+    const originCoords = selectedRoute.path[0];
+    const originHtml = `
+      <div style="position: relative; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.6));">
+        <div style="
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: #10b981;
+          border: 3px solid #ffffff;
+          box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+        "></div>
+      </div>
+    `;
+    const originIcon = L.divIcon({
+      html: originHtml,
+      className: 'origin-pin-marker',
+      iconSize: [28, 28],
+      iconAnchor: [14, 14],
+    });
+    const originMarker = L.marker(originCoords, { icon: originIcon }).addTo(map);
+    originMarker.bindPopup(`
+      <div style="font-family: system-ui, sans-serif; font-size: 12px; color: #171717; padding: 2px;">
+        <strong style="color: #10b981;">🟢 Ponto de Partida</strong>
+        <p style="margin: 3px 0 0; font-size: 11px;">Início da rota calculada</p>
+      </div>
+    `);
+    originMarkerRef.current = originMarker;
+
+    // Destination Pin (Red Pin)
     const destCoords = selectedRoute.path[selectedRoute.path.length - 1];
     const destHtml = `
       <div style="position: relative; width: 34px; height: 42px; display: flex; flex-direction: column; align-items: center; justify-content: center; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.6));">

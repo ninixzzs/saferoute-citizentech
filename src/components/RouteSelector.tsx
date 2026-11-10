@@ -1,17 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavigationRoute } from '../types';
-import { LocationSuggestion, POPULAR_DESTINATIONS } from '../services/routingService';
-import { Clock, MapPin, Search, Loader2, Navigation, RotateCcw, Sparkles } from 'lucide-react';
+import { LocationSuggestion, POPULAR_LOCATIONS } from '../services/routingService';
+import {
+  Clock,
+  MapPin,
+  Search,
+  Loader2,
+  Navigation,
+  ArrowUpDown,
+  RotateCcw,
+  ShieldCheck,
+  Gauge
+} from 'lucide-react';
 
 interface RouteSelectorProps {
   routes: NavigationRoute[];
   selectedRouteId: string;
   onSelectRoute: (route: NavigationRoute) => void;
   isNavigating: boolean;
-  onSearchDestination?: (address: string) => Promise<any> | void;
+  originLocation: LocationSuggestion;
+  destinationLocation: LocationSuggestion;
+  onCalculateJourney: (originText: string, destinationText: string) => Promise<any> | void;
+  onSwapLocations: () => void;
   isCalculatingRoute?: boolean;
-  currentDestination?: LocationSuggestion | null;
   onResetPresetRoutes?: () => void;
+  simSpeed: '1x' | '2x';
+  onToggleSimSpeed: (speed: '1x' | '2x') => void;
 }
 
 export const RouteSelector: React.FC<RouteSelectorProps> = ({
@@ -19,126 +33,194 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
   selectedRouteId,
   onSelectRoute,
   isNavigating,
-  onSearchDestination,
+  originLocation,
+  destinationLocation,
+  onCalculateJourney,
+  onSwapLocations,
   isCalculatingRoute = false,
-  currentDestination = null,
   onResetPresetRoutes,
+  simSpeed,
+  onToggleSimSpeed,
 }) => {
-  const [addressInput, setAddressInput] = useState('');
+  const [originInput, setOriginInput] = useState(originLocation.name);
+  const [destinationInput, setDestinationInput] = useState(destinationLocation.name);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
+  // Sync inputs when props change
+  useEffect(() => {
+    setOriginInput(originLocation.name);
+  }, [originLocation]);
+
+  useEffect(() => {
+    setDestinationInput(destinationLocation.name);
+  }, [destinationLocation]);
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!addressInput.trim() || isNavigating || !onSearchDestination) return;
-    onSearchDestination(addressInput.trim());
+    if (isNavigating || isCalculatingRoute) return;
+    onCalculateJourney(originInput, destinationInput);
   };
 
-  const handleQuickDestinationClick = (dest: LocationSuggestion) => {
-    if (isNavigating || !onSearchDestination) return;
-    setAddressInput(dest.name);
-    onSearchDestination(dest.address);
+  const handleQuickDestination = (dest: LocationSuggestion) => {
+    if (isNavigating || isCalculatingRoute) return;
+    setDestinationInput(dest.name);
+    onCalculateJourney(originInput, dest.name);
   };
 
   return (
     <div className="space-y-4">
-      {/* 1. Address Search Bar for custom route tracing */}
-      <div className="space-y-2.5 bg-neutral-950 p-3.5 rounded-xl border border-neutral-800">
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-bold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
-            <Navigation className="w-3.5 h-3.5 text-neutral-400" />
-            <span>Traçar Rota para Qualquer Endereço</span>
-          </label>
-          {currentDestination && onResetPresetRoutes && !isNavigating && (
+      {/* 1. Professional Route Planner Card (Origin & Destination) */}
+      <div className="bg-neutral-950 p-4 rounded-2xl border border-neutral-800 space-y-3.5 shadow-sm">
+        <div className="flex items-center justify-between border-b border-neutral-800/80 pb-2.5">
+          <div className="flex items-center gap-2">
+            <Navigation className="w-4 h-4 text-emerald-400" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-white">
+              Planejamento de Trajeto
+            </h3>
+          </div>
+
+          {onResetPresetRoutes && !isNavigating && (
             <button
               onClick={() => {
-                setAddressInput('');
                 onResetPresetRoutes();
               }}
               className="text-[11px] text-neutral-400 hover:text-neutral-200 flex items-center gap-1 transition-colors"
-              title="Restaurar rotas padrão de demonstração"
+              title="Restaurar rota padrão"
             >
               <RotateCcw className="w-3 h-3" />
-              <span>Rotas padrão</span>
+              <span>Restaurar</span>
             </button>
           )}
         </div>
 
-        {/* Input & Submit Form */}
-        <form onSubmit={handleSearchSubmit} className="relative flex items-center gap-2">
-          <div className="relative flex-1">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
-              <Search className="w-4 h-4" />
+        {/* Inputs Form with Connected Connector Line */}
+        <form onSubmit={handleSubmit} className="space-y-2.5">
+          <div className="relative space-y-2">
+            {/* Visual connector line between origin and destination */}
+            <div className="absolute left-3.5 top-6 bottom-6 w-0.5 bg-neutral-700/60 pointer-events-none"></div>
+
+            {/* Origin Input */}
+            <div className="relative flex items-center">
+              <div className="absolute left-3 z-10 flex items-center justify-center">
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-950"></div>
+              </div>
+              <input
+                type="text"
+                value={originInput}
+                onChange={(e) => setOriginInput(e.target.value)}
+                placeholder="Ponto de partida (ex: Av. Paulista)..."
+                disabled={isNavigating || isCalculatingRoute}
+                className="w-full pl-9 pr-3 py-2 bg-neutral-900 border border-neutral-700/80 rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-400 focus:ring-1 focus:ring-neutral-400 transition-all font-medium disabled:opacity-50"
+              />
             </div>
-            <input
-              type="text"
-              value={addressInput}
-              onChange={(e) => setAddressInput(e.target.value)}
-              placeholder="Digite qualquer endereço, rua ou bairro (SP)..."
-              disabled={isNavigating || isCalculatingRoute}
-              className="w-full pl-9 pr-3 py-2 bg-neutral-900 border border-neutral-700 focus:border-neutral-400 rounded-lg text-xs text-white placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-neutral-400 transition-all disabled:opacity-50"
-            />
+
+            {/* Destination Input & Swap Button */}
+            <div className="relative flex items-center gap-2">
+              <div className="relative flex-1">
+                <div className="absolute left-3 z-10 flex items-center justify-center">
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-red-950"></div>
+                </div>
+                <input
+                  type="text"
+                  value={destinationInput}
+                  onChange={(e) => setDestinationInput(e.target.value)}
+                  placeholder="Destino final (ex: Brás, Faria Lima, Ibirapuera)..."
+                  disabled={isNavigating || isCalculatingRoute}
+                  className="w-full pl-9 pr-3 py-2 bg-neutral-900 border border-neutral-700/80 rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-400 focus:ring-1 focus:ring-neutral-400 transition-all font-medium disabled:opacity-50"
+                />
+              </div>
+
+              {/* Invert button */}
+              <button
+                type="button"
+                onClick={onSwapLocations}
+                disabled={isNavigating || isCalculatingRoute}
+                className="p-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-neutral-400 hover:text-white transition-colors disabled:opacity-50 shrink-0"
+                title="Inverter ponto de partida e destino"
+              >
+                <ArrowUpDown className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={!addressInput.trim() || isNavigating || isCalculatingRoute}
-            className="px-3.5 py-2 bg-white text-neutral-950 font-bold text-xs rounded-lg hover:bg-neutral-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0 shadow-sm"
-          >
-            {isCalculatingRoute ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>Calculando...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Traçar Rota</span>
-              </>
-            )}
-          </button>
+          {/* Action Row: Simulation Speed & Calculate Button */}
+          <div className="pt-1 flex items-center justify-between gap-2">
+            {/* Speed selection */}
+            <div className="flex items-center gap-1 bg-neutral-900 p-1 rounded-lg border border-neutral-800 text-[11px]">
+              <Gauge className="w-3.5 h-3.5 text-neutral-400 ml-1" />
+              <button
+                type="button"
+                onClick={() => onToggleSimSpeed('1x')}
+                className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                  simSpeed === '1x'
+                    ? 'bg-neutral-800 text-white shadow-xs'
+                    : 'text-neutral-500 hover:text-neutral-300'
+                }`}
+              >
+                1x Normal
+              </button>
+              <button
+                type="button"
+                onClick={() => onToggleSimSpeed('2x')}
+                className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                  simSpeed === '2x'
+                    ? 'bg-neutral-800 text-white shadow-xs'
+                    : 'text-neutral-500 hover:text-neutral-300'
+                }`}
+              >
+                2x Rápido
+              </button>
+            </div>
+
+            {/* Calculate Button */}
+            <button
+              type="submit"
+              disabled={!destinationInput.trim() || isNavigating || isCalculatingRoute}
+              className="px-4 py-2 bg-white text-neutral-950 font-bold text-xs rounded-xl hover:bg-neutral-200 transition-all active:scale-98 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-sm"
+            >
+              {isCalculatingRoute ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Calculando...</span>
+                </>
+              ) : (
+                <>
+                  <Search className="w-3.5 h-3.5" />
+                  <span>Calcular Trajeto</span>
+                </>
+              )}
+            </button>
+          </div>
         </form>
 
-        {/* Quick Suggestion Chips */}
-        <div className="pt-1">
+        {/* Quick Location Chips */}
+        <div className="pt-1 border-t border-neutral-900">
           <div className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold mb-1.5">
-            Sugestões rápidas:
+            Destinos frequentes:
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {POPULAR_DESTINATIONS.slice(0, 6).map((dest) => (
+            {POPULAR_LOCATIONS.slice(0, 6).map((loc) => (
               <button
-                key={dest.name}
+                key={loc.name}
                 type="button"
                 disabled={isNavigating || isCalculatingRoute}
-                onClick={() => handleQuickDestinationClick(dest)}
-                className="px-2 py-1 rounded bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 text-[11px] text-neutral-300 transition-colors disabled:opacity-50"
+                onClick={() => handleQuickDestination(loc)}
+                className="px-2.5 py-1 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 text-[11px] text-neutral-300 transition-colors disabled:opacity-50"
               >
-                {dest.name}
+                {loc.name}
               </button>
             ))}
           </div>
         </div>
-
-        {/* Active custom destination banner */}
-        {currentDestination && (
-          <div className="mt-2 p-2 bg-neutral-900/80 border border-neutral-700/60 rounded-lg text-[11px] flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-neutral-300">
-              <MapPin className="w-3.5 h-3.5 text-red-400 shrink-0" />
-              <span className="font-semibold text-white truncate max-w-[240px]">
-                {currentDestination.name}
-              </span>
-            </div>
-            <span className="text-[10px] font-mono text-neutral-400">Personalizado</span>
-          </div>
-        )}
       </div>
 
-      {/* 2. Routes List */}
+      {/* 2. Routes Options List */}
       <div className="space-y-2.5">
         <div className="flex items-center justify-between border-b border-neutral-800 pb-2">
           <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400">
-            {currentDestination ? 'Opções de Rota Calculadas' : 'Trajetos Disponíveis (SP)'}
+            Opções de Trajeto Analisadas
           </h3>
           <span className="text-[11px] text-neutral-500 font-mono">
-            {routes.length} opções
+            {routes.length} opções disponíveis
           </span>
         </div>
 
@@ -151,10 +233,10 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
               <div
                 key={route.id}
                 onClick={() => !isNavigating && onSelectRoute(route)}
-                className={`p-3 rounded-xl border transition-all cursor-pointer ${
+                className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-neutral-900 border-neutral-300 ring-1 ring-neutral-400/20'
-                    : 'bg-neutral-950 border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/50'
+                    ? 'bg-neutral-900 border-neutral-300 ring-1 ring-neutral-400/20 shadow-md'
+                    : 'bg-neutral-950 border-neutral-800/80 hover:border-neutral-700 hover:bg-neutral-900/50'
                 } ${isNavigating ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 <div className="flex items-start justify-between gap-2">
@@ -164,8 +246,9 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
                         {route.name}
                       </span>
                       {isSafe && (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-neutral-100 text-neutral-950 uppercase tracking-tight">
-                          Recomendado
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 uppercase tracking-tight flex items-center gap-1">
+                          <ShieldCheck className="w-3 h-3" />
+                          <span>Recomendado</span>
                         </span>
                       )}
                     </div>
@@ -181,18 +264,31 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
                     </div>
                   </div>
 
-                  {/* Score tag */}
+                  {/* Safety Score */}
                   <div className="text-right">
-                    <span className="text-xs font-mono font-bold text-neutral-200">
+                    <span className={`text-xs font-mono font-bold ${
+                      route.safetyScore >= 85 ? 'text-emerald-400' : route.safetyScore >= 65 ? 'text-amber-400' : 'text-neutral-300'
+                    }`}>
                       {route.safetyScore}/100
                     </span>
-                    <span className="block text-[10px] text-neutral-500">segurança</span>
+                    <span className="block text-[10px] text-neutral-500 font-sans">segurança</span>
                   </div>
                 </div>
 
                 <p className="text-[11px] text-neutral-400 mt-2 leading-relaxed">
                   {route.description}
                 </p>
+
+                {route.highlights && route.highlights.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-neutral-800/60 flex flex-wrap gap-2 text-[10px] text-neutral-400">
+                    {route.highlights.map((h, i) => (
+                      <span key={i} className="flex items-center gap-1">
+                        <span className="w-1 h-1 rounded-full bg-neutral-600"></span>
+                        <span>{h}</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
