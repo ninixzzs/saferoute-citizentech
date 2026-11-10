@@ -26,7 +26,8 @@ import {
   ListChecks,
   Navigation,
   MessageSquareWarning,
-  MessageSquare,
+  Sparkles,
+  ArrowRight,
 } from 'lucide-react';
 
 export function App() {
@@ -91,6 +92,7 @@ export function App() {
   // Workspace states
   const [viewMode, setViewMode] = useState<'map' | 'phone'>('map');
   const [sidebarTab, setSidebarTab] = useState<'routes' | 'itinerary' | 'alerts' | 'messages'>('routes');
+  const [assistantFocusTrigger, setAssistantFocusTrigger] = useState(0);
   const [focusPoint, setFocusPoint] = useState<{ coords: [number, number]; ts: number } | null>(null);
   const [simulatedAlertZone, setSimulatedAlertZone] = useState<DangerZone | null>(null);
 
@@ -147,6 +149,16 @@ export function App() {
       speakAlert(
         `Alerta Defesa Civil: Área de risco próxima em ${targetZone.neighborhood}. ${targetZone.defenseCivilTip}`
       );
+    }
+  };
+
+  const handleOpenAssistant = () => {
+    setSidebarTab('messages');
+    setAssistantFocusTrigger((n) => n + 1);
+    if (window.innerWidth < 1024) {
+      setTimeout(() => {
+        document.getElementById('info-hub-mobile')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 60);
     }
   };
 
@@ -268,6 +280,36 @@ export function App() {
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* Prominent Featured AI Assistant & All-São-Paulo Coverage Strip */}
+          <div className="mt-3.5 pt-3.5 border-t border-neutral-200/80 dark:border-neutral-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start sm:items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0 shadow-xs">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs font-bold text-neutral-950 dark:text-white flex flex-wrap items-center gap-1.5">
+                  <span>Assistente de IA Pré-Viagem &amp; SMS</span>
+                  <span className="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-[10px] font-mono text-neutral-700 dark:text-neutral-300">
+                    Resposta na hora
+                  </span>
+                </div>
+                <p className="text-[11px] text-neutral-600 dark:text-neutral-400 leading-snug mt-0.5">
+                  Consulte qualquer bairro de São Paulo (Centro, Sul, Norte, Leste, Oeste e Marginais) antes de sair, com orientação calma e sem pânico.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleOpenAssistant}
+              className="px-4 py-2.5 rounded-xl bg-neutral-950 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-neutral-950 text-xs font-bold shadow-sm flex items-center justify-center gap-2 shrink-0 transition-all active:scale-97"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Perguntar à IA agora</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </section>
 
@@ -400,14 +442,14 @@ export function App() {
                 role="tab"
                 aria-selected={sidebarTab === 'messages'}
                 onClick={() => setSidebarTab('messages')}
-                className={`py-2.5 px-1.5 rounded-2xl text-xs font-semibold flex items-center justify-center gap-1 transition-all duration-200 ${
+                className={`py-2.5 px-1.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-1 transition-all duration-200 ${
                   sidebarTab === 'messages'
                     ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
-                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
+                    : 'text-neutral-950 dark:text-white bg-white/80 dark:bg-neutral-950/60 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-200/70 dark:hover:bg-neutral-800'
                 }`}
               >
-                <MessageSquare className="w-3.5 h-3.5 shrink-0" />
-                <span>Mensagens</span>
+                <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                <span>IA &amp; SMS</span>
               </button>
             </div>
 
@@ -465,6 +507,7 @@ export function App() {
                   dangerZones={dangerZones}
                   incidents={incidents}
                   onSwitchToSafeRoute={handleAcceptReroute}
+                  focusInputTrigger={assistantFocusTrigger}
                 />
               )}
             </div>
@@ -543,9 +586,10 @@ export function App() {
             )}
           </div>
 
-          {/* Separated High-Contrast Details / Steps / Alerts Card Above Footer (for both Mapa and Modo Celular) */}
+          {/* Separated High-Contrast Details / Steps / Alerts / AI Card Above Footer (for both Mapa and Modo Celular) */}
           <section
-            aria-label="Detalhes da rota, passo a passo e alertas"
+            id="info-hub-mobile"
+            aria-label="Detalhes da rota, passo a passo, alertas e assistente IA"
             className="rounded-[28px] bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-[0_14px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_18px_48px_rgba(0,0,0,0.5)] overflow-hidden"
           >
             <div
@@ -606,11 +650,11 @@ export function App() {
                 className={`py-2.5 px-1.5 rounded-2xl text-xs font-bold flex flex-wrap items-center justify-center gap-1 text-center leading-tight transition-all ${
                   sidebarTab === 'messages'
                     ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
-                    : 'text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200/70 dark:hover:bg-neutral-800'
+                    : 'text-neutral-950 dark:text-white bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-200/70 dark:hover:bg-neutral-800'
                 }`}
               >
-                <MessageSquare className="w-3.5 h-3.5 shrink-0" />
-                <span>Mensagens</span>
+                <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                <span>IA &amp; SMS</span>
               </button>
             </div>
 
@@ -668,6 +712,7 @@ export function App() {
                   dangerZones={dangerZones}
                   incidents={incidents}
                   onSwitchToSafeRoute={handleAcceptReroute}
+                  focusInputTrigger={assistantFocusTrigger}
                 />
               )}
             </div>
