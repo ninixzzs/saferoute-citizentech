@@ -8,6 +8,7 @@ import {
   Contrast,
   RotateCcw,
   ChevronDown,
+  X,
 } from 'lucide-react';
 import { ThemeMode, FontSizeScale } from '../hooks/useAccessibility';
 
@@ -94,37 +95,56 @@ export const AccessibilityMenu: React.FC<AccessibilityMenuProps> = ({
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-label="Opções de acessibilidade e tema"
-        className="px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200 text-xs font-medium transition-colors flex items-center gap-1.5 shadow-2xs"
+        className="px-2 sm:px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-xs font-medium transition-colors flex items-center gap-1.5 shadow-2xs"
       >
-        <Accessibility className="w-3.5 h-3.5 text-neutral-900 dark:text-white" />
+        <Accessibility className="w-3.5 h-3.5 text-neutral-950 dark:text-white shrink-0" />
+        <span className="sm:hidden text-[11px] font-bold font-mono tracking-tight">Aa</span>
         <span className="hidden sm:inline">Acessibilidade</span>
         <ChevronDown className={`w-3 h-3 text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {/* Dropdown Panel */}
+      {/* Dropdown / Mobile Responsive Sheet */}
       {isOpen && (
-        <div
-          role="dialog"
-          aria-label="Configurações de Acessibilidade e Aparência"
-          className="absolute right-0 top-full mt-2 w-72 rounded-2xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-2xl p-4 space-y-4 z-50 text-neutral-900 dark:text-neutral-100 animate-in fade-in zoom-in-95 duration-150"
-        >
-          <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-2.5">
-            <div className="flex items-center gap-2">
-              <Accessibility className="w-4 h-4 text-neutral-900 dark:text-white" />
-              <span className="text-xs font-bold uppercase tracking-wider">
-                Acessibilidade & Tema
-              </span>
+        <>
+          {/* Mobile tap-away backdrop */}
+          <div
+            onClick={() => setIsOpen(false)}
+            className="fixed inset-0 bg-black/40 backdrop-blur-[1px] z-40 sm:hidden"
+            aria-hidden="true"
+          />
+
+          <div
+            role="dialog"
+            aria-label="Configurações de Acessibilidade e Aparência"
+            className="fixed inset-x-3 top-16 sm:inset-auto sm:absolute sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-80 max-w-md mx-auto rounded-2xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-2xl p-4 space-y-4 z-50 text-neutral-900 dark:text-neutral-100 animate-in fade-in zoom-in-95 duration-150 max-h-[calc(100dvh-5rem)] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-2.5">
+              <div className="flex items-center gap-2">
+                <Accessibility className="w-4 h-4 text-neutral-900 dark:text-white" />
+                <span className="text-xs font-bold uppercase tracking-wider">
+                  Acessibilidade & Tema
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={onReset}
+                  className="text-[11px] text-neutral-500 hover:text-neutral-900 dark:hover:text-white flex items-center gap-1 transition-colors px-1.5 py-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-900"
+                  title="Restaurar configurações padrão"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Padrão</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  className="sm:hidden p-1 rounded-lg bg-neutral-100 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300"
+                  aria-label="Fechar acessibilidade"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={onReset}
-              className="text-[11px] text-neutral-500 hover:text-neutral-900 dark:hover:text-white flex items-center gap-1 transition-colors"
-              title="Restaurar configurações padrão"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Padrão</span>
-            </button>
-          </div>
 
           {/* Theme Mode Selector */}
           <div className="space-y-2">
@@ -207,7 +227,8 @@ export const AccessibilityMenu: React.FC<AccessibilityMenuProps> = ({
               </span>
             </button>
           </div>
-        </div>
+          </div>
+        </>
       )}
     </div>
   );

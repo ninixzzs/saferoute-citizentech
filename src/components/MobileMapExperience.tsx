@@ -260,7 +260,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
   };
 
   return (
-    <div className="relative w-full h-[76dvh] min-h-[540px] max-h-[780px] rounded-3xl overflow-hidden border border-neutral-200 dark:border-neutral-800 shadow-2xl bg-neutral-900 select-none">
+    <div className="relative w-full h-[76dvh] min-h-[540px] max-h-[780px] rounded-[28px] overflow-hidden border border-neutral-200/90 dark:border-neutral-800/90 shadow-[0_18px_50px_rgba(0,0,0,0.16)] dark:shadow-[0_22px_60px_rgba(0,0,0,0.65)] bg-neutral-900 select-none">
       {/* 1. Edge-to-Edge Live Interactive Map */}
       <NavigationMap
         currentPosition={currentPosition}
@@ -628,8 +628,8 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
       <div
         onMouseDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
-        className={`absolute bottom-0 left-0 right-0 z-[420] bg-white/96 dark:bg-neutral-950/96 backdrop-blur-xl border-t border-neutral-200 dark:border-neutral-800 rounded-t-3xl shadow-[0_-12px_40px_rgba(0,0,0,0.22)] transition-all duration-300 flex flex-col ${
-          sheetExpanded ? 'h-[66%]' : 'h-auto'
+        className={`absolute bottom-0 left-0 right-0 z-[420] bg-white/96 dark:bg-neutral-950/96 backdrop-blur-xl border-t border-neutral-200 dark:border-neutral-800 rounded-t-[28px] shadow-[0_-12px_40px_rgba(0,0,0,0.22)] transition-all duration-300 flex flex-col ${
+          sheetExpanded ? 'h-[68%]' : 'h-auto'
         }`}
       >
         {/* Drag Handle + Quick Section Switcher */}
@@ -673,7 +673,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
               <div className="flex items-baseline gap-2 tabular-nums">
-                <span className="text-xl font-extrabold font-mono text-neutral-950 dark:text-white">
+                <span className="font-display text-2xl font-extrabold tracking-tight text-neutral-950 dark:text-white">
                   {remainingMin} min
                 </span>
                 <span className="text-xs font-mono text-neutral-500">({remainingKm} km)</span>

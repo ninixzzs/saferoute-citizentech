@@ -111,7 +111,7 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
       className={
         isFullscreen
           ? 'fixed inset-0 z-50 w-screen h-screen bg-neutral-950 select-none'
-          : 'relative w-full h-[58vh] min-h-[420px] sm:h-[580px] lg:h-[680px] rounded-2xl sm:rounded-3xl overflow-hidden border border-neutral-200 dark:border-neutral-800 shadow-2xl bg-neutral-900 select-none'
+          : 'relative w-full h-[58vh] min-h-[420px] sm:h-[580px] lg:h-[680px] rounded-[28px] overflow-hidden border border-neutral-200/90 dark:border-neutral-800/90 shadow-[0_20px_60px_rgba(0,0,0,0.14)] dark:shadow-[0_24px_64px_rgba(0,0,0,0.65)] bg-neutral-900 select-none'
       }
     >
       {/* Main Interactive Map */}
@@ -250,7 +250,7 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2.5 flex-wrap tabular-nums">
-              <span className="text-xl font-extrabold font-mono min-w-[64px]">
+              <span className="font-display text-2xl font-extrabold tracking-tight min-w-[74px]">
                 {remainingMin} min
               </span>
               <span className="text-xs text-neutral-500 dark:text-neutral-400 font-mono min-w-[54px]">

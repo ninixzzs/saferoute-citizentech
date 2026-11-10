@@ -173,19 +173,19 @@ export function App() {
 
       {/* Main Content */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-5">
-        {/* Hero Header Section with Requested Title & Description */}
+        {/* Hero Header Section with Editorial Display Typography */}
         <section
           aria-label="Apresentação do SafeRoute"
-          className="rounded-3xl bg-white/90 dark:bg-neutral-900/85 border border-neutral-200 dark:border-neutral-800 backdrop-blur-xl p-4 sm:p-6 shadow-sm"
+          className="rounded-[28px] bg-white/95 dark:bg-neutral-950/88 border border-neutral-200/90 dark:border-neutral-800/90 backdrop-blur-xl p-4 sm:p-6 shadow-[0_8px_32px_rgba(0,0,0,0.05)] dark:shadow-[0_14px_44px_rgba(0,0,0,0.55)]"
         >
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3.5 sm:gap-5">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6">
             {/* Hero Title & Description */}
-            <div className="space-y-1.5 sm:space-y-2 max-w-2xl">
-              <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-neutral-950 dark:text-white leading-tight">
+            <div className="space-y-2 max-w-2xl">
+              <h1 className="font-display text-[25px] sm:text-[34px] lg:text-[38px] font-extrabold tracking-[-0.03em] text-neutral-950 dark:text-white leading-[1.08]">
                 Rotas que avisam antes do risco.
               </h1>
 
-              <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
+              <p className="text-xs sm:text-[15px] text-neutral-600 dark:text-neutral-400 leading-relaxed max-w-xl">
                 O SafeRoute compara o caminho mais rápido com um desvio seguro e manda uma mensagem
                 no celular quando você chega perto de uma área de risco em São Paulo.
               </p>
@@ -195,8 +195,8 @@ export function App() {
             <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-2.5 sm:gap-3 shrink-0 tabular-nums select-none">
               {/* Desktop Telemetry Pills */}
               <div className="hidden lg:flex flex-wrap items-center gap-2">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-100/90 dark:bg-neutral-950/80 border border-neutral-200 dark:border-neutral-800 text-xs">
-                  <Route className="w-3.5 h-3.5 text-neutral-900 dark:text-white" />
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-neutral-100/90 dark:bg-neutral-900/90 border border-neutral-200 dark:border-neutral-800 text-xs">
+                  <Route className="w-3.5 h-3.5 text-neutral-950 dark:text-white" />
                   <span className="font-mono font-bold text-neutral-950 dark:text-white">
                     {selectedRoute.distanceKm} km
                   </span>
@@ -206,8 +206,8 @@ export function App() {
                   </span>
                 </div>
 
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-100/90 dark:bg-neutral-950/80 border border-neutral-200 dark:border-neutral-800 text-xs">
-                  <ShieldCheck className="w-3.5 h-3.5 text-neutral-700 dark:text-neutral-300" />
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-100/90 dark:bg-neutral-900/90 border border-neutral-200 dark:border-neutral-800 text-xs">
+                  <ShieldCheck className="w-3.5 h-3.5 text-neutral-800 dark:text-neutral-200" />
                   <span className="text-neutral-500 dark:text-neutral-400">Segurança:</span>
                   <span className="font-mono font-bold text-neutral-950 dark:text-white">
                     {selectedRoute.safetyScore}/100
@@ -220,16 +220,16 @@ export function App() {
                 <div
                   role="tablist"
                   aria-label="Modo de visualização"
-                  className="inline-flex flex-1 sm:flex-initial items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800"
+                  className="inline-flex flex-1 sm:flex-initial items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
                 >
                   <button
                     type="button"
                     role="tab"
                     aria-selected={viewMode === 'map'}
                     onClick={() => setViewMode('map')}
-                    className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                    className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
                       viewMode === 'map'
-                        ? 'bg-white dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-xs ring-1 ring-neutral-200 dark:ring-neutral-700'
+                        ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-xs'
                         : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
                     }`}
                   >
@@ -241,9 +241,9 @@ export function App() {
                     role="tab"
                     aria-selected={viewMode === 'phone'}
                     onClick={() => setViewMode('phone')}
-                    className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                    className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
                       viewMode === 'phone'
-                        ? 'bg-white dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-xs ring-1 ring-neutral-200 dark:ring-neutral-700'
+                        ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-xs'
                         : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
                     }`}
                   >
@@ -255,7 +255,7 @@ export function App() {
                 <button
                   type="button"
                   onClick={handleTriggerDemoAlert}
-                  className="px-3 py-2 rounded-xl bg-neutral-950 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-neutral-950 text-xs font-semibold shadow-sm flex items-center justify-center gap-1.5 transition-all active:scale-98"
+                  className="px-3.5 py-2 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 hover:bg-neutral-100 dark:hover:bg-neutral-900 text-neutral-950 dark:text-white text-xs font-semibold shadow-2xs flex items-center justify-center gap-1.5 transition-all active:scale-97"
                   title="Simular recebimento de alerta da Defesa Civil no aparelho"
                 >
                   <MessageSquareWarning className="w-3.5 h-3.5" />
@@ -338,21 +338,21 @@ export function App() {
           {/* RIGHT: Information & Command Center (5 cols) */}
           <aside
             aria-label="Painel de informações e rotas"
-            className="lg:col-span-5 rounded-3xl bg-white/95 dark:bg-neutral-900/90 border border-neutral-200 dark:border-neutral-800 backdrop-blur-xl shadow-xl overflow-hidden flex flex-col"
+            className="lg:col-span-5 rounded-[28px] bg-white/95 dark:bg-neutral-950/90 border border-neutral-200/90 dark:border-neutral-800/90 backdrop-blur-xl shadow-[0_14px_44px_rgba(0,0,0,0.08)] dark:shadow-[0_20px_56px_rgba(0,0,0,0.55)] overflow-hidden flex flex-col"
           >
             <div
               role="tablist"
               aria-label="Seções de informação"
-              className="grid grid-cols-3 p-1.5 gap-1 bg-neutral-100/80 dark:bg-neutral-950/60 border-b border-neutral-200 dark:border-neutral-800 select-none"
+              className="grid grid-cols-3 p-1.5 gap-1 bg-neutral-100/90 dark:bg-neutral-900/90 border-b border-neutral-200 dark:border-neutral-800 select-none"
             >
               <button
                 type="button"
                 role="tab"
                 aria-selected={sidebarTab === 'routes'}
                 onClick={() => setSidebarTab('routes')}
-                className={`py-2 px-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                className={`py-2.5 px-2 rounded-2xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
                   sidebarTab === 'routes'
-                    ? 'bg-white dark:bg-neutral-900 text-neutral-950 dark:text-white shadow-sm ring-1 ring-neutral-200 dark:ring-neutral-700'
+                    ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
                     : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
                 }`}
               >
@@ -365,9 +365,9 @@ export function App() {
                 role="tab"
                 aria-selected={sidebarTab === 'itinerary'}
                 onClick={() => setSidebarTab('itinerary')}
-                className={`py-2 px-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                className={`py-2.5 px-2 rounded-2xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
                   sidebarTab === 'itinerary'
-                    ? 'bg-white dark:bg-neutral-900 text-neutral-950 dark:text-white shadow-sm ring-1 ring-neutral-200 dark:ring-neutral-700'
+                    ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
                     : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
                 }`}
               >
@@ -380,9 +380,9 @@ export function App() {
                 role="tab"
                 aria-selected={sidebarTab === 'alerts'}
                 onClick={() => setSidebarTab('alerts')}
-                className={`py-2 px-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                className={`py-2.5 px-2 rounded-2xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
                   sidebarTab === 'alerts'
-                    ? 'bg-white dark:bg-neutral-900 text-neutral-950 dark:text-white shadow-sm ring-1 ring-neutral-200 dark:ring-neutral-700'
+                    ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
                     : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
                 }`}
               >
