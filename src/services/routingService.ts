@@ -39,6 +39,11 @@ export const POPULAR_DESTINATIONS: LocationSuggestion[] = [
     coordinates: [-23.6261, -46.6564],
   },
   {
+    name: 'Aeroporto de Guarulhos (GRU)',
+    address: 'Rod. Hélio Smidt - Guarulhos, SP',
+    coordinates: [-23.4356, -46.4731],
+  },
+  {
     name: 'Vila Madalena',
     address: 'Rua Harmonia / Beco do Batman - Vila Madalena, São Paulo',
     coordinates: [-23.5574, -46.6865],
@@ -64,6 +69,11 @@ export const POPULAR_DESTINATIONS: LocationSuggestion[] = [
     coordinates: [-23.6000, -46.7201],
   },
   {
+    name: 'Allianz Parque',
+    address: 'Av. Francisco Matarazzo, 1705 - Água Branca, São Paulo',
+    coordinates: [-23.5275, -46.6784],
+  },
+  {
     name: 'Barra Funda',
     address: 'Terminal Barra Funda - Barra Funda, São Paulo',
     coordinates: [-23.5262, -46.6644],
@@ -83,21 +93,42 @@ export const POPULAR_DESTINATIONS: LocationSuggestion[] = [
     address: 'Largo da Batata - Pinheiros, São Paulo',
     coordinates: [-23.5676, -46.7022],
   },
+  {
+    name: 'Rua Oscar Freire',
+    address: 'Rua Oscar Freire, 800 - Jardins, São Paulo',
+    coordinates: [-23.5631, -46.6685],
+  },
 ];
 
 /**
  * Searches for coordinates based on query text.
  * 1. Checks matching local curated locations.
- * 2. Attempts OpenStreetMap Nominatim geocoding (with SP context).
- * 3. Fallbacks gracefully to pseudo-geocoded coordinates within São Paulo.
+ * 2. Parses direct coordinates (if user types "lat, lng").
+ * 3. OpenStreetMap Nominatim geocoding worldwide / Brazil.
+ * 4. Fallback algorithmically within São Paulo.
  */
 export async function geocodeAddress(query: string): Promise<LocationSuggestion> {
   const cleanQuery = query.trim();
   const lowerQuery = cleanQuery.toLowerCase();
 
-  // 1. Direct local match
+  // 1. Direct coordinate format check (e.g., "-23.55, -46.63")
+  const coordMatch = cleanQuery.match(/^(-?\d+(\.\d+)?)[,\s]+(-?\d+(\.\d+)?)$/);
+  if (coordMatch) {
+    const lat = parseFloat(coordMatch[1]);
+    const lon = parseFloat(coordMatch[3]);
+    if (!isNaN(lat) && !isNaN(lon)) {
+      return {
+        name: `Localização (${lat.toFixed(4)}, ${lon.toFixed(4)})`,
+        address: `${lat.toFixed(4)}, ${lon.toFixed(4)}`,
+        coordinates: [lat, lon],
+      };
+    }
+  }
+
+  // 2. Direct local match
   const localMatch = POPULAR_DESTINATIONS.find(
     (loc) =>
+      loc.name.toLowerCase() === lowerQuery ||
       loc.name.toLowerCase().includes(lowerQuery) ||
       loc.address.toLowerCase().includes(lowerQuery) ||
       lowerQuery.includes(loc.name.toLowerCase())
@@ -106,14 +137,15 @@ export async function geocodeAddress(query: string): Promise<LocationSuggestion>
     return localMatch;
   }
 
-  // 2. Try Nominatim Geocoding API (in browser)
+  // 3. Try Nominatim Geocoding API (in browser)
   try {
+    const searchQuery = cleanQuery.includes(',') ? cleanQuery : `${cleanQuery}, Brasil`;
     const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-      cleanQuery + ', São Paulo, Brasil'
+      searchQuery
     )}&limit=1&addressdetails=1`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500);
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
 
     const response = await fetch(searchUrl, {
       signal: controller.signal,
@@ -142,18 +174,18 @@ export async function geocodeAddress(query: string): Promise<LocationSuggestion>
     // Network or CORS issue, proceed to graceful fallback
   }
 
-  // 3. Fallback: Generate a plausible coordinate in São Paulo based on hash
+  // 4. Fallback: Generate a plausible coordinate based on string hash
   let hash = 0;
   for (let i = 0; i < cleanQuery.length; i++) {
     hash = (hash << 5) - hash + cleanQuery.charCodeAt(i);
     hash |= 0;
   }
-  const normHash1 = ((Math.abs(hash) % 1000) / 1000);
-  const normHash2 = ((Math.abs(hash >> 3) % 1000) / 1000);
+  const normHash1 = (Math.abs(hash) % 1000) / 1000;
+  const normHash2 = (Math.abs(hash >> 3) % 1000) / 1000;
 
-  // Lat between -23.52 and -23.60, Lng between -46.68 and -46.61 (Central / expanded SP)
-  const lat = -23.52 - normHash1 * 0.08;
-  const lng = -46.68 + normHash2 * 0.07;
+  // Lat between -23.51 and -23.63, Lng between -46.70 and -46.58
+  const lat = -23.51 - normHash1 * 0.12;
+  const lng = -46.70 + normHash2 * 0.12;
 
   return {
     name: cleanQuery,
@@ -171,7 +203,11 @@ function createGridPath(
   detourFactor: number = 0
 ): [number, number][] {
   const points: [number, number][] = [start];
-  const steps = 8;
+
+  const totalMeters = calculateDistanceMeters(start[0], start[1], end[0], end[1]);
+  // Steps proportional to distance: at least 7, at most 18 steps
+  const steps = Math.max(7, Math.min(18, Math.round(totalMeters / 450)));
+
   const dLat = (end[0] - start[0]) / steps;
   const dLng = (end[1] - start[1]) / steps;
 
@@ -183,7 +219,7 @@ function createGridPath(
     // Create an arch detour if factor != 0
     const arch = Math.sin((i / steps) * Math.PI) * detourFactor;
     // Add small zigzag to simulate city streets
-    const jitter = (i % 2 === 0 ? 0.0005 : -0.0005) * (detourFactor === 0 ? 1 : 0);
+    const jitter = (i % 2 === 0 ? 0.0004 : -0.0004) * (detourFactor === 0 ? 1 : 0);
 
     const lat = start[0] + dLat * i + perpLat * arch + jitter;
     const lng = start[1] + dLng * i + perpLng * arch;
@@ -232,14 +268,13 @@ export async function calculateRoutesToDestination(
   destinationName: string,
   dangerZones: DangerZone[]
 ): Promise<NavigationRoute[]> {
-  // Compute direct straight line distance in km
   const totalMeters = calculateDistanceMeters(
     origin[0],
     origin[1],
     destination[0],
     destination[1]
   );
-  const baseDistanceKm = Math.max(1.2, Number((totalMeters / 1000).toFixed(1)));
+  const baseDistanceKm = Math.max(1.1, Number((totalMeters / 1000).toFixed(1)));
 
   // Try real OSRM driving route if possible
   let osrmPath: [number, number][] | null = null;
@@ -255,7 +290,6 @@ export async function calculateRoutesToDestination(
       const data = await res.json();
       if (data.routes && data.routes.length > 0) {
         const coords = data.routes[0].geometry.coordinates;
-        // OSRM returns [lon, lat], convert to [lat, lon]
         osrmPath = coords.map((c: [number, number]) => [c[1], c[0]]);
       }
     }
@@ -267,48 +301,48 @@ export async function calculateRoutesToDestination(
   const fastPath = osrmPath && osrmPath.length > 4 ? osrmPath : createGridPath(origin, destination, 0);
   const fastDangers = findDangerZonesOnPath(fastPath, dangerZones, 200);
   const fastDistanceKm = baseDistanceKm;
-  const fastDurationMin = Math.max(4, Math.round(fastDistanceKm * 2.4));
+  const fastDurationMin = Math.max(4, Math.round(fastDistanceKm * 2.3));
   const fastSafetyScore = Math.max(35, 95 - fastDangers.length * 25);
 
   // 2. SafeRoute (Desvio Inteligente que afasta de zonas de risco)
-  const safeDetourFactor = fastDangers.length > 0 ? 1.8 : 0.8;
+  const safeDetourFactor = fastDangers.length > 0 ? 1.6 : 0.7;
   const safePath = createGridPath(origin, destination, safeDetourFactor);
-  const safeDangers = findDangerZonesOnPath(safePath, dangerZones, 50); // Minimal or 0
-  const safeDistanceKm = Number((fastDistanceKm * 1.15).toFixed(1));
+  const safeDangers = findDangerZonesOnPath(safePath, dangerZones, 50);
+  const safeDistanceKm = Number((fastDistanceKm * 1.12).toFixed(1));
   const safeDurationMin = fastDurationMin + (fastDangers.length > 0 ? 4 : 2);
-  const safeSafetyScore = Math.max(88, 98 - safeDangers.length * 8);
+  const safeSafetyScore = Math.max(88, 98 - safeDangers.length * 7);
 
   // 3. Alternative route (Via expressa contornando pelo outro lado)
   const altPath = createGridPath(origin, destination, -1.2);
   const altDangers = findDangerZonesOnPath(altPath, dangerZones, 100);
-  const altDistanceKm = Number((fastDistanceKm * 1.1).toFixed(1));
+  const altDistanceKm = Number((fastDistanceKm * 1.08).toFixed(1));
   const altDurationMin = fastDurationMin + 2;
   const altSafetyScore = Math.max(65, 90 - altDangers.length * 15);
 
   const routes: NavigationRoute[] = [
     {
       id: 'route-safe-custom',
-      name: `SafeRoute &bull; Destino: ${destinationName}`,
+      name: `SafeRoute (Recomendada) &bull; ${destinationName}`,
       type: 'segura',
       distanceKm: safeDistanceKm,
       durationMin: safeDurationMin,
       safetyScore: safeSafetyScore,
       dangerZoneIds: safeDangers.map((d) => d.id),
-      description: `Trajeto otimizado evitando ${
-        fastDangers.length > 0 ? fastDangers.map((z) => z.neighborhood).join(' e ') : 'áreas de alerta'
-      }. Corredores com iluminação e câmeras Smart Sampa.`,
+      description: `Trajeto monitorado evitando ${
+        fastDangers.length > 0 ? fastDangers.map((z) => z.neighborhood).join(' e ') : 'pontos de risco'
+      }. Corredores com iluminação LED e câmeras Smart Sampa.`,
       highlights: [
         safeDangers.length === 0
           ? '100% livre de zonas críticas de furto de smartphone'
-          : 'Desvio ativo contornando pontos de risco',
-        'Corredor monitorado pela PM e Defesa Civil',
-        `Apenas +${safeDurationMin - fastDurationMin} min de viagem por máxima segurança`,
+          : 'Desvio ativo contornando áreas críticas',
+        'Corredor monitorado com presença policial',
+        `Apenas +${safeDurationMin - fastDurationMin} min de viagem com máxima segurança`,
       ],
       path: safePath,
     },
     {
       id: 'route-fast-custom',
-      name: `Rota Direta (Mais Rápida) &bull; ${destinationName}`,
+      name: `Rota Mais Rápida &bull; ${destinationName}`,
       type: 'rapida',
       distanceKm: fastDistanceKm,
       durationMin: fastDurationMin,
@@ -316,12 +350,12 @@ export async function calculateRoutesToDestination(
       dangerZoneIds: fastDangers.map((d) => d.id),
       description:
         fastDangers.length > 0
-          ? `Menor tempo de tráfego, porém cruza ${fastDangers.length} zona(s) de atenção (${fastDangers.map((d) => d.neighborhood).join(', ')}).`
+          ? `Menor tempo de tráfego, porém cruza ${fastDangers.length} área(s) com relatos de furto (${fastDangers.map((d) => d.neighborhood).join(', ')}).`
           : 'Caminho direto via avenidas principais.',
       highlights: [
         'Menor tempo estimado de chegada',
         fastDangers.length > 0
-          ? `Atenção: cruza ${fastDangers.length} área(s) com registros de furto`
+          ? `Atenção: cruza ${fastDangers.length} área(s) de risco de furto`
           : 'Trânsito moderado nas vias principais',
         'Recomendado manter vidros fechados e travas ativas',
       ],
@@ -335,7 +369,7 @@ export async function calculateRoutesToDestination(
       durationMin: altDurationMin,
       safetyScore: altSafetyScore,
       dangerZoneIds: altDangers.map((d) => d.id),
-      description: 'Opção por vias arteriais secundárias com menor concentração de semáforos lentos.',
+      description: 'Opção por vias arteriais secundárias com tráfego mais espaçado.',
       highlights: [
         'Velocidade média constante',
         'Semáforos sincronizados',
