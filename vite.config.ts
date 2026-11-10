@@ -9,6 +9,25 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  esbuild: {
+    legalComments: 'none',
+    drop: ['console', 'debugger'],
+  },
+  build: {
+    sourcemap: false,
+    minify: 'esbuild',
+    cssMinify: true,
+    chunkSizeWarningLimit: 650,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          maps: ['leaflet'],
+          icons: ['lucide-react'],
+        },
+      },
+    },
+  },
   server: {
     port: 3000,
     open: false,

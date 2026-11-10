@@ -17,6 +17,7 @@ import {
   MapPin,
   X,
   AudioLines,
+  Navigation,
 } from 'lucide-react';
 import { DangerZone, IncidentReport, NavigationRoute } from '../types';
 import { SaoPauloZone } from '../data/saoPauloLocations';
@@ -41,6 +42,7 @@ interface SafetyAssistantChatProps {
   dangerZones: DangerZone[];
   incidents: IncidentReport[];
   onSwitchToSafeRoute: () => void;
+  onSelectCustomDestination?: (destinationName: string) => void;
   focusInputTrigger?: number;
 }
 
@@ -53,6 +55,7 @@ interface ChatMessage {
   nearbyPlaces?: NearbyPlaceResult[];
   suggestSafeRouteSwitch?: boolean;
   askFirstTimePlace?: string;
+  suggestedDestination?: string;
 }
 
 const SP_REGIONS: { label: string; zone: SaoPauloZone; prompt: string }[] = [
@@ -72,6 +75,7 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
   dangerZones,
   incidents,
   onSwitchToSafeRoute,
+  onSelectCustomDestination,
   focusInputTrigger = 0,
 }) => {
   const [phoneInput, setPhoneInput] = useState('');
@@ -141,6 +145,37 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
   useEffect(() => {
     pickWarmFemalePortugueseVoice();
   }, []);
+
+  // Sync assistant focus live whenever destinationLocation changes
+  useEffect(() => {
+    setLastTargetPlace(destinationLocation.name);
+    setMessages((prev) => {
+      if (prev.length === 1 && prev[0].id === 'welcome-msg') {
+        const refreshed = generateSafetyAssistantReply(
+          `Como está o trajeto para ${destinationLocation.name}?`,
+          {
+            origin: originLocation,
+            destination: destinationLocation,
+            selectedRoute,
+            allRoutes,
+            dangerZones,
+            incidents,
+          }
+        );
+        return [
+          {
+            ...prev[0],
+            toneLabel: refreshed.toneLabel,
+            text: `Olá! Que bom falar com você. Antes de iniciar sua rota até ${destinationLocation.name}, posso te orientar com calma sobre o caminho e lugares conhecidos por perto. É a sua primeira vez indo até lá?`,
+            nearbyPlaces: refreshed.nearbyPlaces,
+            suggestSafeRouteSwitch: refreshed.suggestSafeRouteSwitch,
+            askFirstTimePlace: destinationLocation.name,
+          },
+        ];
+      }
+      return prev;
+    });
+  }, [destinationLocation.name, originLocation.name, selectedRoute.id]);
 
   // Scoped internal chat scroll
   useEffect(() => {
@@ -230,6 +265,7 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
       nearbyPlaces: reply.nearbyPlaces,
       suggestSafeRouteSwitch: reply.suggestSafeRouteSwitch,
       askFirstTimePlace: reply.askFirstTimePlace,
+      suggestedDestination: reply.suggestedDestination,
     };
 
     setMessages((prev) => [...prev, userMsg, botMsg]);
@@ -261,6 +297,8 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
       recognition.continuous = false;
 
       let latestFinalTranscript = '';
+      let latestInterimTranscript = '';
+      let alreadySubmitted = false;
 
       recognition.onstart = () => {
         setIsListening(true);
@@ -277,12 +315,14 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
             interim += transcript;
           }
         }
+        latestInterimTranscript = interim.trim();
         const currentText = (latestFinalTranscript || interim).trim();
         if (currentText) {
           setLiveTranscript(currentText);
           setInputText(currentText);
         }
-        if (latestFinalTranscript.trim()) {
+        if (latestFinalTranscript.trim() && !alreadySubmitted) {
+          alreadySubmitted = true;
           const finalPrompt = latestFinalTranscript.trim();
           latestFinalTranscript = '';
           try {
@@ -290,6 +330,19 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
           } catch {}
           setIsListening(false);
           askAssistant(finalPrompt, { speakResponse: true });
+        }
+      };
+
+      // Fast commit when speaker finishes talking without waiting long trailing silence
+      recognition.onspeechend = () => {
+        const fastText = (latestFinalTranscript || latestInterimTranscript).trim();
+        if (fastText && !alreadySubmitted) {
+          alreadySubmitted = true;
+          try {
+            recognition.stop();
+          } catch {}
+          setIsListening(false);
+          askAssistant(fastText, { speakResponse: true });
         }
       };
 
@@ -558,6 +611,17 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
                       </li>
                     ))}
                   </ul>
+                )}
+
+                {msg.suggestedDestination && onSelectCustomDestination && (
+                  <button
+                    type="button"
+                    onClick={() => onSelectCustomDestination(msg.suggestedDestination!)}
+                    className="w-full mt-1 py-2.5 px-3 rounded-xl border border-neutral-950 dark:border-white bg-neutral-100 dark:bg-neutral-900 text-neutral-950 dark:text-white text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors"
+                  >
+                    <Navigation className="w-3.5 h-3.5" />
+                    <span>Traçar rota para {msg.suggestedDestination}</span>
+                  </button>
                 )}
 
                 {msg.suggestSafeRouteSwitch && selectedRoute.type !== 'segura' && (

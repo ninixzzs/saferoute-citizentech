@@ -507,6 +507,9 @@ export function App() {
                   dangerZones={dangerZones}
                   incidents={incidents}
                   onSwitchToSafeRoute={handleAcceptReroute}
+                  onSelectCustomDestination={(destName) =>
+                    calculateJourney(originLocation.name, destName, dangerZones)
+                  }
                   focusInputTrigger={assistantFocusTrigger}
                 />
               )}
@@ -712,6 +715,9 @@ export function App() {
                   dangerZones={dangerZones}
                   incidents={incidents}
                   onSwitchToSafeRoute={handleAcceptReroute}
+                  onSelectCustomDestination={(destName) =>
+                    calculateJourney(originLocation.name, destName, dangerZones)
+                  }
                   focusInputTrigger={assistantFocusTrigger}
                 />
               )}

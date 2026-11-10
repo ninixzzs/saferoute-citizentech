@@ -2,6 +2,7 @@ import { IncidentReport, DangerZone } from '../types';
 import { INITIAL_INCIDENT_REPORTS, INITIAL_DANGER_ZONES } from '../data/mockData';
 import { getSupabaseClient, getStoredSupabaseConfig } from './supabase';
 import { localDb } from './db';
+import { saveEncryptedStorage, loadEncryptedStorage } from './cryptoStorage';
 
 const LOCAL_STORAGE_KEY = 'saferoute_incident_reports_v2';
 
@@ -64,11 +65,11 @@ export const incidentApi = {
             isUserCreated: true,
           }));
 
-          // Sync into IndexedDB & LocalStorage
+          // Sync into IndexedDB & encrypted LocalStorage
           for (const item of mapped) {
             await localDb.saveIncident(item);
           }
-          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mapped));
+          await saveEncryptedStorage(LOCAL_STORAGE_KEY, mapped);
           return mapped;
         }
       } catch (err) {
@@ -81,20 +82,20 @@ export const incidentApi = {
       const dbResults = await localDb.getAllIncidents();
       if (dbResults && dbResults.length > 0) {
         const merged = mergeMissingCuratedIncidents(dbResults);
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
+        await saveEncryptedStorage(LOCAL_STORAGE_KEY, merged);
         return merged;
       }
     } catch (e) {
       console.warn('IndexedDB read fallback:', e);
     }
 
-    // LocalStorage fallback
+    // AES-GCM encrypted LocalStorage fallback
     try {
-      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      const stored = await loadEncryptedStorage<IncidentReport[]>(LOCAL_STORAGE_KEY);
       if (stored) {
-        return mergeMissingCuratedIncidents(JSON.parse(stored));
+        return mergeMissingCuratedIncidents(stored);
       }
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(INITIAL_INCIDENT_REPORTS));
+      await saveEncryptedStorage(LOCAL_STORAGE_KEY, INITIAL_INCIDENT_REPORTS);
       return INITIAL_INCIDENT_REPORTS;
     } catch {
       return INITIAL_INCIDENT_REPORTS;
@@ -146,10 +147,10 @@ export const incidentApi = {
       console.warn('IndexedDB save error:', err);
     }
 
-    // Backup in LocalStorage
+    // Backup in encrypted LocalStorage
     const current = await this.getAll();
     const updated = [newReport, ...current.filter((i) => i.id !== newId)];
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+    await saveEncryptedStorage(LOCAL_STORAGE_KEY, updated);
     return newReport;
   },
 
@@ -183,7 +184,7 @@ export const incidentApi = {
     }
 
     current[index] = updatedItem;
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(current));
+    await saveEncryptedStorage(LOCAL_STORAGE_KEY, current);
     return updatedItem;
   },
 
@@ -208,7 +209,7 @@ export const incidentApi = {
 
     const current = await this.getAll();
     const filtered = current.filter((item) => item.id !== id);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(filtered));
+    await saveEncryptedStorage(LOCAL_STORAGE_KEY, filtered);
     return true;
   },
 
@@ -229,7 +230,7 @@ export const incidentApi = {
     } catch (e) {
       console.warn('IndexedDB reset error:', e);
     }
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(INITIAL_INCIDENT_REPORTS));
+    await saveEncryptedStorage(LOCAL_STORAGE_KEY, INITIAL_INCIDENT_REPORTS);
     return INITIAL_INCIDENT_REPORTS;
   },
 };
