@@ -10,6 +10,8 @@ import { LocationSuggestion } from './routingService';
 import { calculateDistanceMeters } from './api';
 import { sanitizeUserInput } from './security';
 
+export type ConversationStage = 'ask_name' | 'ask_destination' | 'ready';
+
 export interface NearbyPlaceResult {
   name: string;
   category: NearbyReferencePlace['category'];
@@ -18,14 +20,18 @@ export interface NearbyPlaceResult {
 
 export interface AssistantReply {
   id: string;
-  toneLabel: 'Tranquilo' | 'Atenção Leve' | 'Cuidado Preventivo';
+  toneLabel: 'Boas-vindas' | 'Tranquilo' | 'Atenção Leve' | 'Cuidado Preventivo';
   text: string;
   tips: string[];
   nearbyPlaces: NearbyPlaceResult[];
   smsPreview: string;
+  nextStage: ConversationStage;
+  detectedName?: string;
+  detectedPlace?: string;
   suggestSafeRouteSwitch?: boolean;
   askFirstTimePlace?: string;
   suggestedDestination?: string;
+  showQuickDestinations?: boolean;
 }
 
 export interface AssistantContext {
@@ -35,6 +41,9 @@ export interface AssistantContext {
   allRoutes: NavigationRoute[];
   dangerZones: DangerZone[];
   incidents: IncidentReport[];
+  stage: ConversationStage;
+  userName?: string;
+  currentFocusPlace?: string;
 }
 
 function normalizeText(value: string): string {
@@ -52,6 +61,54 @@ function containsWholePhrase(normalizedText: string, normalizedPhrase: string): 
   if (!normalizedPhrase) return false;
   const pattern = new RegExp(`(?:^|[^a-z0-9])${escapeRegExp(normalizedPhrase)}(?:[^a-z0-9]|$)`);
   return pattern.test(normalizedText);
+}
+
+function capitalizeWords(text: string): string {
+  return text
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+}
+
+/**
+ * Extracts a customer's name cleanly from natural Portuguese answers.
+ */
+export function extractUserName(rawInput: string): string | null {
+  const clean = sanitizeUserInput(rawInput, 80).trim();
+  if (!clean) return null;
+
+  const patterns = [
+    /(?:meu nome e|me chamo|sou o|sou a|eu sou|pode me chamar de|aqui e o|aqui e a|e o|e a)\s+([A-Za-zÀ-ÿ]+(?:\s+[A-Za-zÀ-ÿ]+)?)/i,
+    /(?:tudo bem[,.!]?\s*(?:e\s+com\s+voc[eê]\??\s*)?)(?:eu\s+sou\s+|me\s+chamo\s+)?([A-Za-zÀ-ÿ]+)/i,
+  ];
+
+  const ignoredWords = new Set([
+    'oi', 'ola', 'bom', 'boa', 'tudo', 'bem', 'sim', 'nao', 'legal', 'otimo',
+    'obrigado', 'obrigada', 'dia', 'tarde', 'noite', 'onde', 'quero', 'vou',
+  ]);
+
+  for (const regex of patterns) {
+    const m = clean.match(regex);
+    if (m?.[1]) {
+      const firstWord = m[1].trim().split(/\s+/)[0];
+      if (firstWord && !ignoredWords.has(normalizeText(firstWord)) && firstWord.length >= 2) {
+        return capitalizeWords(firstWord);
+      }
+    }
+  }
+
+  // If short 1-3 word direct reply (e.g. "Nicolly", "Nicolly Vilela", "Maria")
+  const tokens = clean.replace(/[.!?,;]/g, '').trim().split(/\s+/);
+  if (tokens.length >= 1 && tokens.length <= 3) {
+    const candidate = tokens.find((t) => !ignoredWords.has(normalizeText(t)) && t.length >= 2);
+    if (candidate && /^[A-Za-zÀ-ÿ-]+$/.test(candidate)) {
+      return capitalizeWords(candidate);
+    }
+  }
+
+  return null;
 }
 
 const LOCATION_ALIASES: { alias: string; targetName: string; fallback?: SaoPauloLocationEntry }[] = [
@@ -84,10 +141,6 @@ const LOCATION_ALIASES: { alias: string; targetName: string; fallback?: SaoPaulo
   { alias: 'aricanduva', targetName: 'Avenida Aricanduva' },
   { alias: 'celso garcia', targetName: 'Avenida Celso Garcia' },
   { alias: 'sapopemba', targetName: 'Avenida Sapopemba' },
-  { alias: 'cruzeiro do sul', targetName: 'Avenida Cruzeiro do Sul' },
-  { alias: 'ataliba leonel', targetName: 'Avenida General Ataliba Leonel' },
-  { alias: 'caetano alvares', targetName: 'Avenida Engenheiro Caetano Álvares' },
-  { alias: 'otaviano alves', targetName: 'Avenida Otaviano Alves de Lima' },
   { alias: 'washington luis', targetName: 'Avenida Washington Luís' },
   { alias: 'congonhas', targetName: 'Avenida Washington Luís' },
   { alias: 'ricardo jafet', targetName: 'Avenida Doutor Ricardo Jafet' },
@@ -110,7 +163,6 @@ const LOCATION_ALIASES: { alias: string; targetName: string; fallback?: SaoPaulo
 ];
 
 function matchSpLocation(qNorm: string): SaoPauloLocationEntry | undefined {
-  // 1. Exact whole-phrase match from curated 75+ dataset (longest names first)
   const sortedLocations = [...SAO_PAULO_LOCATIONS].sort(
     (a, b) => b.name.length - a.name.length
   );
@@ -119,7 +171,6 @@ function matchSpLocation(qNorm: string): SaoPauloLocationEntry | undefined {
   );
   if (direct) return direct;
 
-  // 2. Natural spoken aliases (e.g. "Paulista" -> "Avenida Paulista", "Ibirapuera", etc.)
   const sortedAliases = [...LOCATION_ALIASES].sort((a, b) => b.alias.length - a.alias.length);
   for (const item of sortedAliases) {
     if (containsWholePhrase(qNorm, item.alias)) {
@@ -131,14 +182,33 @@ function matchSpLocation(qNorm: string): SaoPauloLocationEntry | undefined {
   return undefined;
 }
 
+/**
+ * Extracts a custom São Paulo destination even if it is outside the 75 curated locations.
+ */
+function extractCustomPlacePhrase(rawQuestion: string): string | null {
+  const clean = rawQuestion.trim().replace(/[?!.]+$/, '');
+  const destMatch = clean.match(
+    /(?:ir\s+para|vou\s+para|vou\s+pro|vou\s+pra|ir\s+pro|ir\s+pra|indo\s+para|destino\s+|bairro\s+|em\s+|no\s+|na\s+|ate\s+)(?:o\s+|a\s+)?([A-Za-zÀ-ÿ0-9\s]{3,35})$/i
+  );
+  if (destMatch?.[1]) {
+    const candidate = destMatch[1].trim();
+    const normCand = normalizeText(candidate);
+    if (
+      !['la', 'ca', 'casa', 'hoje', 'agora', 'sp', 'sao paulo'].includes(normCand) &&
+      candidate.length >= 3
+    ) {
+      return capitalizeWords(candidate);
+    }
+  }
+  return null;
+}
+
 function formatDistanceLabel(meters: number): string {
   if (meters < 1000) return `${Math.max(100, Math.round(meters / 10) * 10)} m`;
   return `${(meters / 1000).toFixed(1).replace('.', ',')} km`;
 }
 
-export function findNearbyPlaces(
-  coordinates: [number, number]
-): NearbyPlaceResult[] {
+export function findNearbyPlaces(coordinates: [number, number]): NearbyPlaceResult[] {
   return SAO_PAULO_NEARBY_PLACES.map((place) => ({
     name: place.name,
     category: place.category,
@@ -169,61 +239,65 @@ const REGION_KEYWORDS: {
     aliases: ['zona sul', 'sul de sp', 'regiao sul'],
     coords: [-23.628, -46.678],
     summary:
-      'Na Zona Sul (como Vila Mariana, Moema, Santo Amaro, Jabaquara, Campo Limpo, Capão Redondo e Grajaú), o deslocamento flui muito bem pelos corredores principais. Em pontos como Capão Redondo e cruzamentos movimentados da Berrini ou Washington Luís no horário de pico, basta manter vidros fechados nos semáforos e seguir com calma.',
+      'Na Zona Sul (Vila Mariana, Moema, Santo Amaro, Jabaquara, Campo Limpo, Capão Redondo e Grajaú), as vias principais fluem bem. Em pontos como Capão Redondo ou cruzamentos lentos da Berrini e Washington Luís no pico, basta manter vidros fechados nos sinais.',
   },
   {
     zone: 'Centro',
     aliases: ['centro', 'regiao central', 'centro historico'],
     coords: [-23.548, -46.638],
     summary:
-      'No Centro (Sé, República, Luz, Santa Ifigênia, Brás, Liberdade, Consolação e Bela Vista), há bastante movimento de pedestres e comércios. Vale apenas manter uma atenção serena ao parar perto de grandes estações e viadutos, preferindo vias iluminadas e o contorno pela 23 de Maio ou Av. Paulista.',
+      'No Centro (Sé, República, Luz, Santa Ifigênia, Brás, Liberdade e Paulista), há bastante movimento. Vale manter atenção calma perto de estações e viadutos, preferindo vias iluminadas e o áudio do GPS.',
   },
   {
     zone: 'Zona Oeste',
     aliases: ['zona oeste', 'regiao oeste', 'oeste de sp'],
     coords: [-23.56, -46.69],
     summary:
-      'A Zona Oeste (Pinheiros, Lapa, Perdizes, Butantã, Vila Madalena e Faria Lima) tem circulação bem organizada no geral. Nos horários de maior movimento na Rebouças, Henrique Schaumann e Ponte Eusébio Matoso, manter o celular guardado e usar o GPS por voz deixa a viagem bem leve.',
+      'A Zona Oeste (Pinheiros, Lapa, Perdizes, Butantã, Vila Madalena e Faria Lima) circula bem no geral. Nos horários de pico na Rebouças, Henrique Schaumann e Ponte Eusébio Matoso, deixe o celular guardado fora do vidro.',
   },
   {
     zone: 'Zona Leste',
     aliases: ['zona leste', 'regiao leste', 'leste de sp'],
     coords: [-23.548, -46.555],
     summary:
-      'Na Zona Leste (Tatuapé, Mooca, Penha, Vila Prudente, Itaquera e São Mateus), os grandes corredores como Radial Leste, Salim Farah Maluf e Anhaia Mello são bem conectados. Em retenções sob viadutos e sinais mais longos, mantenha os vidros fechados para seguir tranquilo.',
+      'Na Zona Leste (Tatuapé, Mooca, Penha, Vila Prudente, Itaquera e São Mateus), corredores como Radial Leste, Salim Farah Maluf e Anhaia Mello são bem conectados. Em retenções sob viadutos, mantenha vidros fechados.',
   },
   {
     zone: 'Zona Norte',
     aliases: ['zona norte', 'regiao norte', 'norte de sp'],
     coords: [-23.5, -46.625],
     summary:
-      'Na Zona Norte (Santana, Vila Guilherme, Tucuruvi e Freguesia do Ó), vias como Cruzeiro do Sul, Ataliba Leonel e Caetano Álvares são bem movimentadas e fáceis de navegar. Nos acessos próximos à Rodoviária do Tietê e saídas de pontes, vale deixar o celular longe do vidro.',
+      'Na Zona Norte (Santana, Vila Guilherme, Tucuruvi e Freguesia do Ó), vias como Cruzeiro do Sul e Ataliba Leonel são bem fáceis de navegar. Perto do Tietê e saídas de pontes, evite celular exposto na janela.',
   },
   {
     zone: 'Marginais e Pontes',
     aliases: ['marginais', 'marginal', 'pontes', 'vias expressas', 'tiete', 'pinheiros'],
     coords: [-23.525, -46.665],
     summary:
-      'Nas Marginais Tietê e Pinheiros e em pontes como Casa Verde, Cidade Universitária, Jaguaré e Morumbi, o ideal é manter uma distância confortável do carro da frente em alças de saída e acompanhar desvios de chuva forte pelos corredores elevados.',
+      'Nas Marginais Tietê e Pinheiros e nas pontes principais, mantenha distância do carro à frente nas alças e redobre a atenção em chuva forte para evitar pontos baixos.',
   },
 ];
 
-/**
- * Generates a calm, informative pre-trip SMS text without causing panic.
- */
-export function buildPreTripSmsMessage(context: AssistantContext): {
+export function buildPreTripSmsMessage(context: {
+  destination: LocationSuggestion;
+  selectedRoute: NavigationRoute;
+  dangerZones: DangerZone[];
+  incidents: IncidentReport[];
+  targetPlaceOverride?: string;
+}): {
   toneLabel: 'Tranquilo' | 'Atenção Leve' | 'Cuidado Preventivo';
   smsText: string;
 } {
-  const { destination, selectedRoute, dangerZones, incidents } = context;
-  const destNorm = normalizeText(destination.name + ' ' + destination.address);
+  const { destination, selectedRoute, dangerZones, incidents, targetPlaceOverride } = context;
+  const placeLabel = targetPlaceOverride || destination.name;
+  const destNorm = normalizeText(`${placeLabel} ${destination.address}`);
 
   const matchingZones = dangerZones.filter((z) => {
     const zNorm = normalizeText(z.neighborhood);
     return (
       selectedRoute.dangerZoneIds.includes(z.id) ||
       containsWholePhrase(destNorm, zNorm) ||
-      containsWholePhrase(normalizeText(`${z.neighborhood} ${z.name}`), normalizeText(destination.name))
+      containsWholePhrase(normalizeText(`${z.neighborhood} ${z.name}`), normalizeText(placeLabel))
     );
   });
 
@@ -231,7 +305,7 @@ export function buildPreTripSmsMessage(context: AssistantContext): {
     (inc) =>
       inc.status !== 'resolvido' &&
       (containsWholePhrase(destNorm, normalizeText(inc.neighborhood)) ||
-        containsWholePhrase(normalizeText(inc.neighborhood), normalizeText(destination.name)))
+        containsWholePhrase(normalizeText(inc.neighborhood), normalizeText(placeLabel)))
   );
 
   const hasCritical =
@@ -244,58 +318,190 @@ export function buildPreTripSmsMessage(context: AssistantContext): {
   if (hasCritical && selectedRoute.type !== 'segura') {
     return {
       toneLabel: 'Cuidado Preventivo',
-      smsText: `SafeRoute SP (SMS Pré-Viagem): Para ir até ${destination.name}, recomendamos atenção preventiva simples: trafegue por avenidas principais iluminadas, mantenha os vidros fechados e use o GPS por áudio. Há um desvio mais tranquilo disponível antes de iniciar.`,
+      smsText: `SafeRoute SP (SMS Pré-Viagem): Para ir até ${placeLabel}, recomendamos atenção simples: trafegue por avenidas principais iluminadas, mantenha os vidros fechados e use o GPS por áudio. Há um desvio tranquilo disponível antes de sair.`,
     };
   }
 
   if (hasModerateOrHigh) {
     return {
       toneLabel: 'Atenção Leve',
-      smsText: `SafeRoute SP (SMS Pré-Viagem): O caminho para ${destination.name} tem movimento intenso em alguns cruzamentos. Siga normalmente mantendo vidros fechados e o celular guardado abaixo do painel ao parar em semáforos. Boa viagem!`,
+      smsText: `SafeRoute SP (SMS Pré-Viagem): O caminho até ${placeLabel} tem movimento intenso em alguns cruzamentos. Siga com tranquilidade mantendo vidros fechados e celular abaixo do painel nos semáforos.`,
     };
   }
 
   return {
     toneLabel: 'Tranquilo',
-    smsText: `SafeRoute SP (SMS Pré-Viagem): O trajeto selecionado até ${destination.name} (${selectedRoute.durationMin} min · segurança ${selectedRoute.safetyScore}/100) segue estável e monitorado no momento. Siga com tranquilidade.`,
+    smsText: `SafeRoute SP (SMS Pré-Viagem): O trajeto para ${placeLabel} (${selectedRoute.durationMin} min · segurança ${selectedRoute.safetyScore}/100) está estável e monitorado. Boa viagem!`,
   };
 }
 
 /**
- * Instant, zero-delay conversational safety companion covering all São Paulo regions, nearby landmarks, and first-time guidance.
+ * Natural, concise, stateful conversational advisor:
+ * 1) Asks customer's name first and remembers it throughout the session.
+ * 2) Asks where they are going BEFORE assuming any preset destination.
+ * 3) Answers any direct question clearly without fluff or panic.
  */
 export function generateSafetyAssistantReply(
   rawQuestion: string,
-  context: AssistantContext,
-  lastTargetPlace?: string
+  context: AssistantContext
 ): AssistantReply {
   const question = sanitizeUserInput(rawQuestion, 240);
   const qNorm = normalizeText(question);
-  const { destination, selectedRoute, allRoutes, dangerZones, incidents } = context;
+  const { destination, selectedRoute, allRoutes, dangerZones, incidents, stage, userName, currentFocusPlace } =
+    context;
 
-  // 1. Word-boundary precise matching (prevents false matches like "esse" -> "Sé")
   const mentionedSp = matchSpLocation(qNorm);
-
-  // 2. Match region if no specific neighborhood
   const mentionedRegion = !mentionedSp
     ? REGION_KEYWORDS.find((reg) => reg.aliases.some((alias) => containsWholePhrase(qNorm, alias)))
     : undefined;
 
-  // Always prioritize explicitly spoken location over previous context
-  const focusName = mentionedSp?.name || lastTargetPlace || destination.name;
-  const focusCoords = mentionedSp?.coordinates || destination.coordinates;
-  const nearbyPlaces = findNearbyPlaces(
-    mentionedRegion ? mentionedRegion.coords : focusCoords
-  );
+  const preSms = buildPreTripSmsMessage({
+    destination,
+    selectedRoute,
+    dangerZones,
+    incidents,
+    targetPlaceOverride: mentionedSp?.name || currentFocusPlace,
+  });
 
-  // If user specifically asked about a place different from current map destination, offer 1-tap route switch
-  const suggestedDestination =
-    mentionedSp &&
-    !containsWholePhrase(normalizeText(destination.name), normalizeText(mentionedSp.name))
-      ? mentionedSp.name
-      : undefined;
+  // STAGE 1: ASK USER NAME FIRST
+  if (stage === 'ask_name') {
+    const parsedName = extractUserName(question);
+    const chosenName = parsedName || 'você';
+
+    // If user already mentioned a destination along with their name (e.g. "Sou a Ana, vou para Paulista")
+    if (mentionedSp && parsedName) {
+      // Transition straight into analyzing their requested destination!
+      return generateSafetyAssistantReply(question, {
+        ...context,
+        stage: 'ask_destination',
+        userName: parsedName,
+      });
+    }
+
+    return {
+      id: `reply-${Date.now()}`,
+      toneLabel: 'Boas-vindas',
+      text: parsedName
+        ? `Prazer, ${parsedName}! Tudo ótimo por aqui. Antes de começarmos, para onde você vai hoje em São Paulo?`
+        : `Tudo ótimo! Antes de começarmos, como posso te chamar? E se já souber, me conta também para onde você vai hoje.`,
+      tips: [],
+      nearbyPlaces: [],
+      smsPreview: preSms.smsText,
+      nextStage: parsedName ? 'ask_destination' : 'ask_name',
+      detectedName: parsedName || undefined,
+      showQuickDestinations: Boolean(parsedName),
+    };
+  }
+
+  const namePrefix = userName ? `${userName}, ` : '';
+  const nameSuffix = userName ? ` ${userName}` : '';
+
+  // Direct FAQ / App Help handling (no fluff)
+  if (
+    containsWholePhrase(qNorm, 'acessibilidade') ||
+    containsWholePhrase(qNorm, 'fonte') ||
+    containsWholePhrase(qNorm, 'letra') ||
+    containsWholePhrase(qNorm, 'aumentar') ||
+    containsWholePhrase(qNorm, 'escuro') ||
+    containsWholePhrase(qNorm, 'noturno')
+  ) {
+    return {
+      id: `reply-${Date.now()}`,
+      toneLabel: 'Tranquilo',
+      text: `${namePrefix}você pode ajustar o tamanho da letra até 20px, ligar o Modo Noturno, Claro ou Alto Contraste tocando no botão "Acessibilidade (Aa)" lá na barra superior! Toda a tela e as diretrizes aumentam juntas.`,
+      tips: ['No celular, o painel de acessibilidade abre em tela cheia para facilitar a leitura.'],
+      nearbyPlaces: currentFocusPlace ? findNearbyPlaces(mentionedSp?.coordinates || destination.coordinates) : [],
+      smsPreview: preSms.smsText,
+      nextStage: stage === 'ask_destination' ? 'ask_destination' : 'ready',
+      showQuickDestinations: stage === 'ask_destination',
+    };
+  }
+
+  if (
+    containsWholePhrase(qNorm, 'emergencia') ||
+    containsWholePhrase(qNorm, 'policia') ||
+    containsWholePhrase(qNorm, 'defesa civil') ||
+    containsWholePhrase(qNorm, 'telefone') ||
+    containsWholePhrase(qNorm, 'numero')
+  ) {
+    return {
+      id: `reply-${Date.now()}`,
+      toneLabel: 'Tranquilo',
+      text: `${namePrefix}os telefones oficiais em São Paulo são: 190 (Polícia Militar), 199 (Defesa Civil), 153 (GCM) e 181 (Disque-Denúncia). Você também pode consultar todas as diretrizes no ícone de livrinho no topo.`,
+      tips: ['Para receber comunicados oficiais de chuva da Defesa Civil, envie seu CEP por SMS para 40199.'],
+      nearbyPlaces: currentFocusPlace ? findNearbyPlaces(destination.coordinates) : [],
+      smsPreview: preSms.smsText,
+      nextStage: stage === 'ask_destination' ? 'ask_destination' : 'ready',
+      showQuickDestinations: stage === 'ask_destination',
+    };
+  }
+
+  if (
+    containsWholePhrase(qNorm, 'como funciona') ||
+    containsWholePhrase(qNorm, 'o que voce faz') ||
+    containsWholePhrase(qNorm, 'auto on') ||
+    containsWholePhrase(qNorm, 'reportar')
+  ) {
+    return {
+      id: `reply-${Date.now()}`,
+      toneLabel: 'Tranquilo',
+      text: `${namePrefix}eu comparo rotas para você evitar cruzamentos críticos com tranquilidade, mostro lugares conhecidos por perto e aviso por voz ou SMS antes de sair. Se deixar o "Auto ON" ligado no celular, eu troco para a rota segura sozinha quando detectar risco à frente.`,
+      tips: ['Você também pode registrar ocorrências em qualquer bairro de SP pelo botão "Reportar" no topo.'],
+      nearbyPlaces: currentFocusPlace ? findNearbyPlaces(destination.coordinates) : [],
+      smsPreview: preSms.smsText,
+      nextStage: stage === 'ask_destination' ? 'ask_destination' : 'ready',
+      showQuickDestinations: stage === 'ask_destination',
+    };
+  }
+
+  // Extract custom place if user typed a neighborhood outside our 75-item dictionary (when asking destination)
+  const customSpPhrase =
+    !mentionedSp && !mentionedRegion ? extractCustomPlacePhrase(question) : null;
+  const shortDirectPlace =
+    stage === 'ask_destination' &&
+    !mentionedSp &&
+    !mentionedRegion &&
+    !customSpPhrase &&
+    question.trim().split(/\s+/).length <= 4 &&
+    !qNorm.includes('?') &&
+    !containsWholePhrase(qNorm, 'sms') &&
+    !containsWholePhrase(qNorm, 'rota')
+      ? capitalizeWords(question.replace(/[.!,]/g, ''))
+      : null;
+
+  const customPlaceName = customSpPhrase || shortDirectPlace;
+
+  // STAGE 2: STILL WAITING FOR DESTINATION AND USER DIDN'T GIVE ONE YET
+  if (
+    stage === 'ask_destination' &&
+    !mentionedSp &&
+    !mentionedRegion &&
+    !customPlaceName &&
+    !containsWholePhrase(qNorm, 'sms') &&
+    !containsWholePhrase(qNorm, 'rota')
+  ) {
+    return {
+      id: `reply-${Date.now()}`,
+      toneLabel: 'Boas-vindas',
+      text: `Entendi,${nameSuffix}! Mas antes de eu analisar tudo direitinho, me conta: para qual bairro, rua ou região de São Paulo você pretende ir hoje?`,
+      tips: [],
+      nearbyPlaces: [],
+      smsPreview: preSms.smsText,
+      nextStage: 'ask_destination',
+      showQuickDestinations: true,
+    };
+  }
+
+  const focusName = mentionedSp?.name || customPlaceName || currentFocusPlace;
+  const focusCoords = mentionedSp?.coordinates || destination.coordinates;
+  const nearbyPlaces = focusName
+    ? findNearbyPlaces(mentionedRegion ? mentionedRegion.coords : focusCoords)
+    : [];
 
   const safeRoute = allRoutes.find((r) => r.type === 'segura');
+  const suggestedDestination =
+    mentionedSp || customPlaceName ? mentionedSp?.name || customPlaceName || undefined : undefined;
+
   const isFirstTimeYes =
     (containsWholePhrase(qNorm, 'primeira vez') && !qNorm.includes('nao e')) ||
     qNorm.includes('nunca fui') ||
@@ -314,74 +520,52 @@ export function generateSafetyAssistantReply(
   const asksRouteCompare =
     qNorm.includes('comparar') ||
     containsWholePhrase(qNorm, 'desvio') ||
-    containsWholePhrase(qNorm, 'rapida');
+    containsWholePhrase(qNorm, 'rapida') ||
+    containsWholePhrase(qNorm, 'rota');
   const asksSms = containsWholePhrase(qNorm, 'sms') || containsWholePhrase(qNorm, 'mensagem');
   const asksRain =
     containsWholePhrase(qNorm, 'chuva') ||
     containsWholePhrase(qNorm, 'alagamento') ||
     containsWholePhrase(qNorm, 'temporal');
   const asksNight =
-    containsWholePhrase(qNorm, 'noite') ||
-    containsWholePhrase(qNorm, 'madrugada');
+    containsWholePhrase(qNorm, 'noite') || containsWholePhrase(qNorm, 'madrugada');
 
-  const preSms = buildPreTripSmsMessage({
-    ...context,
-    destination: mentionedSp
-      ? {
-          name: mentionedSp.name,
-          address: `${mentionedSp.name} - ${mentionedSp.zone}, São Paulo - SP`,
-          coordinates: mentionedSp.coordinates,
-        }
-      : destination,
-  });
-
-  if (isFirstTimeYes) {
+  if (isFirstTimeYes && focusName) {
     return {
       id: `reply-${Date.now()}`,
       toneLabel: 'Atenção Leve',
-      text: `Que bom saber! Como é a sua primeira vez indo para ${focusName}, fique tranquilo(a): separei referências conhecidas e bem movimentadas ali perto caso queira se localizar ou fazer uma parada segura, e recomendo ir ouvindo o áudio do trajeto para dirigir sem pressa.`,
-      tips: [
-        'Dê uma olhada nos pontos conhecidos logo abaixo — são estações, parques ou shoppings fáceis de identificar.',
-        'Nos semáforos, deixe os vidros fechados e evite apoiar o celular no painel perto da janela.',
-        safeRoute && selectedRoute.type !== 'segura'
-          ? 'Se preferir o caminho mais calmo e iluminado desde o início, clique em "Aplicar Desvio Seguro" abaixo.'
-          : 'Com a Rota Segura ativa, eu aviso você com calma antes de qualquer cruzamento que mereça atenção.',
-      ],
+      text: `Combinado, ${userName || 'combinado'}! Como é a sua primeira vez em ${focusName}, deixei pontos conhecidos logo abaixo para você se localizar fácil. Vá ouvindo o GPS por áudio e mantenha vidros fechados nos sinais.`,
+      tips: ['Qualquer dúvida no caminho ou sobre outro bairro, é só me chamar aqui.'],
       nearbyPlaces,
       smsPreview: preSms.smsText,
+      nextStage: 'ready',
       suggestSafeRouteSwitch: selectedRoute.type !== 'segura' && Boolean(safeRoute),
       suggestedDestination,
     };
   }
 
-  if (isAlreadyKnow) {
+  if (isAlreadyKnow && focusName) {
     return {
       id: `reply-${Date.now()}`,
       toneLabel: 'Tranquilo',
-      text: `Perfeito! Como você já conhece ${focusName}, fica bem mais fácil aproveitar a viagem. Deixei os pontos próximos listados aqui caso precise de uma parada rápida, e sigo monitorando qualquer ocorrência no seu caminho.`,
-      tips: [
-        'Você já tem o SMS pré-viagem atualizado pronto logo abaixo se quiser conferir antes de partir.',
-        'Ative o guia por voz ou o Auto-Desvio para fazer todo o percurso com tranquilidade.',
-      ],
+      text: `Ótimo,${nameSuffix}! Como você já conhece ${focusName}, sigo monitorando o percurso em tempo real e já deixei seu SMS pré-viagem pronto logo abaixo.`,
+      tips: [],
       nearbyPlaces,
       smsPreview: preSms.smsText,
+      nextStage: 'ready',
       suggestSafeRouteSwitch: false,
-      suggestedDestination,
     };
   }
 
-  if (asksNearby) {
+  if (asksNearby && focusName) {
     return {
       id: `reply-${Date.now()}`,
       toneLabel: 'Tranquilo',
-      text: `Perto de ${focusName}, você tem ótimos pontos conhecidos e de fácil acesso para se orientar ou parar com tranquilidade caso precise. Listei os mais próximos logo abaixo com a distância estimada!`,
-      tips: [
-        'Estações de metrô, shoppings e parques movimentados são ótimas referências visuais caso queira recalcular a rota.',
-        'Quer que eu verifique mais algum bairro de São Paulo antes de sair?',
-      ],
+      text: `${namePrefix}perto de ${focusName} você tem essas referências movimentadas e fáceis de acessar:`,
+      tips: [],
       nearbyPlaces,
       smsPreview: preSms.smsText,
-      askFirstTimePlace: focusName,
+      nextStage: 'ready',
       suggestedDestination,
     };
   }
@@ -390,46 +574,31 @@ export function generateSafetyAssistantReply(
     return {
       id: `reply-${Date.now()}`,
       toneLabel: preSms.toneLabel,
-      text: `Prontinho! Deixei seu SMS informativo preparado com calma, sem gerar nenhum alarme desnecessário: "${preSms.smsText}"`,
-      tips: [
-        'Você pode testar o recebimento ou abrir direto no aplicativo de SMS do seu celular logo abaixo.',
-      ],
+      text: `${namePrefix}seu SMS informativo antes da saída já está pronto (em tom calmo, sem alarme): "${preSms.smsText}"`,
+      tips: [],
       nearbyPlaces,
       smsPreview: preSms.smsText,
+      nextStage: 'ready',
       suggestSafeRouteSwitch: selectedRoute.type !== 'segura' && Boolean(safeRoute),
     };
   }
 
   if (mentionedRegion) {
     const regionLocations = SAO_PAULO_LOCATIONS.filter((l) => l.zone === mentionedRegion.zone);
-    const regionIncidents = incidents.filter(
-      (inc) =>
-        inc.status !== 'resolvido' &&
-        regionLocations.some((rl) =>
-          containsWholePhrase(normalizeText(inc.neighborhood), normalizeText(rl.name))
-        )
-    );
-    const regionZones = dangerZones.filter((z) =>
+    const hasRegionAlert = dangerZones.some((z) =>
       regionLocations.some((rl) =>
         containsWholePhrase(normalizeText(`${z.neighborhood} ${z.name}`), normalizeText(rl.name))
       )
     );
-
-    const hasRegionAlert = regionZones.length > 0 || regionIncidents.length > 0;
     return {
       id: `reply-${Date.now()}`,
       toneLabel: hasRegionAlert ? 'Cuidado Preventivo' : 'Atenção Leve',
-      text: `${mentionedRegion.summary} É a sua primeira vez circulando por essa parte da ${mentionedRegion.zone}?`,
-      tips: [
-        `Principais pontos em ${mentionedRegion.zone}: ${regionLocations
-          .slice(0, 5)
-          .map((l) => l.name)
-          .join(', ')}.`,
-        'Mantenha os vidros fechados em semáforos lentos e use o áudio do GPS para manter a atenção no trânsito.',
-      ],
+      text: `${namePrefix}${mentionedRegion.summary} É a sua primeira vez por essa área da ${mentionedRegion.zone}?`,
+      tips: [],
       nearbyPlaces,
       smsPreview: preSms.smsText,
-      suggestSafeRouteSwitch: selectedRoute.type !== 'segura' && Boolean(safeRoute),
+      nextStage: 'ready',
+      detectedPlace: mentionedRegion.zone,
       askFirstTimePlace: mentionedRegion.zone,
     };
   }
@@ -438,13 +607,11 @@ export function generateSafetyAssistantReply(
     return {
       id: `reply-${Date.now()}`,
       toneLabel: 'Atenção Leve',
-      text: `Em dias de chuva forte em São Paulo, o mais importante é manter a calma e evitar baixadas e acessos sob viadutos das Marginais, Glicério/Tamanduateí e Av. do Estado. Buscando ruas mais altas, você segue tranquilo(a).`,
-      tips: [
-        'Se a água atingir metade da altura da roda, busque um ponto elevado como os listados abaixo até o nível baixar.',
-        'A Defesa Civil envia boletins gratuitos por SMS quando você envia seu CEP para 40199.',
-      ],
+      text: `${namePrefix}em dias de chuva em SP, evite baixadas das Marginais, Glicério e Av. do Estado. Preferindo vias mais altas, você segue tranquilo(a).`,
+      tips: ['Se a água passar da metade da roda, pare em local seguro elevado.'],
       nearbyPlaces,
       smsPreview: preSms.smsText,
+      nextStage: 'ready',
       suggestSafeRouteSwitch: selectedRoute.type !== 'segura' && Boolean(safeRoute),
     };
   }
@@ -456,19 +623,31 @@ export function generateSafetyAssistantReply(
       toneLabel: selectedRoute.type === 'segura' ? 'Tranquilo' : 'Atenção Leve',
       text:
         selectedRoute.type === 'segura'
-          ? `Você já escolheu a Rota Segura (${safeRoute.safetyScore}/100, ${safeRoute.durationMin} min)! Ela prioriza avenidas amplas, iluminadas e contorna pontos mais visados.`
-          : `Para ${destination.name}, a Rota Segura alcança ${safeRoute.safetyScore}/100 levando apenas cerca de ${diffMin > 0 ? `+${diffMin} min` : 'o mesmo tempo'}, evitando cruzamentos de trânsito muito parado.`,
-      tips: [
-        'Mesmo na rota rápida, eu e o alerta sonoro avisamos antes de qualquer zona de atenção.',
-      ],
+          ? `${namePrefix}a Rota Segura já está ativa (${safeRoute.safetyScore}/100, ${safeRoute.durationMin} min), priorizando vias iluminadas.`
+          : `${namePrefix}a Rota Segura tem índice ${safeRoute.safetyScore}/100 e leva cerca de ${diffMin > 0 ? `+${diffMin} min` : 'quase o mesmo tempo'}, desviando dos cruzamentos mais lentos.`,
+      tips: [],
       nearbyPlaces,
       smsPreview: preSms.smsText,
+      nextStage: 'ready',
       suggestSafeRouteSwitch: selectedRoute.type !== 'segura',
     };
   }
 
-  const targetNorm = normalizeText(focusName);
+  if (!focusName) {
+    return {
+      id: `reply-${Date.now()}`,
+      toneLabel: 'Boas-vindas',
+      text: `${namePrefix}me diga para qual bairro ou endereço em São Paulo você vai hoje que eu verifico na hora para você!`,
+      tips: [],
+      nearbyPlaces: [],
+      smsPreview: preSms.smsText,
+      nextStage: 'ask_destination',
+      showQuickDestinations: true,
+    };
+  }
 
+  // Analyze the user's chosen destination concisely
+  const targetNorm = normalizeText(focusName);
   const matchedZones = dangerZones.filter((z) => {
     const zNeighborhoodNorm = normalizeText(z.neighborhood);
     const zFullNorm = normalizeText(`${z.neighborhood} ${z.name}`);
@@ -498,22 +677,21 @@ export function generateSafetyAssistantReply(
 
   if (hasCritical || hasHigh) {
     const mainZone = matchedZones[0];
-    const zoneName = mentionedSp?.name || mainZone?.neighborhood || focusName;
     const regionLabel = mentionedSp ? ` (${mentionedSp.zone})` : '';
-
     return {
       id: `reply-${Date.now()}`,
       toneLabel: 'Cuidado Preventivo',
-      text: `Sobre ${zoneName}${regionLabel}, dá para ir com calma seguindo cuidados simples de rotina: essa região tem cruzamentos movimentados${asksNight ? ' (especialmente à noite)' : ''} que pedem atenção preventiva, sem motivo para pânico. Aliás, é a sua primeira vez indo para ${zoneName}?`,
+      text: `${namePrefix}sobre ${focusName}${regionLabel}: dá para ir com calma tomando cuidados simples nos semáforos${asksNight ? ' (principalmente à noite)' : ''} — mantenha vidros fechados e use o GPS por áudio, sem motivo para pânico. É a sua primeira vez indo para lá?`,
       tips: [
         mainZone?.defenseCivilTip ||
-          'Mantenha vidros fechados e portas travadas principalmente ao reduzir a velocidade.',
-        'Prefira esconder o celular abaixo do painel e acompanhar as curvas apenas pelo áudio do GPS.',
+          'Mantenha o celular fora da linha do vidro ao reduzir em cruzamentos.',
       ],
       nearbyPlaces,
       smsPreview: preSms.smsText,
+      nextStage: 'ready',
+      detectedPlace: focusName,
       suggestSafeRouteSwitch: selectedRoute.type !== 'segura' && Boolean(safeRoute),
-      askFirstTimePlace: zoneName,
+      askFirstTimePlace: focusName,
       suggestedDestination,
     };
   }
@@ -522,12 +700,12 @@ export function generateSafetyAssistantReply(
     return {
       id: `reply-${Date.now()}`,
       toneLabel: 'Atenção Leve',
-      text: `A região de ${focusName}${mentionedSp ? ` (${mentionedSp.zone})` : ''} está com circulação normal e bom movimento comercial. Basta manter cuidados básicos nos cruzamentos — você pode ir tranquilo(a)! É a sua primeira vez indo até lá?`,
-      tips: [
-        'Mantenha os vidros fechados em semáforos lentos e evite apoiar o celular perto da janela.',
-      ],
+      text: `${namePrefix}${focusName}${mentionedSp ? ` (${mentionedSp.zone})` : ''} está com fluxo normal e movimento intenso em alguns cruzamentos — basta manter vidros fechados nos sinais. É a sua primeira vez indo até lá?`,
+      tips: [],
       nearbyPlaces,
       smsPreview: preSms.smsText,
+      nextStage: 'ready',
+      detectedPlace: focusName,
       askFirstTimePlace: focusName,
       suggestedDestination,
     };
@@ -536,13 +714,12 @@ export function generateSafetyAssistantReply(
   return {
     id: `reply-${Date.now()}`,
     toneLabel: 'Tranquilo',
-    text: `Ótima notícia: no acompanhamento atual, ${focusName}${mentionedSp ? ` (${mentionedSp.zone})` : ''} não concentra alertas críticos ativos nesta faixa${asksNight ? ' neste horário' : ''}. Você pode fazer uma viagem bem tranquila! É a sua primeira vez indo até esse local?`,
-    tips: [
-      'Cobertura ativa em todas as regiões de São Paulo: Centro, Sul, Oeste, Leste, Norte e Marginais.',
-      'Separei abaixo alguns lugares conhecidos próximos para servir de referência no seu caminho.',
-    ],
+    text: `${namePrefix}${focusName}${mentionedSp ? ` (${mentionedSp.zone})` : ''} não concentra alertas críticos neste momento — viagem tranquila! É a sua primeira vez indo para lá?`,
+    tips: [],
     nearbyPlaces,
     smsPreview: preSms.smsText,
+    nextStage: 'ready',
+    detectedPlace: focusName,
     askFirstTimePlace: focusName,
     suggestedDestination,
   };

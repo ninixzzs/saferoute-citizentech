@@ -18,6 +18,7 @@ import {
   X,
   AudioLines,
   Navigation,
+  RotateCcw,
 } from 'lucide-react';
 import { DangerZone, IncidentReport, NavigationRoute } from '../types';
 import { SaoPauloZone } from '../data/saoPauloLocations';
@@ -27,6 +28,7 @@ import {
   generateSafetyAssistantReply,
   AssistantReply,
   NearbyPlaceResult,
+  ConversationStage,
 } from '../services/safetyAssistant';
 import {
   speakNaturalPortuguese,
@@ -56,6 +58,7 @@ interface ChatMessage {
   suggestSafeRouteSwitch?: boolean;
   askFirstTimePlace?: string;
   suggestedDestination?: string;
+  showQuickDestinations?: boolean;
 }
 
 const SP_REGIONS: { label: string; zone: SaoPauloZone; prompt: string }[] = [
@@ -66,6 +69,19 @@ const SP_REGIONS: { label: string; zone: SaoPauloZone; prompt: string }[] = [
   { label: 'Zona Norte', zone: 'Zona Norte', prompt: 'Como está a Zona Norte de SP?' },
   { label: 'Marginais', zone: 'Marginais e Pontes', prompt: 'Como estão as Marginais e Pontes?' },
 ];
+
+const INITIAL_GREETING_TEXT = 'Oi, tudo bem? Qual é o seu nome?';
+
+function createInitialWelcomeMessage(): ChatMessage {
+  return {
+    id: 'welcome-msg',
+    sender: 'assistant',
+    toneLabel: 'Boas-vindas',
+    text: INITIAL_GREETING_TEXT,
+    tips: [],
+    nearbyPlaces: [],
+  };
+}
 
 export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
   originLocation,
@@ -81,8 +97,12 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
   const [phoneInput, setPhoneInput] = useState('');
   const [smsSentNotice, setSmsSentNotice] = useState(false);
   const [inputText, setInputText] = useState('');
+
+  // Stateful conversational memory
+  const [stage, setStage] = useState<ConversationStage>('ask_name');
+  const [userName, setUserName] = useState<string>('');
+  const [currentFocusPlace, setCurrentFocusPlace] = useState<string | undefined>(undefined);
   const [activeRegion, setActiveRegion] = useState<SaoPauloZone | null>(null);
-  const [lastTargetPlace, setLastTargetPlace] = useState<string>(destinationLocation.name);
   const [aiVoiceEnabled, setAiVoiceEnabled] = useState(true);
 
   // Live Floating Voice Orb Mode (Siri / ChatGPT / Gemini style)
@@ -92,33 +112,9 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
   const [liveTranscript, setLiveTranscript] = useState('');
   const [micErrorNotice, setMicErrorNotice] = useState<string | null>(null);
 
-  const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    const initial = generateSafetyAssistantReply(
-      `Como está o trajeto para ${destinationLocation.name}?`,
-      {
-        origin: originLocation,
-        destination: destinationLocation,
-        selectedRoute,
-        allRoutes,
-        dangerZones,
-        incidents,
-      }
-    );
-    return [
-      {
-        id: 'welcome-msg',
-        sender: 'assistant',
-        toneLabel: initial.toneLabel,
-        text: `Olá! Que bom falar com você. Antes de iniciar sua rota até ${destinationLocation.name}, posso te orientar com calma sobre o caminho e lugares conhecidos por perto. É a sua primeira vez indo até lá?`,
-        tips: [
-          'Toque em "Modo Voz (Orbe)" ou no microfone para conversar comigo por voz em ritmo calmo e natural.',
-        ],
-        nearbyPlaces: initial.nearbyPlaces,
-        suggestSafeRouteSwitch: initial.suggestSafeRouteSwitch,
-        askFirstTimePlace: destinationLocation.name,
-      },
-    ];
-  });
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
+    createInitialWelcomeMessage(),
+  ]);
 
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -131,51 +127,18 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
   const preTripSms = useMemo(
     () =>
       buildPreTripSmsMessage({
-        origin: originLocation,
         destination: destinationLocation,
         selectedRoute,
-        allRoutes,
         dangerZones,
         incidents,
+        targetPlaceOverride: currentFocusPlace,
       }),
-    [originLocation, destinationLocation, selectedRoute, allRoutes, dangerZones, incidents]
+    [destinationLocation, selectedRoute, dangerZones, incidents, currentFocusPlace]
   );
 
-  // Warm voice cache early
   useEffect(() => {
     pickWarmFemalePortugueseVoice();
   }, []);
-
-  // Sync assistant focus live whenever destinationLocation changes
-  useEffect(() => {
-    setLastTargetPlace(destinationLocation.name);
-    setMessages((prev) => {
-      if (prev.length === 1 && prev[0].id === 'welcome-msg') {
-        const refreshed = generateSafetyAssistantReply(
-          `Como está o trajeto para ${destinationLocation.name}?`,
-          {
-            origin: originLocation,
-            destination: destinationLocation,
-            selectedRoute,
-            allRoutes,
-            dangerZones,
-            incidents,
-          }
-        );
-        return [
-          {
-            ...prev[0],
-            toneLabel: refreshed.toneLabel,
-            text: `Olá! Que bom falar com você. Antes de iniciar sua rota até ${destinationLocation.name}, posso te orientar com calma sobre o caminho e lugares conhecidos por perto. É a sua primeira vez indo até lá?`,
-            nearbyPlaces: refreshed.nearbyPlaces,
-            suggestSafeRouteSwitch: refreshed.suggestSafeRouteSwitch,
-            askFirstTimePlace: destinationLocation.name,
-          },
-        ];
-      }
-      return prev;
-    });
-  }, [destinationLocation.name, originLocation.name, selectedRoute.id]);
 
   // Scoped internal chat scroll
   useEffect(() => {
@@ -233,28 +196,38 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
       setActiveRegion(options.regionTag);
     }
 
+    const effectiveStage: ConversationStage =
+      options?.regionTag && stage === 'ask_name'
+        ? 'ready'
+        : options?.regionTag && stage === 'ask_destination'
+          ? 'ready'
+          : stage;
+
     const userMsg: ChatMessage = {
       id: `u-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       sender: 'user',
       text: clean,
     };
 
-    const reply = generateSafetyAssistantReply(
-      clean,
-      {
-        origin: originLocation,
-        destination: destinationLocation,
-        selectedRoute,
-        allRoutes,
-        dangerZones,
-        incidents,
-      },
-      lastTargetPlace
-    );
+    const reply = generateSafetyAssistantReply(clean, {
+      origin: originLocation,
+      destination: destinationLocation,
+      selectedRoute,
+      allRoutes,
+      dangerZones,
+      incidents,
+      stage: effectiveStage,
+      userName: userName || undefined,
+      currentFocusPlace,
+    });
 
-    if (reply.askFirstTimePlace) {
-      setLastTargetPlace(reply.askFirstTimePlace);
+    if (reply.detectedName) {
+      setUserName(reply.detectedName);
     }
+    if (reply.detectedPlace) {
+      setCurrentFocusPlace(reply.detectedPlace);
+    }
+    setStage(reply.nextStage);
 
     const botMsg: ChatMessage = {
       id: `${reply.id}-${Math.random().toString(36).slice(2, 6)}`,
@@ -266,6 +239,7 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
       suggestSafeRouteSwitch: reply.suggestSafeRouteSwitch,
       askFirstTimePlace: reply.askFirstTimePlace,
       suggestedDestination: reply.suggestedDestination,
+      showQuickDestinations: reply.showQuickDestinations,
     };
 
     setMessages((prev) => [...prev, userMsg, botMsg]);
@@ -276,6 +250,21 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
     }
   };
 
+  const handleResetConversation = () => {
+    stopPortugueseSpeech();
+    setIsSpeaking(false);
+    setStage('ask_name');
+    setUserName('');
+    setCurrentFocusPlace(undefined);
+    setActiveRegion(null);
+    setInputText('');
+    setLiveTranscript('');
+    setMessages([createInitialWelcomeMessage()]);
+    if (aiVoiceEnabled) {
+      speakCalmReply(INITIAL_GREETING_TEXT);
+    }
+  };
+
   const startVoiceCapture = () => {
     setMicErrorNotice(null);
     stopPortugueseSpeech();
@@ -283,7 +272,7 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
 
     if (!speechRecognitionSupported) {
       setMicErrorNotice(
-        'Seu navegador não suporta microfone nativo, mas você pode tocar nas perguntas rápidas abaixo para conversar por voz comigo.'
+        'Seu navegador não suporta microfone nativo, mas você pode tocar nas opções abaixo para conversar por voz comigo.'
       );
       return;
     }
@@ -333,7 +322,6 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
         }
       };
 
-      // Fast commit when speaker finishes talking without waiting long trailing silence
       recognition.onspeechend = () => {
         const fastText = (latestFinalTranscript || latestInterimTranscript).trim();
         if (fastText && !alreadySubmitted) {
@@ -348,7 +336,7 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
 
       recognition.onerror = () => {
         setIsListening(false);
-        setMicErrorNotice('Não consegui captar sua voz agora. Tente tocar no orbe novamente ou escolha uma pergunta abaixo.');
+        setMicErrorNotice('Não consegui captar sua voz agora. Toque no orbe para tentar de novo.');
       };
 
       recognition.onend = () => {
@@ -370,11 +358,25 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
     setIsListening(false);
   };
 
-  const handleOpenVoiceOrb = (autoListen = true) => {
+  const handleOpenVoiceOrb = () => {
     setIsVoiceOrbOpen(true);
     setLiveTranscript('');
     setMicErrorNotice(null);
-    if (autoListen && speechRecognitionSupported) {
+
+    // Speak greeting naturally if conversation hasn't started yet
+    const latest = messages[messages.length - 1];
+    if (messages.length === 1 && latest?.sender === 'assistant') {
+      speakNaturalPortuguese(latest.text, {
+        onStart: () => setIsSpeaking(true),
+        onEnd: () => {
+          setIsSpeaking(false);
+          if (speechRecognitionSupported) {
+            startVoiceCapture();
+          }
+        },
+        onError: () => setIsSpeaking(false),
+      });
+    } else if (speechRecognitionSupported) {
       setTimeout(() => startVoiceCapture(), 150);
     }
   };
@@ -391,7 +393,7 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
       stopPortugueseSpeech();
       setIsSpeaking(false);
       if (speechRecognitionSupported) {
-        setTimeout(() => startVoiceCapture(), 120);
+        setTimeout(() => startVoiceCapture(), 100);
       }
       return;
     }
@@ -416,14 +418,29 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
     preTripSms.smsText
   )}`;
 
-  const quickQuestions = [
+  const quickDestinationOptions = [
+    'Avenida Paulista',
+    'Capão Redondo',
+    'Pinheiros',
+    'Tatuapé',
+    'Santana',
+    'Praça da Sé',
+  ];
+
+  const quickReadyQuestions = [
     'Lugares conhecidos por perto?',
-    `É tranquilo ir para ${destinationLocation.name}?`,
-    'Como está o Capão Redondo?',
     'Comparar rota segura vs rápida',
-    'Chuva e alagamentos em SP',
+    'Como funciona a acessibilidade?',
+    'Telefones de emergência?',
     'Ver texto do SMS',
   ];
+
+  const inputPlaceholder =
+    stage === 'ask_name'
+      ? 'Digite ou fale o seu nome...'
+      : stage === 'ask_destination'
+        ? `Para onde você vai hoje${userName ? `, ${userName}` : ''}?`
+        : `Pergunte qualquer coisa${userName ? `, ${userName}` : ''}...`;
 
   const latestAssistantMsg = [...messages].reverse().find((m) => m.sender === 'assistant');
 
@@ -440,7 +457,7 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
               </div>
               <div>
                 <h3 className="font-display text-base font-extrabold tracking-tight leading-tight">
-                  Assistente IA SafeRoute
+                  Assistente IA SafeRoute{userName ? ` · ${userName}` : ''}
                 </h3>
                 <p className="text-[11px] opacity-80 flex items-center gap-1">
                   <Zap className="w-3 h-3 shrink-0" />
@@ -450,12 +467,11 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
             </div>
 
             <div className="flex items-center gap-1.5">
-              {/* Siri / ChatGPT / Gemini Live Orb Mode Trigger */}
               <button
                 type="button"
-                onClick={() => handleOpenVoiceOrb(true)}
+                onClick={handleOpenVoiceOrb}
                 className="px-3 py-1.5 rounded-full bg-white dark:bg-neutral-950 text-neutral-950 dark:text-white text-[11px] font-bold flex items-center gap-1.5 shadow-sm hover:opacity-90 active:scale-95 transition-all"
-                title="Abrir modo conversa por voz com orbe flutuante"
+                title="Abrir conversa por voz com orbe flutuante"
               >
                 <AudioLines className="w-3.5 h-3.5" />
                 <span>Orbe de Voz</span>
@@ -477,6 +493,16 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
               >
                 {aiVoiceEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
               </button>
+
+              <button
+                type="button"
+                onClick={handleResetConversation}
+                className="p-1.5 rounded-full bg-white/15 dark:bg-neutral-950/10 border border-white/25 dark:border-neutral-950/20 transition-colors hover:bg-white/25"
+                title="Reiniciar conversa"
+                aria-label="Reiniciar conversa com a IA"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
 
@@ -484,7 +510,7 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
           <div className="pt-1 space-y-1.5">
             <div className="text-[10px] font-bold uppercase tracking-wider opacity-75 flex items-center gap-1">
               <Compass className="w-3 h-3" />
-              <span>Consultar regiões de São Paulo em 1 toque:</span>
+              <span>Regiões de São Paulo:</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {SP_REGIONS.map((reg) => {
@@ -508,7 +534,7 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
           </div>
         </div>
 
-        {/* Instant Zero-Delay Conversation Thread */}
+        {/* Instant Conversation Thread */}
         <div
           ref={chatScrollRef}
           className="p-3.5 space-y-3 max-h-[22rem] overflow-y-auto bg-neutral-50/70 dark:bg-neutral-900/50"
@@ -529,14 +555,14 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 dark:border-neutral-800 pb-1.5">
                     <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-400 flex items-center gap-1">
                       <Sparkles className="w-3 h-3" />
-                      <span>Companhia SafeRoute</span>
+                      <span>SafeRoute IA</span>
                     </span>
                     <div className="flex items-center gap-1.5">
                       <button
                         type="button"
                         onClick={() => speakCalmReply(msg.text)}
                         className="p-1 rounded-lg bg-neutral-100 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white"
-                        title="Ouvir esta mensagem com voz suave"
+                        title="Ouvir mensagem"
                         aria-label="Ouvir mensagem em voz alta"
                       >
                         <Volume2 className="w-3 h-3" />
@@ -549,6 +575,22 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
                 )}
 
                 <p className="text-xs sm:text-sm leading-relaxed">{msg.text}</p>
+
+                {/* Quick Destination Chips when IA asks where user is going */}
+                {msg.sender === 'assistant' && msg.showQuickDestinations && (
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    {quickDestinationOptions.map((place) => (
+                      <button
+                        key={place}
+                        type="button"
+                        onClick={() => askAssistant(`Vou para ${place}`)}
+                        className="px-2.5 py-1.5 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 text-[11px] font-semibold hover:border-neutral-950 dark:hover:border-white transition-colors"
+                      >
+                        {place}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {/* Interactive "First Time Going There?" Quick Replies */}
                 {msg.sender === 'assistant' && msg.askFirstTimePlace && (
@@ -574,7 +616,7 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
                   </div>
                 )}
 
-                {/* Nearby Reference Places Around Destination */}
+                {/* Nearby Reference Places Around Chosen Destination */}
                 {msg.nearbyPlaces && msg.nearbyPlaces.length > 0 && (
                   <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800/80 space-y-1.5">
                     <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 flex items-center gap-1">
@@ -639,28 +681,30 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
           ))}
         </div>
 
-        {/* Quick 1-Tap Prompt Chips */}
-        <div className="px-3.5 py-2 border-t border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex items-center gap-1.5 overflow-x-auto">
-          {quickQuestions.map((q) => (
-            <button
-              key={q}
-              type="button"
-              onClick={() => askAssistant(q)}
-              className="px-2.5 py-1.5 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-900 dark:hover:border-white text-[11px] font-semibold text-neutral-900 dark:text-neutral-100 whitespace-nowrap shrink-0 transition-colors"
-            >
-              {q}
-            </button>
-          ))}
-        </div>
+        {/* Context-Aware Quick Question Chips (only shown after destination/onboarding starts) */}
+        {stage === 'ready' && (
+          <div className="px-3.5 py-2 border-t border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex items-center gap-1.5 overflow-x-auto">
+            {quickReadyQuestions.map((q) => (
+              <button
+                key={q}
+                type="button"
+                onClick={() => askAssistant(q)}
+                className="px-2.5 py-1.5 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-900 dark:hover:border-white text-[11px] font-semibold text-neutral-900 dark:text-neutral-100 whitespace-nowrap shrink-0 transition-colors"
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+        )}
 
-        {/* High-Visibility Voice Orb + Text Composer */}
+        {/* Voice Orb + Input Composer */}
         <form
           onSubmit={handleSubmit}
           className="p-3 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/80 flex items-center gap-2"
         >
           <button
             type="button"
-            onClick={() => handleOpenVoiceOrb(true)}
+            onClick={handleOpenVoiceOrb}
             aria-label="Abrir Orbe de Voz para conversar falando"
             title="Conversar com o Orbe Flutuante da IA"
             className="p-2.5 rounded-xl border bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border-neutral-950 dark:border-white font-bold text-xs flex items-center justify-center shrink-0 hover:opacity-90 active:scale-95 transition-all shadow-xs"
@@ -673,8 +717,8 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="Digite ou toque no microfone para o Modo Voz..."
-            aria-label="Perguntar ao assistente preventivo"
+            placeholder={inputPlaceholder}
+            aria-label="Responder ou perguntar ao assistente preventivo"
             className="flex-1 min-w-0 px-3.5 py-2.5 rounded-xl bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-xs text-neutral-950 dark:text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-950 dark:focus:border-white"
           />
 
@@ -682,15 +726,15 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
             type="submit"
             disabled={!inputText.trim()}
             className="px-4 py-2.5 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 disabled:opacity-40 transition-opacity font-bold text-xs flex items-center gap-1.5 shrink-0"
-            aria-label="Enviar pergunta para a IA"
+            aria-label="Enviar mensagem para a IA"
           >
             <Send className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Perguntar</span>
+            <span className="hidden sm:inline">Enviar</span>
           </button>
         </form>
       </div>
 
-      {/* 2. Calm Pre-Trip SMS Card (Synced Live before Route Starts) */}
+      {/* 2. Calm Pre-Trip SMS Card */}
       <div className="p-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200 dark:border-neutral-800 pb-2">
           <div className="flex items-center gap-2">
@@ -776,7 +820,7 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
                 />
                 <div>
                   <span className="font-display text-sm font-bold tracking-tight block leading-none">
-                    SafeRoute &middot; Modo Voz
+                    SafeRoute &middot; Modo Voz{userName ? ` · ${userName}` : ''}
                   </span>
                   <span className="text-[11px] text-neutral-400 font-mono mt-0.5 block">
                     {isListening
@@ -801,7 +845,6 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
             {/* Centerpiece Animated Monochrome Floating Orb */}
             <div className="flex-1 flex flex-col items-center justify-center gap-7 max-w-xl w-full mx-auto text-center my-4">
               <div className="relative flex items-center justify-center">
-                {/* Ambient outer halo rings */}
                 {isListening && (
                   <>
                     <span className="absolute w-64 h-64 rounded-full border border-white/25 animate-ping" />
@@ -812,7 +855,6 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
                   <span className="absolute w-56 h-56 rounded-full border border-white/25 animate-pulse" />
                 )}
 
-                {/* Tactile Floating Orb Button */}
                 <button
                   type="button"
                   onClick={handleOrbTap}
@@ -835,13 +877,11 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
                       'radial-gradient(circle at 32% 28%, #ffffff 0%, #d4d4d4 35%, #525252 72%, #171717 100%)',
                   }}
                 >
-                  {/* Inner Liquid Specular Highlight */}
                   <span
                     className="absolute top-5 left-7 w-14 h-8 rounded-full bg-white/55 blur-md pointer-events-none"
                     aria-hidden="true"
                   />
 
-                  {/* Subtle Sound Equalizer when speaking or listening */}
                   <div className="relative z-10 flex items-center justify-center gap-1.5 h-10">
                     {isSpeaking || isListening ? (
                       [0, 1, 2, 3, 4].map((bar) => (
@@ -861,7 +901,7 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
                 </button>
               </div>
 
-              {/* Live Voice Caption & Calming Subtitles */}
+              {/* Live Voice Caption */}
               <div className="space-y-3 px-2 max-w-lg">
                 {liveTranscript ? (
                   <p className="text-base sm:text-lg font-medium text-white/95 leading-relaxed">
@@ -899,28 +939,28 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
               </div>
             </div>
 
-            {/* Bottom Quick Voice Starters + Action Controls */}
+            {/* Bottom Stage-Aware Voice Starters */}
             <div className="max-w-xl w-full mx-auto space-y-4">
-              <div className="flex flex-wrap items-center justify-center gap-1.5">
-                {[
-                  'Como está o Capão Redondo?',
-                  'Lugares perto do destino',
-                  'Sim, é minha primeira vez',
-                  'Comparar rota segura',
-                ].map((prompt) => (
-                  <button
-                    key={prompt}
-                    type="button"
-                    onClick={() => {
-                      setLiveTranscript(prompt);
-                      askAssistant(prompt, { speakResponse: true });
-                    }}
-                    className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-medium text-neutral-200 transition-colors"
-                  >
-                    {prompt}
-                  </button>
-                ))}
-              </div>
+              {stage !== 'ask_name' && (
+                <div className="flex flex-wrap items-center justify-center gap-1.5">
+                  {(stage === 'ask_destination'
+                    ? ['Vou para Avenida Paulista', 'Vou para Capão Redondo', 'Vou para Pinheiros']
+                    : ['Lugares perto de lá', 'Sim, é minha primeira vez', 'Comparar rota segura']
+                  ).map((prompt) => (
+                    <button
+                      key={prompt}
+                      type="button"
+                      onClick={() => {
+                        setLiveTranscript(prompt);
+                        askAssistant(prompt, { speakResponse: true });
+                      }}
+                      className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-medium text-neutral-200 transition-colors"
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               <div className="flex items-center justify-center gap-3">
                 <button
