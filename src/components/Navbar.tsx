@@ -37,7 +37,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-neutral-200 dark:border-neutral-800 bg-white/85 dark:bg-neutral-950/85 backdrop-blur-xl transition-colors">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 flex items-center justify-between gap-2 sm:gap-3">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 min-h-14 py-1.5 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
         {/* Brand */}
         <div className="flex items-center gap-2 shrink-0">
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-xs">

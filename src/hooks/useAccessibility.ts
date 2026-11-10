@@ -68,7 +68,9 @@ export function useAccessibility() {
 
   // Apply font size scale to <html>
   useEffect(() => {
-    document.documentElement.style.fontSize = FONT_PX_MAP[fontSize];
+    const root = document.documentElement;
+    root.style.fontSize = FONT_PX_MAP[fontSize];
+    root.dataset.fontScale = fontSize;
     localStorage.setItem(STORAGE_FONT_KEY, fontSize);
   }, [fontSize]);
 

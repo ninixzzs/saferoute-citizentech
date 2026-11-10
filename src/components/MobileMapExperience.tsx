@@ -236,7 +236,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
   };
 
   return (
-    <div className="relative w-full h-[64dvh] min-h-[460px] max-h-[600px] rounded-[28px] overflow-hidden border border-neutral-200/90 dark:border-neutral-800/90 shadow-[0_18px_50px_rgba(0,0,0,0.16)] dark:shadow-[0_22px_60px_rgba(0,0,0,0.65)] bg-neutral-950 select-none flex flex-col">
+    <div className="relative w-full h-[68dvh] min-h-[30rem] max-h-[46rem] rounded-[28px] overflow-hidden border border-neutral-200/90 dark:border-neutral-800/90 shadow-[0_18px_50px_rgba(0,0,0,0.16)] dark:shadow-[0_22px_60px_rgba(0,0,0,0.65)] bg-neutral-950 select-none flex flex-col">
       {!isSearchOpen ? (
         <div className="relative w-full h-full flex-1">
           <NavigationMap
@@ -487,11 +487,11 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
               </div>
             )}
 
-            {/* ETA + Primary Drive Action */}
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <div className="flex items-baseline gap-2 tabular-nums">
-                  <span className="font-display text-2xl font-extrabold tracking-tight text-neutral-950 dark:text-white">
+            {/* ETA + Primary Drive Action (wraps gracefully at 20px accessibility font scale) */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 tabular-nums">
+                  <span className="font-display text-xl sm:text-2xl font-extrabold tracking-tight text-neutral-950 dark:text-white">
                     {remainingMin} min
                   </span>
                   <span className="text-xs font-mono text-neutral-600 dark:text-neutral-400">

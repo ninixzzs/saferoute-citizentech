@@ -86,30 +86,30 @@ export const AccessibilityMenu: React.FC<AccessibilityMenuProps> = ({
     { id: 'system', label: 'Aparelho', icon: <Monitor className="w-4 h-4 sm:w-3.5 sm:h-3.5" /> },
   ];
 
-  const fontOptions: { id: FontSizeScale; label: string }[] = [
-    { id: 'sm', label: 'A-' },
-    { id: 'md', label: 'A' },
-    { id: 'lg', label: 'A+' },
-    { id: 'xl', label: 'A++' },
+  const fontOptions: { id: FontSizeScale; label: string; px: string }[] = [
+    { id: 'sm', label: 'A-', px: '14px' },
+    { id: 'md', label: 'A', px: '16px' },
+    { id: 'lg', label: 'A+', px: '18px' },
+    { id: 'xl', label: 'A++', px: '20px' },
   ];
 
   const renderPanelContent = (isMobileSheet: boolean) => (
     <div className="space-y-4">
-      <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-3">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 dark:border-neutral-800 pb-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-7 h-7 rounded-lg bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0">
             <Accessibility className="w-4 h-4" />
           </div>
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider block leading-none">
+          <div className="min-w-0">
+            <span className="text-xs font-bold uppercase tracking-wider block leading-tight">
               Acessibilidade &amp; Tema
             </span>
-            <span className="text-[10px] text-neutral-500 mt-0.5 block">
+            <span className="text-[11px] text-neutral-500 mt-0.5 block">
               Ajuste visual e sonoro do aplicativo
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
             onClick={onReset}
@@ -179,16 +179,20 @@ export const AccessibilityMenu: React.FC<AccessibilityMenuProps> = ({
                 key={opt.id}
                 type="button"
                 onClick={() => onChangeFontSize(opt.id)}
-                className={`min-h-[42px] sm:min-h-0 py-2 rounded-lg text-xs font-bold transition-all ${
+                className={`min-h-[44px] sm:min-h-0 py-2 px-1 rounded-lg text-xs font-bold flex flex-col items-center justify-center leading-tight transition-all ${
                   active
                     ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
                     : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
                 }`}
               >
-                {opt.label}
+                <span>{opt.label}</span>
+                <span className="text-[10px] font-mono opacity-80">{opt.px}</span>
               </button>
             );
           })}
+        </div>
+        <div className="p-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-sm text-neutral-800 dark:text-neutral-200 leading-snug">
+          Exemplo de leitura atual nas rotas e diretrizes.
         </div>
       </div>
 

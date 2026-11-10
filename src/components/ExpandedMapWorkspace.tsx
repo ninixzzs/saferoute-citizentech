@@ -111,7 +111,7 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
       className={
         isFullscreen
           ? 'fixed inset-0 z-[950] w-screen h-screen bg-neutral-950 select-none'
-          : 'relative w-full h-[58vh] min-h-[420px] sm:h-[580px] lg:h-[680px] rounded-[28px] overflow-hidden border border-neutral-200/90 dark:border-neutral-800/90 shadow-[0_20px_60px_rgba(0,0,0,0.14)] dark:shadow-[0_24px_64px_rgba(0,0,0,0.65)] bg-neutral-900 select-none'
+          : 'relative w-full h-[58vh] min-h-[26rem] sm:h-[36rem] lg:h-[42.5rem] rounded-[28px] overflow-hidden border border-neutral-200/90 dark:border-neutral-800/90 shadow-[0_20px_60px_rgba(0,0,0,0.14)] dark:shadow-[0_24px_64px_rgba(0,0,0,0.65)] bg-neutral-900 select-none'
       }
     >
       {/* Main Interactive Map */}
@@ -139,7 +139,7 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
           onTouchStart={(e) => e.stopPropagation()}
           className="select-none pointer-events-auto"
         >
-          <div className="absolute top-4 left-4 right-28 sm:right-auto sm:w-[360px] z-[400] bg-neutral-950/92 backdrop-blur-xl text-white rounded-2xl p-3 shadow-2xl border border-white/15 flex items-center gap-3 h-[64px]">
+          <div className="absolute top-4 left-4 right-28 sm:right-auto sm:w-[23rem] max-w-[calc(100%-8rem)] z-[400] bg-neutral-950/92 backdrop-blur-xl text-white rounded-2xl p-3 shadow-2xl border border-white/15 flex items-center gap-3 min-h-[4rem]">
             <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-md">
               {renderTurnIcon(activeStep?.modifier)}
             </div>

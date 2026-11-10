@@ -6,15 +6,31 @@
 @layer base {
   html {
     transition: font-size 0.15s ease-out;
+    overflow-x: clip;
   }
 
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    overflow-x: clip;
   }
 }
 
 .font-display {
   font-family: 'Syne', 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+/* Automatically scale micro pixel utility labels when accessibility font scale increases */
+html[data-font-scale="lg"] [class*="text-\[10px\]"] {
+  font-size: 0.72rem;
+}
+html[data-font-scale="lg"] [class*="text-\[11px\]"] {
+  font-size: 0.78rem;
+}
+html[data-font-scale="xl"] [class*="text-\[10px\]"] {
+  font-size: 0.78rem;
+}
+html[data-font-scale="xl"] [class*="text-\[11px\]"] {
+  font-size: 0.86rem;
 }
 
 /* Architectural monochrome dot-grid backgrounds for Light and Dark modes */

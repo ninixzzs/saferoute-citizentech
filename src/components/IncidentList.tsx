@@ -145,9 +145,9 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                 {inc.description}
               </p>
 
-              <div className="flex items-center justify-between text-[10px] text-neutral-500 pt-1 border-t border-neutral-200/70 dark:border-neutral-900">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-neutral-500 pt-1.5 border-t border-neutral-200/70 dark:border-neutral-900">
                 <span>{inc.timestamp}</span>
-                <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-1.5">
                   {onFocusIncident && (
                     <button
                       type="button"

@@ -184,11 +184,11 @@ export function App() {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-6">
             {/* Hero Title & Description */}
             <div className="space-y-1 sm:space-y-2 max-w-2xl">
-              <h1 className="font-display text-[22px] sm:text-[34px] lg:text-[38px] font-extrabold tracking-[-0.03em] text-neutral-950 dark:text-white leading-[1.08]">
+              <h1 className="font-display text-[1.4rem] sm:text-[2.15rem] lg:text-[2.4rem] font-extrabold tracking-[-0.03em] text-neutral-950 dark:text-white leading-[1.08]">
                 Rotas que avisam antes do risco.
               </h1>
 
-              <p className="text-[11px] sm:text-[15px] text-neutral-600 dark:text-neutral-400 leading-relaxed max-w-xl">
+              <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed max-w-xl">
                 O SafeRoute compara o caminho mais rápido com um desvio seguro e manda uma mensagem
                 no celular quando você chega perto de uma área de risco em São Paulo.
               </p>
@@ -394,7 +394,7 @@ export function App() {
               </button>
             </div>
 
-            <div className="p-4 max-h-[622px] overflow-y-auto">
+            <div className="p-4 max-h-[39rem] overflow-y-auto">
               {sidebarTab === 'routes' && (
                 <RouteSelector
                   routes={routes}
@@ -529,7 +529,7 @@ export function App() {
                 role="tab"
                 aria-selected={sidebarTab === 'routes'}
                 onClick={() => setSidebarTab('routes')}
-                className={`py-2.5 px-2 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                className={`py-2.5 px-1.5 rounded-2xl text-xs font-bold flex flex-wrap items-center justify-center gap-1 text-center leading-tight transition-all ${
                   sidebarTab === 'routes'
                     ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
                     : 'text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200/70 dark:hover:bg-neutral-800'
@@ -544,7 +544,7 @@ export function App() {
                 role="tab"
                 aria-selected={sidebarTab === 'itinerary'}
                 onClick={() => setSidebarTab('itinerary')}
-                className={`py-2.5 px-2 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                className={`py-2.5 px-1.5 rounded-2xl text-xs font-bold flex flex-wrap items-center justify-center gap-1 text-center leading-tight transition-all ${
                   sidebarTab === 'itinerary'
                     ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
                     : 'text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200/70 dark:hover:bg-neutral-800'
@@ -559,7 +559,7 @@ export function App() {
                 role="tab"
                 aria-selected={sidebarTab === 'alerts'}
                 onClick={() => setSidebarTab('alerts')}
-                className={`py-2.5 px-2 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                className={`py-2.5 px-1.5 rounded-2xl text-xs font-bold flex flex-wrap items-center justify-center gap-1 text-center leading-tight transition-all ${
                   sidebarTab === 'alerts'
                     ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
                     : 'text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200/70 dark:hover:bg-neutral-800'
