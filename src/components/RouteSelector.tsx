@@ -4,6 +4,7 @@ import {
   LocationSuggestion,
   POPULAR_LOCATIONS,
   searchAddressSuggestions,
+  reverseGeocode,
 } from '../services/routingService';
 import {
   Clock,
@@ -16,6 +17,7 @@ import {
   ShieldCheck,
   Gauge,
   X,
+  LocateFixed,
 } from 'lucide-react';
 
 interface RouteSelectorProps {
@@ -53,8 +55,31 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
   const [destinationInput, setDestinationInput] = useState(destinationLocation.name);
   const [activeField, setActiveField] = useState<'origin' | 'destination' | null>(null);
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>(POPULAR_LOCATIONS.slice(0, 5));
+  const [isLocatingGps, setIsLocatingGps] = useState(false);
 
   const debounceRef = useRef<number | null>(null);
+
+  const handleUseCurrentLocation = () => {
+    if (isNavigating || isCalculatingRoute || !navigator.geolocation) return;
+    setIsLocatingGps(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const loc = await reverseGeocode(pos.coords.latitude, pos.coords.longitude);
+          setOriginInput(loc.name);
+          if (destinationInput.trim()) {
+            onCalculateJourney(loc.address, destinationInput);
+          }
+        } finally {
+          setIsLocatingGps(false);
+        }
+      },
+      () => {
+        setIsLocatingGps(false);
+      },
+      { enableHighAccuracy: true, timeout: 6000 }
+    );
+  };
 
   useEffect(() => {
     setOriginInput(originLocation.name);
@@ -156,26 +181,44 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
                   triggerSuggestions(originInput);
                 }}
                 onBlur={() => setTimeout(() => setActiveField(null), 220)}
-                placeholder="Ponto de partida (rua, bairro ou CEP)..."
+                placeholder="Partida (rua, bairro ou CEP)..."
                 aria-label="Ponto de partida"
                 disabled={isNavigating || isCalculatingRoute}
-                className="w-full pl-9 pr-8 py-2.5 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl text-xs text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:border-blue-500 dark:focus:border-neutral-400 focus:ring-1 focus:ring-blue-500/30 transition-all font-medium disabled:opacity-50"
+                className="w-full pl-9 pr-14 py-2.5 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded-xl text-xs text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:border-blue-500 dark:focus:border-neutral-400 focus:ring-1 focus:ring-blue-500/30 transition-all font-medium disabled:opacity-50"
               />
-              {originInput && !isNavigating && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOriginInput('');
-                    setActiveField('origin');
-                    triggerSuggestions('');
-                  }}
-                  className="absolute right-2.5 p-0.5 text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
-                  title="Limpar origem"
-                  aria-label="Limpar origem"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
+              <div className="absolute right-2 flex items-center gap-1">
+                {originInput && !isNavigating && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOriginInput('');
+                      setActiveField('origin');
+                      triggerSuggestions('');
+                    }}
+                    className="p-0.5 text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
+                    title="Limpar origem"
+                    aria-label="Limpar origem"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                {!isNavigating && (
+                  <button
+                    type="button"
+                    onClick={handleUseCurrentLocation}
+                    disabled={isLocatingGps}
+                    className="p-1 text-neutral-500 hover:text-blue-600 dark:text-neutral-400 dark:hover:text-white transition-colors"
+                    title="Usar minha localização GPS atual"
+                    aria-label="Usar minha localização GPS atual"
+                  >
+                    {isLocatingGps ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <LocateFixed className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Destination Input & Swap Button */}

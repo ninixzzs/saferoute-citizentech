@@ -42,6 +42,13 @@ export interface IncidentReport {
   isUserCreated?: boolean;
 }
 
+export interface RouteStep {
+  instruction: string;
+  street: string;
+  distanceMeters: number;
+  modifier?: string;
+}
+
 export interface NavigationRoute {
   id: string;
   name: string;
@@ -54,6 +61,7 @@ export interface NavigationRoute {
   description: string;
   highlights: string[];
   streetNames?: string[];
+  steps?: RouteStep[];
 }
 
 export interface NavigationState {

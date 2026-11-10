@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   CornerUpRight,
+  CornerUpLeft,
+  ArrowUp,
   Volume2,
   VolumeX,
   Search,
@@ -30,6 +32,8 @@ interface MobilePhoneSimulatorProps {
   currentPosition: [number, number];
   nextPosition?: [number, number];
   selectedRoute: NavigationRoute;
+  allRoutes?: NavigationRoute[];
+  onSelectRoute?: (route: NavigationRoute) => void;
   dangerZones: DangerZone[];
   incidents: IncidentReport[];
   isNavigating: boolean;
@@ -61,6 +65,8 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
   currentPosition,
   nextPosition,
   selectedRoute,
+  allRoutes = [],
+  onSelectRoute,
   dangerZones,
   incidents,
   isNavigating,
@@ -184,13 +190,26 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
     ? Math.max(0.1, Number((selectedRoute.distanceKm * remainingFactor).toFixed(1)))
     : selectedRoute.distanceKm;
 
-  // Dynamic street instruction during trip
+  // Dynamic street & maneuver instruction during trip
+  const steps = selectedRoute.steps || [];
+  const stepIdx =
+    steps.length > 0
+      ? Math.min(steps.length - 1, Math.floor((progressPercentage / 100) * steps.length))
+      : 0;
+  const activeStep = steps[stepIdx];
+
   const streetNames = selectedRoute.streetNames || [];
   const currentStreetIndex =
     streetNames.length > 0
       ? Math.min(streetNames.length - 1, Math.floor((progressPercentage / 100) * streetNames.length))
       : 0;
-  const upcomingStreet = streetNames[currentStreetIndex] || selectedRoute.name;
+  const upcomingStreet = activeStep?.street || streetNames[currentStreetIndex] || selectedRoute.name;
+
+  const renderTurnIcon = (modifier?: string) => {
+    if (modifier?.includes('left')) return <CornerUpLeft className="w-5 h-5 text-white stroke-[2.5]" />;
+    if (modifier?.includes('right')) return <CornerUpRight className="w-5 h-5 text-white stroke-[2.5]" />;
+    return <ArrowUp className="w-5 h-5 text-white stroke-[2.5]" />;
+  };
 
   return (
     <div className="flex flex-col items-center justify-center w-full py-2">
@@ -223,6 +242,8 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
               currentPosition={currentPosition}
               nextPosition={nextPosition}
               selectedRoute={selectedRoute}
+              allRoutes={allRoutes}
+              onSelectRoute={onSelectRoute}
               dangerZones={dangerZones}
               incidents={incidents}
               isNavigating={isNavigating}
@@ -237,13 +258,19 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
               /* Turn-by-Turn Guidance Header */
               <div className="bg-neutral-900/95 backdrop-blur-md text-white rounded-2xl p-3 shadow-xl flex items-center justify-between gap-3 border border-neutral-800">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center shrink-0 shadow-inner">
-                    <CornerUpRight className="w-5 h-5 text-white stroke-[2.5]" />
+                  <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shrink-0 shadow-inner">
+                    {renderTurnIcon(activeStep?.modifier)}
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-base font-bold leading-tight">Em 200 m</span>
-                      <span className="text-[11px] text-neutral-400">siga pela via</span>
+                      <span className="text-sm font-bold leading-tight">
+                        {activeStep ? activeStep.instruction : 'Siga em frente'}
+                      </span>
+                      {activeStep?.distanceMeters ? (
+                        <span className="text-[11px] font-mono text-neutral-400">
+                          {activeStep.distanceMeters} m
+                        </span>
+                      ) : null}
                     </div>
                     <p className="text-xs font-medium text-white/95 truncate">
                       {upcomingStreet}

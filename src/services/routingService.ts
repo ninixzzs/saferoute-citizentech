@@ -1,4 +1,4 @@
-import { NavigationRoute, DangerZone } from '../types';
+import { NavigationRoute, DangerZone, RouteStep } from '../types';
 import { calculateDistanceMeters } from './api';
 
 export interface LocationSuggestion {
@@ -133,7 +133,64 @@ export const DEFAULT_DESTINATION: LocationSuggestion = {
 };
 
 /**
- * Real-time autocomplete suggestions combining curated SP locations and Nominatim OpenStreetMap
+ * Resolves a Brazilian CEP (e.g. "01310-100" or "01310100") via official ViaCEP API
+ */
+async function resolveBrazilianCep(cepRaw: string): Promise<{ street: string; city: string; uf: string; bairro: string } | null> {
+  const digits = cepRaw.replace(/\D/g, '');
+  if (digits.length !== 8) return null;
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.erro || !data.localidade) return null;
+    return {
+      street: data.logradouro || '',
+      bairro: data.bairro || '',
+      city: data.localidade,
+      uf: data.uf || 'SP',
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Formats Photon GeoJSON feature into a clean LocationSuggestion
+ */
+function formatPhotonFeature(f: any): LocationSuggestion | null {
+  const props = f?.properties || {};
+  const coords = f?.geometry?.coordinates;
+  if (!Array.isArray(coords) || coords.length < 2) return null;
+  const lon = Number(coords[0]);
+  const lat = Number(coords[1]);
+  if (isNaN(lat) || isNaN(lon)) return null;
+
+  const primary = props.name || props.street || props.district || props.city;
+  if (!primary) return null;
+
+  const streetPart =
+    props.street && props.housenumber
+      ? `${props.street}, ${props.housenumber}`
+      : props.street || props.name;
+  const areaParts = [streetPart, props.district, props.city, props.state]
+    .filter(Boolean)
+    .filter((v, idx, arr) => arr.indexOf(v) === idx);
+
+  return {
+    name: primary,
+    address: areaParts.slice(0, 3).join(' - '),
+    coordinates: [lat, lon],
+  };
+}
+
+/**
+ * Real-time autocomplete suggestions powered by Photon (Komoot/OSM), ViaCEP & curated SP landmarks
  */
 export async function searchAddressSuggestions(query: string): Promise<LocationSuggestion[]> {
   const clean = query.trim();
@@ -144,12 +201,75 @@ export async function searchAddressSuggestions(query: string): Promise<LocationS
       !clean ||
       loc.name.toLowerCase().includes(lower) ||
       loc.address.toLowerCase().includes(lower)
-  ).slice(0, 5);
+  ).slice(0, 4);
 
   if (clean.length < 3) {
     return localMatches;
   }
 
+  // Check if user is typing a CEP
+  const digits = clean.replace(/\D/g, '');
+  if (digits.length === 8) {
+    const cepData = await resolveBrazilianCep(digits);
+    if (cepData) {
+      const cepQuery = [cepData.street, cepData.bairro, cepData.city, cepData.uf]
+        .filter(Boolean)
+        .join(', ');
+      const geocoded = await geocodeAddress(cepQuery);
+      return [
+        {
+          name: cepData.street || `${cepData.city} (${clean})`,
+          address: `${cepData.street ? cepData.street + ' - ' : ''}${cepData.bairro ? cepData.bairro + ', ' : ''}${cepData.city} - ${cepData.uf}`,
+          coordinates: geocoded.coordinates,
+        },
+      ];
+    }
+  }
+
+  // Query Photon API (extremely fast, CORS-friendly, biased to São Paulo)
+  try {
+    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(
+      clean
+    )}&lat=-23.5505&lon=-46.6333&limit=5`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2800);
+
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (response.ok) {
+      const data = await response.json();
+      if (Array.isArray(data?.features)) {
+        const photonResults = data.features
+          .map(formatPhotonFeature)
+          .filter((item: LocationSuggestion | null): item is LocationSuggestion => {
+            if (!item) return false;
+            // Prioritize Brazil bounding box
+            const [lat, lon] = item.coordinates;
+            return lat >= -34 && lat <= 6 && lon >= -74 && lon <= -34;
+          });
+
+        const combined = [...localMatches];
+        for (const rem of photonResults) {
+          if (
+            !combined.some(
+              (c) =>
+                c.name.toLowerCase() === rem.name.toLowerCase() &&
+                c.address.toLowerCase() === rem.address.toLowerCase()
+            )
+          ) {
+            combined.push(rem);
+          }
+        }
+        if (combined.length > 0) return combined.slice(0, 6);
+      }
+    }
+  } catch {
+    // Fallback to Nominatim if Photon fails
+  }
+
+  // Secondary fallback: Nominatim
   try {
     const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
       clean
@@ -157,7 +277,6 @@ export async function searchAddressSuggestions(query: string): Promise<LocationS
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3000);
-
     const response = await fetch(searchUrl, {
       signal: controller.signal,
       headers: { 'Accept-Language': 'pt-BR,pt;q=0.9' },
@@ -170,17 +289,14 @@ export async function searchAddressSuggestions(query: string): Promise<LocationS
         const remoteSuggestions: LocationSuggestion[] = data
           .map((item: any) => {
             const parts = String(item.display_name || '').split(',');
-            const shortName = parts[0]?.trim() || clean;
-            const shortAddress = parts.slice(0, 3).join(',').trim();
             return {
-              name: shortName,
-              address: shortAddress,
+              name: parts[0]?.trim() || clean,
+              address: parts.slice(0, 3).join(',').trim(),
               coordinates: [parseFloat(item.lat), parseFloat(item.lon)] as [number, number],
             };
           })
           .filter((s) => !isNaN(s.coordinates[0]) && !isNaN(s.coordinates[1]));
 
-        // Merge local + remote avoiding duplicates by name
         const combined = [...localMatches];
         for (const rem of remoteSuggestions) {
           if (!combined.some((c) => c.name.toLowerCase() === rem.name.toLowerCase())) {
@@ -191,14 +307,14 @@ export async function searchAddressSuggestions(query: string): Promise<LocationS
       }
     }
   } catch {
-    // Silent fallback to local matches
+    // Silent fallback
   }
 
   return localMatches;
 }
 
 /**
- * Searches for coordinates based on query text with São Paulo bias.
+ * Searches for exact coordinates from CEP, coordinates, curated points, Photon or Nominatim.
  */
 export async function geocodeAddress(
   query: string,
@@ -208,7 +324,7 @@ export async function geocodeAddress(
   if (!cleanQuery) return defaultFallback;
   const lowerQuery = cleanQuery.toLowerCase();
 
-  // 1. Direct coordinate format check (e.g., "-23.55, -46.63")
+  // 1. Direct coordinate format check
   const coordMatch = cleanQuery.match(/^(-?\d+(\.\d+)?)[,\s]+(-?\d+(\.\d+)?)$/);
   if (coordMatch) {
     const lat = parseFloat(coordMatch[1]);
@@ -222,22 +338,66 @@ export async function geocodeAddress(
     }
   }
 
-  // 2. Exact or close local match
+  // 2. Direct local curated match
   const exactLocal = POPULAR_LOCATIONS.find(
     (loc) => loc.name.toLowerCase() === lowerQuery || loc.address.toLowerCase() === lowerQuery
   );
   if (exactLocal) return exactLocal;
 
-  // 3. Try Nominatim Geocoding API biased to São Paulo metro first, then Brazil
+  // 3. Brazilian CEP lookup via ViaCEP
+  let effectiveQuery = cleanQuery;
+  const digitsOnly = cleanQuery.replace(/\D/g, '');
+  if (digitsOnly.length === 8 && cleanQuery.length <= 10) {
+    const cepData = await resolveBrazilianCep(digitsOnly);
+    if (cepData) {
+      effectiveQuery = [cepData.street, cepData.bairro, cepData.city, cepData.uf]
+        .filter(Boolean)
+        .join(', ');
+    }
+  }
+
+  // 4. Try Photon API first (fast, São Paulo biased)
   try {
-    const searchQuery = cleanQuery.includes(',') ? cleanQuery : `${cleanQuery}, São Paulo`;
+    const qWithContext = effectiveQuery.includes(',') ? effectiveQuery : `${effectiveQuery}, São Paulo`;
+    const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(
+      qWithContext
+    )}&lat=-23.5505&lon=-46.6333&limit=3`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3200);
+    const res = await fetch(photonUrl, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const data = await res.json();
+      const firstBr = (data?.features || [])
+        .map(formatPhotonFeature)
+        .find((item: LocationSuggestion | null) => {
+          if (!item) return false;
+          const [lat, lon] = item.coordinates;
+          return lat >= -34 && lat <= 6 && lon >= -74 && lon <= -34;
+        });
+      if (firstBr) {
+        return {
+          name: cleanQuery,
+          address: firstBr.address,
+          coordinates: firstBr.coordinates,
+        };
+      }
+    }
+  } catch {
+    // Proceed to Nominatim
+  }
+
+  // 5. Nominatim fallback
+  try {
+    const searchQuery = effectiveQuery.includes(',') ? effectiveQuery : `${effectiveQuery}, São Paulo`;
     const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
       searchQuery
     )}&viewbox=-46.85,-23.35,-46.35,-23.85&countrycodes=br&limit=1&addressdetails=1`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
-
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
     const response = await fetch(searchUrl, {
       signal: controller.signal,
       headers: { 'Accept-Language': 'pt-BR,pt;q=0.9' },
@@ -259,32 +419,11 @@ export async function geocodeAddress(
         }
       }
     }
-
-    // Retry without ", São Paulo" suffix in case user typed another city (e.g. "Campinas", "Santos")
-    const retryUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-      cleanQuery + ', Brasil'
-    )}&countrycodes=br&limit=1`;
-    const retryRes = await fetch(retryUrl, { headers: { 'Accept-Language': 'pt-BR,pt;q=0.9' } });
-    if (retryRes.ok) {
-      const retryData = await retryRes.json();
-      if (Array.isArray(retryData) && retryData.length > 0) {
-        const item = retryData[0];
-        const lat = parseFloat(item.lat);
-        const lon = parseFloat(item.lon);
-        if (!isNaN(lat) && !isNaN(lon)) {
-          return {
-            name: cleanQuery,
-            address: item.display_name.split(',').slice(0, 3).join(','),
-            coordinates: [lat, lon],
-          };
-        }
-      }
-    }
   } catch {
     // Fallback below
   }
 
-  // 4. Partial local match fallback
+  // 6. Partial local match fallback
   const partialLocal = POPULAR_LOCATIONS.find(
     (loc) =>
       loc.name.toLowerCase().includes(lowerQuery) ||
@@ -292,7 +431,7 @@ export async function geocodeAddress(
   );
   if (partialLocal) return partialLocal;
 
-  // 5. Deterministic fallback inside SP central region
+  // 7. Deterministic fallback inside SP central region
   let hash = 0;
   for (let i = 0; i < cleanQuery.length; i++) {
     hash = (hash << 5) - hash + cleanQuery.charCodeAt(i);
@@ -312,7 +451,7 @@ export async function geocodeAddress(
 }
 
 /**
- * Reverse geocodes a clicked map point into a readable street/neighborhood name
+ * Reverse geocodes GPS coordinates into a readable street/neighborhood name
  */
 export async function reverseGeocode(lat: number, lon: number): Promise<LocationSuggestion> {
   try {
@@ -343,17 +482,38 @@ export async function reverseGeocode(lat: number, lon: number): Promise<Location
   }
 
   return {
-    name: `Ponto (${lat.toFixed(4)}, ${lon.toFixed(4)})`,
+    name: `Localização Atual (${lat.toFixed(4)}, ${lon.toFixed(4)})`,
     address: `${lat.toFixed(5)}, ${lon.toFixed(5)}`,
     coordinates: [Number(lat.toFixed(5)), Number(lon.toFixed(5))],
   };
 }
 
-/**
- * Uniformly resamples a dense road polyline to a clean number of animation waypoints
- * while preserving exact street geometry
- */
-function resamplePath(coords: [number, number][], targetCount = 46): [number, number][] {
+function translateManeuver(type?: string, modifier?: string): string {
+  if (type === 'arrive') return 'Chegada ao destino';
+  if (type === 'depart') return 'Siga em frente';
+  if (type === 'roundabout' || type === 'rotary') return 'Entre na rotatória';
+
+  switch (modifier) {
+    case 'right':
+      return 'Vire à direita';
+    case 'left':
+      return 'Vire à esquerda';
+    case 'slight right':
+      return 'Mantenha-se à direita';
+    case 'slight left':
+      return 'Mantenha-se à esquerda';
+    case 'sharp right':
+      return 'Curva acentuada à direita';
+    case 'sharp left':
+      return 'Curva acentuada à esquerda';
+    case 'uturn':
+      return 'Faça o retorno';
+    default:
+      return 'Continue em frente';
+  }
+}
+
+function resamplePath(coords: [number, number][], targetCount = 48): [number, number][] {
   if (coords.length <= targetCount) return coords;
   const result: [number, number][] = [coords[0]];
   const step = (coords.length - 1) / (targetCount - 1);
@@ -365,9 +525,6 @@ function resamplePath(coords: [number, number][], targetCount = 46): [number, nu
   return result;
 }
 
-/**
- * Geometric fallback path if OSRM is unreachable
- */
 function createDenseFallbackPath(
   start: [number, number],
   end: [number, number],
@@ -396,11 +553,9 @@ interface OsrmRouteResult {
   distanceKm: number;
   durationMin: number;
   streetNames: string[];
+  steps: RouteStep[];
 }
 
-/**
- * Fetches real street-following driving routes from OSRM
- */
 async function fetchOsrmRoutes(
   waypoints: [number, number][],
   alternatives = true
@@ -426,22 +581,33 @@ async function fetchOsrmRoutes(
         (c: [number, number]) => [c[1], c[0]]
       );
       const streetNames: string[] = [];
+      const steps: RouteStep[] = [];
+
       if (Array.isArray(r.legs)) {
         for (const leg of r.legs) {
           if (Array.isArray(leg.steps)) {
             for (const st of leg.steps) {
+              const street = st.name || 'Via local';
               if (st.name && !streetNames.includes(st.name)) {
                 streetNames.push(st.name);
               }
+              steps.push({
+                instruction: translateManeuver(st.maneuver?.type, st.maneuver?.modifier),
+                street,
+                distanceMeters: Math.max(20, Math.round(st.distance || 0)),
+                modifier: st.maneuver?.modifier,
+              });
             }
           }
         }
       }
+
       return {
         path: resamplePath(rawCoords, 48),
         distanceKm: Math.max(0.8, Number((r.distance / 1000).toFixed(1))),
         durationMin: Math.max(3, Math.round(r.duration / 60)),
         streetNames,
+        steps,
       };
     });
   } catch {
@@ -449,9 +615,6 @@ async function fetchOsrmRoutes(
   }
 }
 
-/**
- * Checks which danger zones are within warning range of any point in the path
- */
 function findDangerZonesOnPath(
   path: [number, number][],
   dangerZones: DangerZone[],
@@ -475,9 +638,6 @@ function findDangerZonesOnPath(
   return triggered;
 }
 
-/**
- * Computes a perpendicular detour waypoint to route around danger zones on real streets
- */
 function computeDetourWaypoint(
   origin: [number, number],
   destination: [number, number],
@@ -488,7 +648,6 @@ function computeDetourWaypoint(
   const dLat = destination[0] - origin[0];
   const dLng = destination[1] - origin[1];
   const len = Math.sqrt(dLat * dLat + dLng * dLng) || 0.01;
-  // Offset ~0.014 deg (~1.5 km) perpendicular to straight line
   const offset = 0.014 * side;
   return [
     Number((midLat + (-dLng / len) * offset).toFixed(5)),
@@ -516,18 +675,17 @@ export async function calculateRoutesBetweenPoints(
   const fallbackDistKm = Math.max(1.2, Number((straightMeters / 1000).toFixed(1)));
   const fallbackDurMin = Math.max(5, Math.round(fallbackDistKm * 2.4));
 
-  // 1. Fetch real OSRM primary + alternatives
   const directResults = await fetchOsrmRoutes([origin, destination], true);
   const fastResult: OsrmRouteResult = directResults[0] || {
     path: createDenseFallbackPath(origin, destination, 0),
     distanceKm: fallbackDistKm,
     durationMin: fallbackDurMin,
     streetNames: [],
+    steps: [],
   };
 
   const fastDangers = findDangerZonesOnPath(fastResult.path, dangerZones, 200);
 
-  // 2. Fetch real OSRM detour routes (South/East and North/West corridors)
   const detourWp1 = computeDetourWaypoint(origin, destination, 1);
   const detourWp2 = computeDetourWaypoint(origin, destination, -1);
 
@@ -541,6 +699,7 @@ export async function calculateRoutesBetweenPoints(
     distanceKm: Number((fastResult.distanceKm * 1.12).toFixed(1)),
     durationMin: fastResult.durationMin + 4,
     streetNames: [],
+    steps: [],
   };
 
   const candidateAlt = detour2Res[0] || detour1Res[0] || {
@@ -548,9 +707,9 @@ export async function calculateRoutesBetweenPoints(
     distanceKm: Number((fastResult.distanceKm * 1.08).toFixed(1)),
     durationMin: fastResult.durationMin + 2,
     streetNames: [],
+    steps: [],
   };
 
-  // Pick safest candidate (fewest danger zones) for SafeRoute
   const safeDangers1 = findDangerZonesOnPath(candidateSafe.path, dangerZones, 140);
   const safeDangers2 = findDangerZonesOnPath(candidateAlt.path, dangerZones, 140);
 
@@ -578,6 +737,7 @@ export async function calculateRoutesBetweenPoints(
       safetyScore: safeScore,
       dangerZoneIds: safeDangers.map((d) => d.id),
       streetNames: bestSafe.streetNames,
+      steps: bestSafe.steps,
       description: safeMainStreets
         ? `Via ${safeMainStreets}. Corredor monitorado evitando trechos de maior incidência.`
         : `Trajeto planejado evitando ${
@@ -601,6 +761,7 @@ export async function calculateRoutesBetweenPoints(
       safetyScore: fastScore,
       dangerZoneIds: fastDangers.map((d) => d.id),
       streetNames: fastResult.streetNames,
+      steps: fastResult.steps,
       description: fastMainStreets
         ? `Via ${fastMainStreets}.${
             fastDangers.length > 0 ? ` Cruza ${fastDangers.length} ponto(s) de atenção.` : ''
@@ -624,9 +785,11 @@ export async function calculateRoutesBetweenPoints(
       safetyScore: altScore,
       dangerZoneIds: altDangers.map((d) => d.id),
       streetNames: altRoute.streetNames,
-      description: altRoute.streetNames.length > 0
-        ? `Via ${altRoute.streetNames.slice(0, 3).join(', ')}. Opção secundária equilibrada.`
-        : 'Rota secundária por vias arteriais.',
+      steps: altRoute.steps,
+      description:
+        altRoute.streetNames.length > 0
+          ? `Via ${altRoute.streetNames.slice(0, 3).join(', ')}. Opção secundária equilibrada.`
+          : 'Rota secundária por vias arteriais.',
       highlights: [
         'Fluxo alternado em corredores secundários',
         `Segurança estimada: ${altScore}/100`,

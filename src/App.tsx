@@ -58,7 +58,6 @@ export function App() {
     switchImmediatelyToSafeRoute,
     calculateJourney,
     swapOriginAndDestination,
-    setPointFromMap,
     resetToPresetRoutes,
     originLocation,
     destinationLocation,
@@ -246,7 +245,7 @@ export function App() {
 
               <span className="text-[11px] text-neutral-500 dark:text-neutral-400 font-mono">
                 {viewMode === 'map'
-                  ? 'Clique para explorar ou marcar partida/destino'
+                  ? 'Clique nas rotas tracejadas para alternar'
                   : 'Pré-visualização mobile em tempo real'}
               </span>
             </div>
@@ -256,6 +255,10 @@ export function App() {
                 currentPosition={currentPosition}
                 nextPosition={nextPosition}
                 selectedRoute={selectedRoute}
+                allRoutes={routes}
+                onSelectRoute={selectRoute}
+                originLocation={originLocation}
+                destinationLocation={destinationLocation}
                 dangerZones={dangerZones}
                 incidents={incidents}
                 isNavigating={isNavigating}
@@ -269,7 +272,6 @@ export function App() {
                 onReset={handleResetAll}
                 onAcceptReroute={handleAcceptReroute}
                 onDismissAlert={dismissAlert}
-                onPickPointFromMap={(role, coords) => setPointFromMap(role, coords, dangerZones)}
                 focusPoint={focusPoint}
                 simSpeed={simSpeed}
                 onToggleSimSpeed={setSimSpeed}
@@ -279,6 +281,8 @@ export function App() {
                 currentPosition={currentPosition}
                 nextPosition={nextPosition}
                 selectedRoute={selectedRoute}
+                allRoutes={routes}
+                onSelectRoute={selectRoute}
                 dangerZones={dangerZones}
                 incidents={incidents}
                 isNavigating={isNavigating}

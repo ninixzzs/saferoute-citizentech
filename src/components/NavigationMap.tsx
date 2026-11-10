@@ -7,12 +7,12 @@ interface NavigationMapProps {
   currentPosition: [number, number];
   nextPosition?: [number, number];
   selectedRoute: NavigationRoute;
+  allRoutes?: NavigationRoute[];
+  onSelectRoute?: (route: NavigationRoute) => void;
   dangerZones: DangerZone[];
   incidents: IncidentReport[];
   isNavigating: boolean;
   onZoneClick?: (zone: DangerZone) => void;
-  mapPickMode?: 'none' | 'origin' | 'destination';
-  onMapPick?: (coords: [number, number]) => void;
   focusPoint?: { coords: [number, number]; ts: number } | null;
   topControlOffsetClass?: string;
   className?: string;
@@ -40,12 +40,12 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
   currentPosition,
   nextPosition,
   selectedRoute,
+  allRoutes = [],
+  onSelectRoute,
   dangerZones,
   incidents,
   isNavigating,
   onZoneClick,
-  mapPickMode = 'none',
-  onMapPick,
   focusPoint = null,
   topControlOffsetClass = 'top-16',
   className = '',
@@ -57,6 +57,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
   const destinationMarkerRef = useRef<L.Marker | null>(null);
   const routePolylineRef = useRef<L.Polyline | null>(null);
   const routeGlowRef = useRef<L.Polyline | null>(null);
+  const altRoutesLayerRef = useRef<L.LayerGroup | null>(null);
   const zonesLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const incidentsLayerGroupRef = useRef<L.LayerGroup | null>(null);
 
@@ -66,11 +67,8 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
   const isNavigatingRef = useRef<boolean>(isNavigating);
   isNavigatingRef.current = isNavigating;
 
-  const mapPickModeRef = useRef<'none' | 'origin' | 'destination'>(mapPickMode);
-  mapPickModeRef.current = mapPickMode;
-
-  const onMapPickRef = useRef(onMapPick);
-  onMapPickRef.current = onMapPick;
+  const onSelectRouteRef = useRef(onSelectRoute);
+  onSelectRouteRef.current = onSelectRoute;
 
   const [mapType, setMapType] = useState<'satellite' | 'street'>('satellite');
 
@@ -104,13 +102,8 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     labelsTileLayerRef.current = labelsLayer;
 
     zonesLayerGroupRef.current = L.layerGroup().addTo(map);
+    altRoutesLayerRef.current = L.layerGroup().addTo(map);
     incidentsLayerGroupRef.current = L.layerGroup().addTo(map);
-
-    map.on('click', (e: L.LeafletMouseEvent) => {
-      if (mapPickModeRef.current !== 'none' && onMapPickRef.current) {
-        onMapPickRef.current([e.latlng.lat, e.latlng.lng]);
-      }
-    });
 
     mapInstanceRef.current = map;
 
@@ -184,24 +177,49 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     map.invalidateSize();
   }, [mapType]);
 
-  // Update Route Polyline, Origin & Destination Pins
+  // Render Alternative Routes & Selected Route
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map || !selectedRoute.path || selectedRoute.path.length === 0) return;
 
+    if (altRoutesLayerRef.current) altRoutesLayerRef.current.clearLayers();
     if (routeGlowRef.current) routeGlowRef.current.remove();
     if (routePolylineRef.current) routePolylineRef.current.remove();
     if (originMarkerRef.current) originMarkerRef.current.remove();
     if (destinationMarkerRef.current) destinationMarkerRef.current.remove();
 
+    // Draw inactive alternative routes underneath when not actively driving
+    if (!isNavigating && allRoutes.length > 1 && altRoutesLayerRef.current) {
+      allRoutes
+        .filter((r) => r.id !== selectedRoute.id && r.path.length > 1)
+        .forEach((alt) => {
+          const altLine = L.polyline(alt.path, {
+            color: '#94a3b8',
+            weight: 4.5,
+            opacity: 0.65,
+            dashArray: '6, 6',
+            lineCap: 'round',
+          });
+          altLine.on('click', () => {
+            if (!isNavigatingRef.current && onSelectRouteRef.current) {
+              onSelectRouteRef.current(alt);
+            }
+          });
+          altLine.bindTooltip(`${alt.durationMin} min (${alt.distanceKm} km)`, {
+            sticky: true,
+          });
+          altLine.addTo(altRoutesLayerRef.current!);
+        });
+    }
+
     const isSafe = selectedRoute.type === 'segura';
-    const mainColor = isSafe ? '#2563eb' : '#64748b';
+    const mainColor = isSafe ? '#2563eb' : '#475569';
     const glowColor = 'rgba(0, 0, 0, 0.5)';
 
     const glowLine = L.polyline(selectedRoute.path, {
       color: glowColor,
-      weight: 9,
-      opacity: 0.8,
+      weight: 9.5,
+      opacity: 0.85,
       lineCap: 'round',
       lineJoin: 'round',
     }).addTo(map);
@@ -267,9 +285,9 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
         map.flyToBounds(bounds, { padding: [55, 55], duration: 1.0 });
       } catch {}
     }
-  }, [selectedRoute]);
+  }, [selectedRoute, allRoutes, isNavigating]);
 
-  // Focus specific coordinate when user clicks an incident in the feed
+  // Focus specific coordinate when user clicks an incident
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map || !focusPoint) return;
@@ -402,15 +420,8 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     }
   };
 
-  const handleZoomIn = () => mapInstanceRef.current?.zoomIn();
-  const handleZoomOut = () => mapInstanceRef.current?.zoomOut();
-
   return (
-    <div
-      className={`relative w-full h-full bg-neutral-900 overflow-hidden ${
-        mapPickMode !== 'none' ? 'cursor-crosshair' : ''
-      } ${className}`}
-    >
+    <div className={`relative w-full h-full bg-neutral-900 overflow-hidden ${className}`}>
       <div
         ref={mapContainerRef}
         className="w-full h-full"
@@ -432,7 +443,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
         <div className="flex flex-col rounded-xl overflow-hidden bg-black/80 backdrop-blur-md border border-white/20 shadow-lg">
           <button
             type="button"
-            onClick={handleZoomIn}
+            onClick={() => mapInstanceRef.current?.zoomIn()}
             className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 transition-colors border-b border-white/10"
             title="Aumentar zoom"
             aria-label="Aumentar zoom"
@@ -441,7 +452,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
           </button>
           <button
             type="button"
-            onClick={handleZoomOut}
+            onClick={() => mapInstanceRef.current?.zoomOut()}
             className="w-8 h-8 flex items-center justify-center text-white hover:bg-white/10 transition-colors"
             title="Diminuir zoom"
             aria-label="Diminuir zoom"
