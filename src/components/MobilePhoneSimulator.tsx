@@ -16,7 +16,8 @@ import {
   ArrowRight,
   Plus,
   Loader2,
-  MapPin
+  MapPin,
+  Globe
 } from 'lucide-react';
 import { DangerZone, NavigationRoute, IncidentReport } from '../types';
 import { LocationSuggestion, POPULAR_DESTINATIONS } from '../services/routingService';
@@ -75,6 +76,7 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
   const [testMessageActive, setTestMessageActive] = useState<boolean>(false);
   const [phoneSearchInput, setPhoneSearchInput] = useState<string>('');
   const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false);
+  const [mapMode, setMapMode] = useState<'saferoute' | 'google'>('saferoute');
 
   // Sync phone input when current destination changes
   useEffect(() => {
@@ -132,6 +134,34 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
 
   return (
     <div className="flex flex-col items-center justify-center w-full py-2">
+      {/* Map Mode Selector */}
+      <div className="flex items-center gap-1.5 bg-neutral-900/90 backdrop-blur-md p-1 rounded-full border border-neutral-800 mb-3 shadow-md">
+        <button
+          type="button"
+          onClick={() => setMapMode('saferoute')}
+          className={`px-3 py-1 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
+            mapMode === 'saferoute'
+              ? 'bg-white text-neutral-950 shadow-sm'
+              : 'text-neutral-400 hover:text-white'
+          }`}
+        >
+          <ShieldCheck className="w-3.5 h-3.5" />
+          <span>Navegador SafeRoute GPS</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMapMode('google')}
+          className={`px-3 py-1 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
+            mapMode === 'google'
+              ? 'bg-white text-neutral-950 shadow-sm'
+              : 'text-neutral-400 hover:text-white'
+          }`}
+        >
+          <Globe className="w-3.5 h-3.5" />
+          <span>Google Maps Oficial (Embed)</span>
+        </button>
+      </div>
+
       {/* Phone Hardware Mockup */}
       <div className="relative w-full max-w-[390px] h-[750px] rounded-[50px] bg-black border-[10px] border-neutral-900 shadow-[0_25px_60px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col select-none ring-1 ring-neutral-800">
         
@@ -157,14 +187,28 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
 
           {/* 1. Map Layer (Absolute fill behind everything) */}
           <div className="absolute inset-0 w-full h-full z-0">
-            <NavigationMap
-              currentPosition={currentPosition}
-              selectedRoute={selectedRoute}
-              dangerZones={dangerZones}
-              incidents={incidents}
-              isNavigating={isNavigating}
-              className="w-full h-full border-0 rounded-none shadow-none"
-            />
+            {mapMode === 'google' ? (
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d467690.1438945829!2d-46.924959153557225!3d-23.682063549379812!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce448183a461d1%3A0x9ba94b08ff335bae!2zU8OjbyBQYXVsbywgU1A!5e0!3m2!1spt-BR!2sbr!4v1794275130689!5m2!1spt-BR!2sbr"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="strict-origin-when-cross-origin"
+                className="w-full h-full"
+                title="Google Maps Oficial São Paulo"
+              />
+            ) : (
+              <NavigationMap
+                currentPosition={currentPosition}
+                selectedRoute={selectedRoute}
+                dangerZones={dangerZones}
+                incidents={incidents}
+                isNavigating={isNavigating}
+                className="w-full h-full border-0 rounded-none shadow-none"
+              />
+            )}
           </div>
 
           {/* 2. Top Navigation Banner OR Search Bar for tracing route */}
@@ -364,6 +408,19 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
 
           {/* 4. Floating Action Buttons inside phone */}
           <div className="absolute right-3 top-24 z-20 flex flex-col gap-2 pointer-events-auto">
+            {/* Toggle Google Maps / SafeRoute */}
+            <button
+              onClick={() => setMapMode(mapMode === 'google' ? 'saferoute' : 'google')}
+              className={`w-9 h-9 rounded-full shadow-md border flex items-center justify-center transition-colors ${
+                mapMode === 'google'
+                  ? 'bg-neutral-950 text-white border-neutral-900'
+                  : 'bg-white text-neutral-800 border-neutral-300 hover:bg-neutral-100'
+              }`}
+              title={mapMode === 'google' ? 'Voltar para SafeRoute GPS' : 'Abrir Google Maps Oficial'}
+            >
+              <Globe className="w-4 h-4" />
+            </button>
+
             {/* Quick Test Message Button */}
             <button
               onClick={() => {

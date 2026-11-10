@@ -1,6 +1,7 @@
 import { IncidentReport, DangerZone } from '../types';
 import { INITIAL_INCIDENT_REPORTS, INITIAL_DANGER_ZONES } from '../data/mockData';
-import { supabase, isSupabaseConfigured } from './supabase';
+import { getSupabaseClient, getStoredSupabaseConfig } from './supabase';
+import { localDb } from './db';
 
 const LOCAL_STORAGE_KEY = 'saferoute_incident_reports_v2';
 
@@ -25,9 +26,12 @@ export function calculateDistanceMeters(
 }
 
 export const incidentApi = {
-  // READ: List all incident reports (Supabase -> LocalStorage fallback)
+  // READ: List all incident reports (Supabase -> IndexedDB -> LocalStorage fallback)
   async getAll(): Promise<IncidentReport[]> {
-    if (isSupabaseConfigured) {
+    const { isConfigured } = getStoredSupabaseConfig();
+    const supabase = getSupabaseClient();
+
+    if (isConfigured) {
       try {
         const { data, error } = await supabase
           .from('incidents')
@@ -53,15 +57,31 @@ export const incidentApi = {
             reportedBy: item.reported_by || 'Cidadão',
             isUserCreated: true,
           }));
+
+          // Sync into IndexedDB & LocalStorage
+          for (const item of mapped) {
+            await localDb.saveIncident(item);
+          }
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(mapped));
           return mapped;
         }
       } catch (err) {
-        console.warn('Supabase fetch failed, falling back to local data:', err);
+        console.warn('Supabase fetch failed, falling back to IndexedDB:', err);
       }
     }
 
-    // Local fallback
+    // Persistent IndexedDB lookup
+    try {
+      const dbResults = await localDb.getAllIncidents();
+      if (dbResults && dbResults.length > 0) {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dbResults));
+        return dbResults;
+      }
+    } catch (e) {
+      console.warn('IndexedDB read fallback:', e);
+    }
+
+    // LocalStorage fallback
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (stored) {
@@ -74,7 +94,7 @@ export const incidentApi = {
     }
   },
 
-  // CREATE: Post report to Supabase + LocalStorage
+  // CREATE: Post report to Supabase + IndexedDB + LocalStorage
   async create(
     reportData: Omit<IncidentReport, 'id' | 'timestamp' | 'confirmationsCount' | 'status'>
   ): Promise<IncidentReport> {
@@ -88,7 +108,10 @@ export const incidentApi = {
       isUserCreated: true,
     };
 
-    if (isSupabaseConfigured) {
+    const { isConfigured } = getStoredSupabaseConfig();
+    const supabase = getSupabaseClient();
+
+    if (isConfigured) {
       try {
         await supabase.from('incidents').insert({
           id: newId,
@@ -109,15 +132,26 @@ export const incidentApi = {
       }
     }
 
+    // Persist in IndexedDB
+    try {
+      await localDb.saveIncident(newReport);
+    } catch (err) {
+      console.warn('IndexedDB save error:', err);
+    }
+
+    // Backup in LocalStorage
     const current = await this.getAll();
-    const updated = [newReport, ...current];
+    const updated = [newReport, ...current.filter((i) => i.id !== newId)];
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
     return newReport;
   },
 
   // UPDATE: Status or confirmations
   async update(id: string, patch: Partial<IncidentReport>): Promise<IncidentReport> {
-    if (isSupabaseConfigured) {
+    const { isConfigured } = getStoredSupabaseConfig();
+    const supabase = getSupabaseClient();
+
+    if (isConfigured) {
       try {
         const payload: any = {};
         if (patch.status) payload.status = patch.status;
@@ -135,6 +169,12 @@ export const incidentApi = {
     if (index === -1) throw new Error('Incidente não encontrado');
 
     const updatedItem = { ...current[index], ...patch };
+    try {
+      await localDb.saveIncident(updatedItem);
+    } catch (e) {
+      console.warn('IndexedDB update error:', e);
+    }
+
     current[index] = updatedItem;
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(current));
     return updatedItem;
@@ -142,12 +182,21 @@ export const incidentApi = {
 
   // DELETE
   async delete(id: string): Promise<boolean> {
-    if (isSupabaseConfigured) {
+    const { isConfigured } = getStoredSupabaseConfig();
+    const supabase = getSupabaseClient();
+
+    if (isConfigured) {
       try {
         await supabase.from('incidents').delete().eq('id', id);
       } catch (err) {
         console.warn('Supabase delete error:', err);
       }
+    }
+
+    try {
+      await localDb.deleteIncident(id);
+    } catch (e) {
+      console.warn('IndexedDB delete error:', e);
     }
 
     const current = await this.getAll();
@@ -168,6 +217,11 @@ export const incidentApi = {
   },
 
   async resetToDefault(): Promise<IncidentReport[]> {
+    try {
+      await localDb.populateDefaults();
+    } catch (e) {
+      console.warn('IndexedDB reset error:', e);
+    }
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(INITIAL_INCIDENT_REPORTS));
     return INITIAL_INCIDENT_REPORTS;
   },
