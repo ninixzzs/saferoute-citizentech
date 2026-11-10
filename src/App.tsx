@@ -176,16 +176,16 @@ export function App() {
         {/* Hero Header Section with Editorial Display Typography */}
         <section
           aria-label="Apresentação do SafeRoute"
-          className="rounded-[28px] bg-white/95 dark:bg-neutral-950/88 border border-neutral-200/90 dark:border-neutral-800/90 backdrop-blur-xl p-4 sm:p-6 shadow-[0_8px_32px_rgba(0,0,0,0.05)] dark:shadow-[0_14px_44px_rgba(0,0,0,0.55)]"
+          className="rounded-[24px] sm:rounded-[28px] bg-white/95 dark:bg-neutral-950/88 border border-neutral-200/90 dark:border-neutral-800/90 backdrop-blur-xl p-3.5 sm:p-6 shadow-[0_8px_32px_rgba(0,0,0,0.05)] dark:shadow-[0_14px_44px_rgba(0,0,0,0.55)]"
         >
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-6">
             {/* Hero Title & Description */}
-            <div className="space-y-2 max-w-2xl">
-              <h1 className="font-display text-[25px] sm:text-[34px] lg:text-[38px] font-extrabold tracking-[-0.03em] text-neutral-950 dark:text-white leading-[1.08]">
+            <div className="space-y-1 sm:space-y-2 max-w-2xl">
+              <h1 className="font-display text-[22px] sm:text-[34px] lg:text-[38px] font-extrabold tracking-[-0.03em] text-neutral-950 dark:text-white leading-[1.08]">
                 Rotas que avisam antes do risco.
               </h1>
 
-              <p className="text-xs sm:text-[15px] text-neutral-600 dark:text-neutral-400 leading-relaxed max-w-xl">
+              <p className="text-[11px] sm:text-[15px] text-neutral-600 dark:text-neutral-400 leading-relaxed max-w-xl">
                 O SafeRoute compara o caminho mais rápido com um desvio seguro e manda uma mensagem
                 no celular quando você chega perto de uma área de risco em São Paulo.
               </p>

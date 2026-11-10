@@ -60,7 +60,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Right Controls + Accessibility */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <AccessibilityMenu
             themeMode={themeMode}
             onChangeTheme={onChangeTheme}
@@ -70,13 +70,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             onDecreaseFont={onDecreaseFont}
             highContrast={highContrast}
             onToggleHighContrast={onToggleHighContrast}
+            voiceEnabled={voiceEnabled}
+            onToggleVoice={onToggleVoice}
             onReset={onResetAccessibility}
           />
 
           <button
             type="button"
             onClick={onToggleVoice}
-            className={`p-2 rounded-lg border text-xs font-medium transition-colors flex items-center gap-1.5 ${
+            className={`hidden sm:flex p-2 rounded-lg border text-xs font-medium transition-colors items-center gap-1.5 ${
               voiceEnabled
                 ? 'bg-neutral-100 dark:bg-neutral-900 border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-white'
                 : 'bg-transparent border-neutral-200 dark:border-neutral-800 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-300'
@@ -91,8 +93,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onOpenTipsDrawer}
-            className="px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white text-xs font-medium transition-colors flex items-center gap-1.5"
+            className="p-2 sm:px-2.5 sm:py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white text-xs font-medium transition-colors flex items-center gap-1.5"
             aria-label="Abrir diretrizes da Defesa Civil"
+            title="Diretrizes da Defesa Civil"
           >
             <BookOpen className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-400" />
             <span className="hidden sm:inline">Diretrizes</span>
@@ -101,7 +104,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onOpenReportModal}
-            className="px-3 py-1.5 rounded-lg bg-neutral-950 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-neutral-950 font-semibold text-xs transition-colors flex items-center gap-1.5 shadow-xs"
+            className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-neutral-950 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-neutral-950 font-semibold text-xs transition-colors flex items-center gap-1 shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Reportar</span>

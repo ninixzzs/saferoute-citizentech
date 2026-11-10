@@ -138,6 +138,8 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [sheetTab, setSheetTab] = useState<SheetTab>('routes');
+  const [autoReroute, setAutoReroute] = useState(true);
+  const [autoRerouteNotice, setAutoRerouteNotice] = useState<string | null>(null);
 
   const [originInput, setOriginInput] = useState(originLocation.name);
   const [destInput, setDestInput] = useState(destinationLocation.name);
@@ -146,6 +148,30 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
   const [isLocatingGps, setIsLocatingGps] = useState(false);
 
   const debounceRef = useRef<number | null>(null);
+  const noticeTimerRef = useRef<number | null>(null);
+
+  // Mobile automation: auto-reroute to the safe route when approaching a Defesa Civil risk zone
+  useEffect(() => {
+    if (
+      activeAlertZone &&
+      isNavigating &&
+      autoReroute &&
+      selectedRoute.type !== 'segura'
+    ) {
+      onAcceptReroute();
+      setAutoRerouteNotice(`Desvio seguro ativado (${activeAlertZone.neighborhood})`);
+      if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
+      noticeTimerRef.current = window.setTimeout(() => {
+        setAutoRerouteNotice(null);
+      }, 4500);
+    }
+  }, [activeAlertZone, isNavigating, autoReroute, selectedRoute.type, onAcceptReroute]);
+
+  useEffect(() => {
+    return () => {
+      if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     setOriginInput(originLocation.name);
@@ -260,7 +286,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
   };
 
   return (
-    <div className="relative w-full h-[76dvh] min-h-[540px] max-h-[780px] rounded-[28px] overflow-hidden border border-neutral-200/90 dark:border-neutral-800/90 shadow-[0_18px_50px_rgba(0,0,0,0.16)] dark:shadow-[0_22px_60px_rgba(0,0,0,0.65)] bg-neutral-900 select-none">
+    <div className="relative w-full h-[78dvh] min-h-[550px] max-h-[820px] rounded-[28px] overflow-hidden border border-neutral-200/90 dark:border-neutral-800/90 shadow-[0_18px_50px_rgba(0,0,0,0.16)] dark:shadow-[0_22px_60px_rgba(0,0,0,0.65)] bg-neutral-900 select-none">
       {/* 1. Edge-to-Edge Live Interactive Map */}
       <NavigationMap
         currentPosition={currentPosition}
@@ -273,15 +299,15 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
         isNavigating={isNavigating}
         speedKmH={speedKmH}
         focusPoint={focusPoint}
-        topControlOffsetClass="top-20"
+        topControlOffsetClass="top-[84px]"
         className="w-full h-full"
       />
 
-      {/* 2. Top Floating Search Pill / Turn-by-Turn Guidance */}
+      {/* 2. Top Floating Search Pill (with Direct 1-Tap GPS) OR Turn-by-Turn Guidance */}
       <div
         onMouseDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
-        className="absolute top-3 left-3 right-3 z-[410] space-y-2 pointer-events-auto"
+        className="absolute top-3 left-3 right-3 z-[410] pointer-events-auto"
       >
         {isNavigating ? (
           <div className="bg-neutral-950/95 backdrop-blur-xl text-white rounded-2xl p-3 shadow-2xl border border-white/15 flex items-center justify-between gap-2.5">
@@ -324,95 +350,151 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
             </div>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => setIsSearchOpen(true)}
-            className="w-full bg-white/96 dark:bg-neutral-950/95 backdrop-blur-xl rounded-2xl p-3 shadow-xl border border-neutral-200 dark:border-neutral-800 flex items-center gap-3 text-left active:scale-[0.99] transition-transform"
-          >
-            <div className="w-9 h-9 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0">
-              {isCalculatingRoute ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                Para onde você vai?
+          <div className="w-full bg-white/96 dark:bg-neutral-950/95 backdrop-blur-xl rounded-2xl p-2 pl-2.5 shadow-xl border border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsSearchOpen(true)}
+              className="flex-1 min-w-0 flex items-center gap-2.5 text-left active:scale-[0.99] transition-transform py-0.5"
+            >
+              <div className="w-9 h-9 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0">
+                {isCalculatingRoute ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
               </div>
-              <div className="text-xs font-bold text-neutral-950 dark:text-white truncate">
-                {originLocation.name} &rarr; {destinationLocation.name}
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                  Para onde você vai?
+                </div>
+                <div className="text-xs font-bold text-neutral-950 dark:text-white truncate">
+                  {originLocation.name} &rarr; {destinationLocation.name}
+                </div>
               </div>
-            </div>
-            <span className="px-2.5 py-1 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-[11px] font-bold text-neutral-800 dark:text-neutral-200 shrink-0">
-              Alterar
-            </span>
-          </button>
-        )}
+            </button>
 
-        {/* Active Geofence Defesa Civil Alert Card */}
-        {activeAlertZone && (
-          <div className="rounded-2xl bg-neutral-950 text-white border border-neutral-800 shadow-2xl p-3.5 space-y-2 animate-in slide-in-from-top-4 duration-200">
-            <div className="flex items-center justify-between border-b border-neutral-800 pb-2">
-              <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
-                <AlertTriangle className="w-4 h-4 text-white" />
-                <span>Alerta Defesa Civil SP</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => onDismissAlert(activeAlertZone.id)}
-                className="text-neutral-400 hover:text-white p-0.5"
-                aria-label="Fechar alerta"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div>
-              <h4 className="text-xs font-bold">{activeAlertZone.neighborhood}</h4>
-              <p className="text-xs text-neutral-300 mt-0.5 leading-relaxed">
-                {activeAlertZone.defenseCivilTip}
-              </p>
-            </div>
-            {selectedRoute.type !== 'segura' && (
-              <div className="flex items-center gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={onAcceptReroute}
-                  className="flex-1 py-2 px-3 rounded-xl bg-white text-neutral-950 font-bold text-xs flex items-center justify-center gap-1.5"
-                >
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>Desviar para Rota Segura</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onDismissAlert(activeAlertZone.id)}
-                  className="py-2 px-3 rounded-xl bg-neutral-900 text-neutral-300 border border-neutral-800 text-xs font-semibold"
-                >
-                  Dispensar
-                </button>
-              </div>
-            )}
+            <button
+              type="button"
+              onClick={handleUseGps}
+              disabled={isLocatingGps || isCalculatingRoute}
+              className="p-2 rounded-xl bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 border border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white shrink-0 transition-colors"
+              title="Atualizar partida com GPS atual"
+              aria-label="Usar minha localização GPS atual"
+            >
+              {isLocatingGps ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <LocateFixed className="w-4 h-4" />
+              )}
+            </button>
           </div>
         )}
       </div>
 
-      {/* 3. Quick Report Floating Action Button (Waze-style) */}
+      {/* 3. Top-Left Quick Actions (Aligned cleanly opposite map right controls, zero overlap) */}
       {!isSearchOpen && !sheetExpanded && (
         <div
           onMouseDown={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
-          className="absolute left-3 bottom-48 z-[400] flex flex-col gap-2 pointer-events-auto"
+          className="absolute top-[84px] left-3 z-[400] flex flex-col items-start gap-2 pointer-events-auto"
         >
-          <button
-            type="button"
-            onClick={onOpenReportModal}
-            className="px-3 py-2 rounded-full bg-neutral-950/92 dark:bg-white/95 text-white dark:text-neutral-950 border border-white/15 dark:border-neutral-300 shadow-xl flex items-center gap-1.5 text-xs font-bold active:scale-95 transition-transform"
-            title="Reportar risco na via"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Alertar</span>
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={onOpenReportModal}
+              className="h-8 px-2.5 rounded-xl bg-white/95 dark:bg-neutral-950/90 text-neutral-950 dark:text-white border border-neutral-200 dark:border-white/15 shadow-lg flex items-center gap-1 text-[11px] font-bold active:scale-95 transition-transform backdrop-blur-md"
+              title="Reportar ocorrência na via"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Alertar</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setAutoReroute(!autoReroute)}
+              aria-pressed={autoReroute}
+              className={`h-8 px-2.5 rounded-xl border shadow-lg flex items-center gap-1 text-[11px] font-bold active:scale-95 transition-all backdrop-blur-md ${
+                autoReroute
+                  ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border-neutral-950 dark:border-white'
+                  : 'bg-white/95 dark:bg-neutral-950/90 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-white/15'
+              }`}
+              title="Ativar ou desativar desvio automático em zonas de risco"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>{autoReroute ? 'Auto ON' : 'Auto OFF'}</span>
+            </button>
+          </div>
 
           {isNavigating && (
-            <div className="w-12 h-12 rounded-full bg-neutral-950/92 border border-white/20 shadow-xl flex flex-col items-center justify-center text-white font-mono">
+            <div className="w-11 h-11 rounded-full bg-neutral-950/92 border border-white/20 shadow-xl flex flex-col items-center justify-center text-white font-mono">
               <span className="text-xs font-black leading-none">{speedKmH}</span>
-              <span className="text-[8px] text-neutral-400 uppercase">km/h</span>
+              <span className="text-[7px] text-neutral-400 uppercase">km/h</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 3B. Lower Floating Alert / Automation Notification Band (Positioned cleanly above Bottom Sheet) */}
+      {!isSearchOpen && !sheetExpanded && (autoRerouteNotice || activeAlertZone) && (
+        <div
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          className="absolute bottom-[198px] left-3 right-3 z-[425] space-y-2 pointer-events-auto"
+        >
+          {autoRerouteNotice && (
+            <div className="rounded-2xl bg-neutral-950 text-white border border-white/15 shadow-2xl px-3.5 py-2.5 flex items-center justify-between gap-2 animate-in slide-in-from-bottom-2 duration-200">
+              <div className="flex items-center gap-2 min-w-0">
+                <ShieldCheck className="w-4 h-4 text-white shrink-0" />
+                <span className="text-xs font-bold truncate">{autoRerouteNotice}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAutoRerouteNotice(null)}
+                className="text-neutral-400 hover:text-white p-0.5 shrink-0"
+                aria-label="Fechar aviso"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+          {activeAlertZone && (
+            <div className="rounded-2xl bg-neutral-950 text-white border border-neutral-800 shadow-2xl p-3.5 space-y-2 animate-in slide-in-from-bottom-3 duration-200">
+              <div className="flex items-center justify-between border-b border-neutral-800 pb-1.5">
+                <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
+                  <AlertTriangle className="w-4 h-4 text-white" />
+                  <span>Alerta Defesa Civil SP</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onDismissAlert(activeAlertZone.id)}
+                  className="text-neutral-400 hover:text-white p-0.5"
+                  aria-label="Fechar alerta"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div>
+                <h4 className="text-xs font-bold">{activeAlertZone.neighborhood}</h4>
+                <p className="text-xs text-neutral-300 mt-0.5 leading-relaxed">
+                  {activeAlertZone.defenseCivilTip}
+                </p>
+              </div>
+              {selectedRoute.type !== 'segura' && (
+                <div className="flex items-center gap-2 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={onAcceptReroute}
+                    className="flex-1 py-2 px-3 rounded-xl bg-white text-neutral-950 font-bold text-xs flex items-center justify-center gap-1.5"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>Desviar para Rota Segura</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDismissAlert(activeAlertZone.id)}
+                    className="py-2 px-3 rounded-xl bg-neutral-900 text-neutral-300 border border-neutral-800 text-xs font-semibold"
+                  >
+                    Dispensar
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -741,6 +823,16 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
               )}
             </div>
           </div>
+
+          {/* Live Trip Progress Bar inside Sheet */}
+          {isNavigating && (
+            <div className="w-full h-1 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-neutral-950 dark:bg-white transition-all duration-700 rounded-full"
+                style={{ width: `${progressPercentage}%` }}
+              />
+            </div>
+          )}
 
           {/* Sheet Quick Sub-Tabs Row */}
           <div className="grid grid-cols-3 gap-1.5 pt-1">
