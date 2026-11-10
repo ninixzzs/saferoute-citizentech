@@ -158,8 +158,8 @@ export const PRESET_ROUTES: NavigationRoute[] = [
     description: 'Corta o Centro Histórico via Santa Ifigênia e Praça da Sé. Menor tempo estimado, mas atravessa 2 áreas com alto índice de furto.',
     highlights: [
       'Menor tempo de tráfego (-4 min)',
-      '⚠️ Cruza 2 zonas com alto índice de furto de celular',
-      'Recomendação: Ativar vidros fechados e modo blindado'
+      'Cruza 2 zonas com alto índice de furto de celular',
+      'Recomendação: Ativar vidros fechados e travas'
     ],
     // Coordinates path starting around Paulista / Consolação down towards Santa Ifigênia, Sé, and ending at Brás
     path: [
@@ -184,9 +184,9 @@ export const PRESET_ROUTES: NavigationRoute[] = [
     dangerZoneIds: [],
     description: 'Evita áreas críticas contornando por avenidas monitoradas com câmeras do Detecta SP, iluminação LED e presença policial.',
     highlights: [
-      '🛡️ 100% livre de zonas críticas de furto de smartphone',
-      'Corredor iluminado com monitoramento Smart Sampa',
-      'Apenas +4 minutos para máxima tranquilidade'
+      'Livre de zonas críticas de furto de smartphone',
+      'Corredor monitorado Smart Sampa com iluminação LED',
+      'Apenas +4 minutos para máxima segurança'
     ],
     path: [
       [-23.5587, -46.6601],

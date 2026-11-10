@@ -110,8 +110,9 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
 
       const popupHtml = `
         <div style="font-family: inherit; font-size: 12px; line-height: 1.4;">
-          <div style="font-weight: 800; font-size: 13px; color: ${color}; margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
-            ⚠️ ${zone.name}
+          <div style="font-weight: 800; font-size: 13px; color: ${color}; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${color};"></span>
+            ${zone.name}
           </div>
           <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase;">
             ${zone.neighborhood} &bull; Risco ${zone.riskLevel}
@@ -119,8 +120,8 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
           <div style="margin-top: 6px; color: #f1f5f9; font-weight: 600;">
             ${zone.title}
           </div>
-          <div style="margin-top: 6px; padding: 6px; background: rgba(245, 158, 11, 0.15); border-left: 3px solid #f59e0b; border-radius: 4px; color: #fef08a;">
-            💡 <strong>Defesa Civil:</strong> ${zone.defenseCivilTip}
+          <div style="margin-top: 6px; padding: 8px; background: rgba(245, 158, 11, 0.12); border-left: 3px solid #f59e0b; border-radius: 4px; color: #fef08a;">
+            <strong>Defesa Civil SP:</strong> ${zone.defenseCivilTip}
           </div>
         </div>
       `;
@@ -144,28 +145,31 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     incidents.forEach((inc) => {
       const iconHtml = `
         <div style="
-          background: #ef4444;
-          width: 26px;
-          height: 26px;
+          background: #dc2626;
+          width: 28px;
+          height: 28px;
           border-radius: 50%;
           border: 2px solid #ffffff;
-          box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+          box-shadow: 0 0 12px rgba(220, 38, 38, 0.7);
           display: flex;
           align-items: center;
           justify-content: center;
           color: white;
-          font-size: 12px;
           cursor: pointer;
         ">
-          🚨
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
         </div>
       `;
 
       const customIcon = L.divIcon({
         html: iconHtml,
         className: 'incident-marker-pin',
-        iconSize: [26, 26],
-        iconAnchor: [13, 13],
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
       });
 
       const marker = L.marker(inc.coordinates, { icon: customIcon });
@@ -183,7 +187,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     });
   }, [incidents]);
 
-  // Update Car Navigation Position & Center
+  // Update Car Navigation Position & Center (Google Maps Navigation Puck)
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -195,23 +199,24 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
           width: 44px;
           height: 44px;
           border-radius: 50%;
-          background: rgba(59, 130, 246, 0.25);
+          background: rgba(37, 99, 235, 0.25);
           animation: radar-pulse 1.8s infinite;
         "></div>
         <div style="
           width: 32px;
           height: 32px;
           border-radius: 50%;
-          background: #2563eb;
+          background: #1d4ed8;
           border: 3px solid #ffffff;
-          box-shadow: 0 0 16px rgba(37, 99, 235, 0.9);
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4), 0 0 16px rgba(29, 78, 216, 0.9);
           display: flex;
           align-items: center;
           justify-content: center;
           color: white;
-          font-size: 16px;
         ">
-          🚗
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#ffffff" style="transform: rotate(0deg); filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));">
+            <polygon points="12,2 20,21 12,17 4,21"/>
+          </svg>
         </div>
       </div>
     `;

@@ -56,12 +56,13 @@ saferoute-citizentech/
 ├── .github/workflows/deploy.yml   # CI/CD automatizado GitHub Actions
 ├── public/shield-alert.svg        # Favicon e identidade visual
 ├── src/
-│   ├── components/                # 12 componentes reutilizáveis
+│   ├── components/                # 13 componentes reutilizáveis
 │   │   ├── AlertBanner.tsx        # Banner de aviso emergencial
 │   │   ├── DefesaCivilModal.tsx   # Modal de alerta estilo transmissão 40199
 │   │   ├── Footer.tsx             # Rodapé com créditos de Nicolly & repositório
 │   │   ├── IncidentList.tsx       # Feed de ocorrências com filtros e ações CRUD
 │   │   ├── IncidentReportModal.tsx# Formulário de criação de ocorrências (POST)
+│   │   ├── MobilePhoneSimulator.tsx # Protótipo Smartphone tela de celular estilo Google Maps
 │   │   ├── Navbar.tsx             # Cabeçalho com status e controles de áudio
 │   │   ├── NavigationControls.tsx # Velocímetro, barra de progresso e controles GPS
 │   │   ├── NavigationMap.tsx      # Mapa interativo Leaflet com radar e camadas
@@ -93,20 +94,21 @@ saferoute-citizentech/
 
 ---
 
-## 4. Detalhamento dos Componentes Reutilizáveis (12)
+## 4. Detalhamento dos Componentes Reutilizáveis (13)
 
-1. **`SafetyScoreBadge`**: Exibe a pontuação de 0 a 100 de uma rota ou área com cores dinâmicas (verde >80, amarelo 55-79, vermelho <55) e ícone contextual.
-2. **`Navbar`**: Barra de navegação com status da rede SSP/Defesa Civil, contador de alertas ativos, toggle de voz e atalhos rápidos.
-3. **`AlertBanner`**: Alerta superior fixo que dispara quando o condutor ingressa em zona perigosa, oferecendo botão de desvio instantâneo.
-4. **`DefesaCivilModal`**: Modal imersivo simulando aviso de transmissão de emergência (SMS 40199), com instruções táticas e opção de aceite de desvio.
-5. **`NavigationMap`**: Container Leaflet com azulejos Dark Matter CartoDB, traçado de polilinhas seguras vs perigosas, círculos com efeito radar nas manchas criminais e marcador do veículo em deslocamento contínuo.
-6. **`RouteSelector`**: Seletor comparativo entre "Rota Rápida", "SafeRoute Defesa Civil" e "Rota Expressa", demonstrando tempo, distância e pontuação de segurança.
-7. **`NavigationControls`**: Cockpit de direção com velocímetro digital em tempo real (km/h), barra de progresso e botões de simulação (Iniciar, Pausar, Retomar, Reiniciar).
-8. **`IncidentList`**: Painel de visualização e gerenciamento das ocorrências (Read, Update status para "resolvido", Delete e Upvote com confirmações da comunidade).
-9. **`IncidentReportModal`**: Formulário modal acessível para registro de novas ocorrências (Create), com seleção de bairro e coordenadas geográficas de SP.
-10. **`SafetyTipsDrawer`**: Gaveta lateral expansível com telefones de emergência (190, 199, 153, 181) e diretrizes contra a "gangue da bicicleta".
-11. **`StatsOverview`**: Indicadores executivos com total de zonas críticas, ocorrências nas últimas 24h, taxa de eficácia de desvio e tamanho da rede cívica.
-12. **`Footer`**: Rodapé institucional destacando a liderança de Nicolly, stack utilizada e link para o GitHub oficial.
+1. **`MobilePhoneSimulator`**: Chassis fidedigno de smartphone com Dynamic Island, barra de status do sistema (5G, horário, bateria), cabeçalho de navegação estilo Google Maps com manobras passo a passo (*"Em 200m, vire à direita"*), velocímetro com limite de via, bottom sheet com ETA/duração e notificação *Heads-Up* que desce do topo ao cruzar área crítica de perigo com botão de desvio instantâneo.
+2. **`SafetyScoreBadge`**: Exibe a pontuação de 0 a 100 de uma rota ou área com cores dinâmicas (verde >80, amarelo 55-79, vermelho <55) e ícone contextual.
+3. **`Navbar`**: Barra de navegação com status da rede SSP/Defesa Civil, contador de alertas ativos, toggle de voz e atalhos rápidos.
+4. **`AlertBanner`**: Alerta superior fixo que dispara quando o condutor ingressa em zona perigosa, oferecendo botão de desvio instantâneo.
+5. **`DefesaCivilModal`**: Modal imersivo simulando aviso de transmissão de emergência (SMS 40199), com instruções táticas e opção de aceite de desvio.
+6. **`NavigationMap`**: Container Leaflet com azulejos Dark Matter CartoDB, traçado de polilinhas seguras vs perigosas, círculos com efeito radar nas manchas criminais e marcador do veículo em deslocamento contínuo (navigation puck com cone de direção).
+7. **`RouteSelector`**: Seletor comparativo entre "Rota Rápida", "SafeRoute Defesa Civil" e "Rota Expressa", demonstrando tempo, distância e pontuação de segurança.
+8. **`NavigationControls`**: Cockpit de direção com velocímetro digital em tempo real (km/h), barra de progresso e botões de simulação (Iniciar, Pausar, Retomar, Reiniciar).
+9. **`IncidentList`**: Painel de visualização e gerenciamento das ocorrências (Read, Update status para "resolvido", Delete e Upvote com confirmações da comunidade).
+10. **`IncidentReportModal`**: Formulário modal acessível para registro de novas ocorrências (Create), com seleção de bairro e coordenadas geográficas de SP.
+11. **`SafetyTipsDrawer`**: Gaveta lateral expansível com telefones de emergência (190, 199, 153, 181) e diretrizes contra a "gangue da bicicleta".
+12. **`StatsOverview`**: Indicadores executivos com total de zonas críticas, ocorrências nas últimas 24h, taxa de eficácia de desvio e tamanho da rede cívica.
+13. **`Footer`**: Rodapé institucional destacando a liderança de Nicolly, stack utilizada e link para o GitHub oficial.
 
 ---
 

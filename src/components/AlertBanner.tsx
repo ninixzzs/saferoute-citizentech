@@ -37,9 +37,8 @@ export const AlertBanner: React.FC<AlertBannerProps> = ({
             <h4 className="text-sm sm:text-base font-bold text-white mt-1">
               {zone.title}
             </h4>
-            <p className="text-xs sm:text-sm text-amber-200/90 font-medium mt-0.5 flex items-center gap-1.5">
-              <span>💡</span>
-              <strong>Dica prática:</strong> {zone.defenseCivilTip}
+            <p className="text-xs sm:text-sm text-amber-200/90 font-medium mt-1 flex items-center gap-1.5">
+              <span className="font-semibold text-amber-400">Instrução:</span> {zone.defenseCivilTip}
             </p>
           </div>
         </div>

@@ -137,11 +137,11 @@ export const IncidentReportModal: React.FC<IncidentReportModalProps> = ({
                 onChange={(e) => setCategory(e.target.value as IncidentCategory)}
                 className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs sm:text-sm text-slate-100 focus:outline-none focus:border-amber-500/60"
               >
-                <option value="furto_celular">📱 Furto de Smartphone</option>
-                <option value="assalto">⚠️ Assalto / Abordagem</option>
-                <option value="arrastao">🚨 Arrastão em Trânsito</option>
-                <option value="alagamento">🌊 Ponto de Alagamento</option>
-                <option value="iluminacao_precaria">💡 Iluminação Precária</option>
+                <option value="furto_celular">Furto de Smartphone</option>
+                <option value="assalto">Assalto / Abordagem</option>
+                <option value="arrastao">Arrastão em Trânsito</option>
+                <option value="alagamento">Ponto de Alagamento</option>
+                <option value="iluminacao_precaria">Iluminação Precária</option>
                 <option value="outro">Outro Risco</option>
               </select>
             </div>

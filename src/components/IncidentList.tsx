@@ -43,11 +43,11 @@ export const IncidentList: React.FC<IncidentListProps> = ({
 }) => {
   const categories: { key: IncidentCategory | 'todos'; label: string }[] = [
     { key: 'todos', label: 'Todos' },
-    { key: 'furto_celular', label: '📱 Furto de Celular' },
-    { key: 'assalto', label: '⚠️ Assalto' },
-    { key: 'arrastao', label: '🚨 Arrastão' },
-    { key: 'alagamento', label: '🌊 Alagamento' },
-    { key: 'iluminacao_precaria', label: '💡 Iluminação Ruim' },
+    { key: 'furto_celular', label: 'Furto de Celular' },
+    { key: 'assalto', label: 'Assalto' },
+    { key: 'arrastao', label: 'Arrastão' },
+    { key: 'alagamento', label: 'Alagamento' },
+    { key: 'iluminacao_precaria', label: 'Iluminação Precária' },
   ];
 
   return (
