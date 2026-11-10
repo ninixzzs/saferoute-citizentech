@@ -15,8 +15,7 @@ import {
   CornerUpLeft,
   CornerUpRight,
   ArrowUp,
-  ChevronUp,
-  ChevronDown,
+  ArrowLeft,
   Gauge,
   Plus,
   ListChecks,
@@ -24,6 +23,7 @@ import {
   Clock,
   Volume2,
   VolumeX,
+  Map as MapIcon,
 } from 'lucide-react';
 import {
   DangerZone,
@@ -88,7 +88,7 @@ interface MobileMapExperienceProps {
   onToggleSimSpeed: (speed: '1x' | '2x') => void;
 }
 
-type SheetTab = 'routes' | 'itinerary' | 'alerts';
+type MobileScreen = 'map' | 'search' | 'routes' | 'steps' | 'alerts';
 
 export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
   currentPosition,
@@ -135,9 +135,8 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
   simSpeed,
   onToggleSimSpeed,
 }) => {
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [sheetExpanded, setSheetExpanded] = useState(false);
-  const [sheetTab, setSheetTab] = useState<SheetTab>('routes');
+  // Single exclusive screen state so nothing ever overlaps or clutters another section
+  const [activeScreen, setActiveScreen] = useState<MobileScreen>('map');
   const [autoReroute, setAutoReroute] = useState(true);
   const [autoRerouteNotice, setAutoRerouteNotice] = useState<string | null>(null);
 
@@ -150,7 +149,15 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
   const debounceRef = useRef<number | null>(null);
   const noticeTimerRef = useRef<number | null>(null);
 
-  // Mobile automation: auto-reroute to the safe route when approaching a Defesa Civil risk zone
+  useEffect(() => {
+    setOriginInput(originLocation.name);
+  }, [originLocation]);
+
+  useEffect(() => {
+    setDestInput(destinationLocation.name);
+  }, [destinationLocation]);
+
+  // Smart mobile automation: auto-reroute onto the safe detour when approaching risk
   useEffect(() => {
     if (
       activeAlertZone &&
@@ -173,14 +180,6 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
     };
   }, []);
 
-  useEffect(() => {
-    setOriginInput(originLocation.name);
-  }, [originLocation]);
-
-  useEffect(() => {
-    setDestInput(destinationLocation.name);
-  }, [destinationLocation]);
-
   const triggerSuggestions = (query: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = window.setTimeout(async () => {
@@ -199,7 +198,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
           setOriginInput(loc.name);
           if (destInput.trim()) {
             await onCalculateJourney(loc.address, destInput);
-            setIsSearchOpen(false);
+            setActiveScreen('map');
           }
         } finally {
           setIsLocatingGps(false);
@@ -215,7 +214,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
     if (!destInput.trim() || isNavigating || isCalculatingRoute) return;
     setActiveField(null);
     await onCalculateJourney(originInput, destInput);
-    setIsSearchOpen(false);
+    setActiveScreen('map');
   };
 
   const handleSelectSuggestion = async (loc: LocationSuggestion) => {
@@ -224,13 +223,13 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
       setActiveField(null);
       if (destInput.trim()) {
         await onCalculateJourney(loc.address, destInput);
-        setIsSearchOpen(false);
+        setActiveScreen('map');
       }
     } else {
       setDestInput(loc.name);
       setActiveField(null);
       await onCalculateJourney(originInput, loc.address);
-      setIsSearchOpen(false);
+      setActiveScreen('map');
     }
   };
 
@@ -239,16 +238,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
     setDestInput(loc.name);
     setActiveField(null);
     await onCalculateJourney(originInput, loc.address);
-    setIsSearchOpen(false);
-  };
-
-  const openSheetSection = (tab: SheetTab) => {
-    if (sheetExpanded && sheetTab === tab) {
-      setSheetExpanded(false);
-    } else {
-      setSheetTab(tab);
-      setSheetExpanded(true);
-    }
+    setActiveScreen('map');
   };
 
   const remainingFactor = Math.max(0, 1 - progressPercentage / 100);
@@ -285,262 +275,403 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
     return 'Alternativa';
   };
 
+  const renderScreenHeader = (title: string, subtitle?: string) => (
+    <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between bg-white dark:bg-neutral-950 shrink-0">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <button
+          type="button"
+          onClick={() => setActiveScreen('map')}
+          className="p-2 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white shrink-0 active:scale-95 transition-transform"
+          aria-label="Voltar para o mapa"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+        <div className="min-w-0">
+          <h3 className="text-sm font-bold text-neutral-950 dark:text-white truncate">{title}</h3>
+          {subtitle && (
+            <p className="text-[11px] text-neutral-500 truncate">{subtitle}</p>
+          )}
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setActiveScreen('map')}
+        className="px-2.5 py-1.5 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 text-[11px] font-bold flex items-center gap-1 shrink-0"
+      >
+        <MapIcon className="w-3.5 h-3.5" />
+        <span>Ver Mapa</span>
+      </button>
+    </div>
+  );
+
   return (
-    <div className="relative w-full h-[78dvh] min-h-[550px] max-h-[820px] rounded-[28px] overflow-hidden border border-neutral-200/90 dark:border-neutral-800/90 shadow-[0_18px_50px_rgba(0,0,0,0.16)] dark:shadow-[0_22px_60px_rgba(0,0,0,0.65)] bg-neutral-900 select-none">
-      {/* 1. Edge-to-Edge Live Interactive Map */}
-      <NavigationMap
-        currentPosition={currentPosition}
-        nextPosition={nextPosition}
-        selectedRoute={selectedRoute}
-        allRoutes={allRoutes}
-        onSelectRoute={onSelectRoute}
-        dangerZones={dangerZones}
-        incidents={incidents}
-        isNavigating={isNavigating}
-        speedKmH={speedKmH}
-        focusPoint={focusPoint}
-        topControlOffsetClass="top-[84px]"
-        className="w-full h-full"
-      />
+    <div className="relative w-full h-[78dvh] min-h-[550px] max-h-[820px] rounded-[28px] overflow-hidden border border-neutral-200/90 dark:border-neutral-800/90 shadow-[0_18px_50px_rgba(0,0,0,0.16)] dark:shadow-[0_22px_60px_rgba(0,0,0,0.65)] bg-neutral-950 select-none flex flex-col">
+      {/* =====================================================================
+          SCREEN 1: LIVE INTERACTIVE MAP (Clean, Focused Map View)
+         ===================================================================== */}
+      {activeScreen === 'map' && (
+        <div className="relative w-full h-full flex-1">
+          <NavigationMap
+            currentPosition={currentPosition}
+            nextPosition={nextPosition}
+            selectedRoute={selectedRoute}
+            allRoutes={allRoutes}
+            onSelectRoute={onSelectRoute}
+            dangerZones={dangerZones}
+            incidents={incidents}
+            isNavigating={isNavigating}
+            speedKmH={speedKmH}
+            focusPoint={focusPoint}
+            topControlOffsetClass="top-[82px]"
+            className="w-full h-full"
+          />
 
-      {/* 2. Top Floating Search Pill (with Direct 1-Tap GPS) OR Turn-by-Turn Guidance */}
-      {!isSearchOpen && !sheetExpanded && (
-        <div
-          onMouseDown={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
-          className="absolute top-3 left-3 right-3 z-[410] pointer-events-auto"
-        >
-        {isNavigating ? (
-          <div className="bg-neutral-950/95 backdrop-blur-xl text-white rounded-2xl p-3 shadow-2xl border border-white/15 flex items-center justify-between gap-2.5">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-md">
-                {renderTurnIcon(activeStep?.modifier)}
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-sm font-bold leading-tight truncate">
-                    {activeStep ? activeStep.instruction : 'Siga em frente'}
-                  </span>
-                  {activeStep?.distanceMeters ? (
-                    <span className="text-[11px] font-mono tabular-nums text-neutral-300 shrink-0">
-                      ({activeStep.distanceMeters} m)
-                    </span>
-                  ) : null}
+          {/* Top Bar: Search Pill OR Active Turn Guidance */}
+          <div
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            className="absolute top-3 left-3 right-3 z-[410] pointer-events-auto"
+          >
+            {isNavigating ? (
+              <div className="bg-neutral-950/95 backdrop-blur-xl text-white rounded-2xl p-3 shadow-2xl border border-white/15 flex items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-md">
+                    {renderTurnIcon(activeStep?.modifier)}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-sm font-bold leading-tight truncate">
+                        {activeStep ? activeStep.instruction : 'Siga em frente'}
+                      </span>
+                      {activeStep?.distanceMeters ? (
+                        <span className="text-[11px] font-mono tabular-nums text-neutral-300 shrink-0">
+                          ({activeStep.distanceMeters} m)
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-xs text-neutral-300 truncate mt-0.5">{currentStreet}</p>
+                  </div>
                 </div>
-                <p className="text-xs text-neutral-300 truncate mt-0.5">{currentStreet}</p>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                type="button"
-                onClick={onToggleVoice}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
-                aria-label={voiceEnabled ? 'Desativar voz' : 'Ativar voz'}
-              >
-                {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-neutral-400" />}
-              </button>
-              <button
-                type="button"
-                onClick={onReset}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
-                aria-label="Encerrar navegação"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="w-full bg-white/96 dark:bg-neutral-950/95 backdrop-blur-xl rounded-2xl p-2 pl-2.5 shadow-xl border border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setIsSearchOpen(true)}
-              className="flex-1 min-w-0 flex items-center gap-2.5 text-left active:scale-[0.99] transition-transform py-0.5"
-            >
-              <div className="w-9 h-9 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0">
-                {isCalculatingRoute ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                  Para onde você vai?
-                </div>
-                <div className="text-xs font-bold text-neutral-950 dark:text-white truncate">
-                  {originLocation.name} &rarr; {destinationLocation.name}
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={onToggleVoice}
+                    className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+                    aria-label={voiceEnabled ? 'Desativar voz' : 'Ativar voz'}
+                  >
+                    {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-neutral-400" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onReset}
+                    className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+                    aria-label="Encerrar navegação"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleUseGps}
-              disabled={isLocatingGps || isCalculatingRoute}
-              className="p-2 rounded-xl bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 border border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white shrink-0 transition-colors"
-              title="Atualizar partida com GPS atual"
-              aria-label="Usar minha localização GPS atual"
-            >
-              {isLocatingGps ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <LocateFixed className="w-4 h-4" />
-              )}
-            </button>
-          </div>
-        )}
-        </div>
-      )}
-
-      {/* 3. Top-Left Quick Actions (Aligned cleanly opposite map right controls, zero overlap) */}
-      {!isSearchOpen && !sheetExpanded && (
-        <div
-          onMouseDown={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
-          className="absolute top-[84px] left-3 z-[400] flex flex-col items-start gap-2 pointer-events-auto"
-        >
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={onOpenReportModal}
-              className="h-8 px-2.5 rounded-xl bg-white/95 dark:bg-neutral-950/90 text-neutral-950 dark:text-white border border-neutral-200 dark:border-white/15 shadow-lg flex items-center gap-1 text-[11px] font-bold active:scale-95 transition-transform backdrop-blur-md"
-              title="Reportar ocorrência na via"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Alertar</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setAutoReroute(!autoReroute)}
-              aria-pressed={autoReroute}
-              className={`h-8 px-2.5 rounded-xl border shadow-lg flex items-center gap-1 text-[11px] font-bold active:scale-95 transition-all backdrop-blur-md ${
-                autoReroute
-                  ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border-neutral-950 dark:border-white'
-                  : 'bg-white/95 dark:bg-neutral-950/90 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-white/15'
-              }`}
-              title="Ativar ou desativar desvio automático em zonas de risco"
-            >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>{autoReroute ? 'Auto ON' : 'Auto OFF'}</span>
-            </button>
-          </div>
-
-          {isNavigating && (
-            <div className="w-11 h-11 rounded-full bg-neutral-950/92 border border-white/20 shadow-xl flex flex-col items-center justify-center text-white font-mono">
-              <span className="text-xs font-black leading-none">{speedKmH}</span>
-              <span className="text-[7px] text-neutral-400 uppercase">km/h</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 3B. Lower Floating Alert / Automation Notification Band (Positioned cleanly above Bottom Sheet) */}
-      {!isSearchOpen && !sheetExpanded && (autoRerouteNotice || activeAlertZone) && (
-        <div
-          onMouseDown={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
-          className="absolute bottom-[198px] left-3 right-3 z-[425] space-y-2 pointer-events-auto"
-        >
-          {autoRerouteNotice && (
-            <div className="rounded-2xl bg-neutral-950 text-white border border-white/15 shadow-2xl px-3.5 py-2.5 flex items-center justify-between gap-2 animate-in slide-in-from-bottom-2 duration-200">
-              <div className="flex items-center gap-2 min-w-0">
-                <ShieldCheck className="w-4 h-4 text-white shrink-0" />
-                <span className="text-xs font-bold truncate">{autoRerouteNotice}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setAutoRerouteNotice(null)}
-                className="text-neutral-400 hover:text-white p-0.5 shrink-0"
-                aria-label="Fechar aviso"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
-
-          {activeAlertZone && (
-            <div className="rounded-2xl bg-neutral-950 text-white border border-neutral-800 shadow-2xl p-3.5 space-y-2 animate-in slide-in-from-bottom-3 duration-200">
-              <div className="flex items-center justify-between border-b border-neutral-800 pb-1.5">
-                <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
-                  <AlertTriangle className="w-4 h-4 text-white" />
-                  <span>Alerta Defesa Civil SP</span>
-                </span>
+            ) : (
+              <div className="w-full bg-white/96 dark:bg-neutral-950/95 backdrop-blur-xl rounded-2xl p-2 pl-2.5 shadow-xl border border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => onDismissAlert(activeAlertZone.id)}
-                  className="text-neutral-400 hover:text-white p-0.5"
-                  aria-label="Fechar alerta"
+                  onClick={() => setActiveScreen('search')}
+                  className="flex-1 min-w-0 flex items-center gap-2.5 text-left active:scale-[0.99] transition-transform py-0.5"
                 >
-                  <X className="w-4 h-4" />
+                  <div className="w-9 h-9 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0">
+                    {isCalculatingRoute ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                      Para onde você vai?
+                    </div>
+                    <div className="text-xs font-bold text-neutral-950 dark:text-white truncate">
+                      {originLocation.name} &rarr; {destinationLocation.name}
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleUseGps}
+                  disabled={isLocatingGps || isCalculatingRoute}
+                  className="p-2 rounded-xl bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 border border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white shrink-0 transition-colors"
+                  title="Atualizar partida com GPS atual"
+                  aria-label="Usar minha localização GPS atual"
+                >
+                  {isLocatingGps ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <LocateFixed className="w-4 h-4" />
+                  )}
                 </button>
               </div>
-              <div>
-                <h4 className="text-xs font-bold">{activeAlertZone.neighborhood}</h4>
-                <p className="text-xs text-neutral-300 mt-0.5 leading-relaxed">
-                  {activeAlertZone.defenseCivilTip}
-                </p>
+            )}
+          </div>
+
+          {/* Top-Left Quick Map Tools */}
+          <div
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            className="absolute top-[82px] left-3 z-[400] flex flex-col items-start gap-2 pointer-events-auto"
+          >
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={onOpenReportModal}
+                className="h-8 px-2.5 rounded-xl bg-white/95 dark:bg-neutral-950/90 text-neutral-950 dark:text-white border border-neutral-200 dark:border-white/15 shadow-lg flex items-center gap-1 text-[11px] font-bold active:scale-95 transition-transform backdrop-blur-md"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Alertar</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAutoReroute(!autoReroute)}
+                aria-pressed={autoReroute}
+                className={`h-8 px-2.5 rounded-xl border shadow-lg flex items-center gap-1 text-[11px] font-bold active:scale-95 transition-all backdrop-blur-md ${
+                  autoReroute
+                    ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border-neutral-950 dark:border-white'
+                    : 'bg-white/95 dark:bg-neutral-950/90 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-white/15'
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>{autoReroute ? 'Auto ON' : 'Auto OFF'}</span>
+              </button>
+            </div>
+
+            {isNavigating && (
+              <div className="w-11 h-11 rounded-full bg-neutral-950/92 border border-white/20 shadow-xl flex flex-col items-center justify-center text-white font-mono">
+                <span className="text-xs font-black leading-none">{speedKmH}</span>
+                <span className="text-[7px] text-neutral-400 uppercase">km/h</span>
               </div>
-              {selectedRoute.type !== 'segura' && (
-                <div className="flex items-center gap-2 pt-0.5">
+            )}
+          </div>
+
+          {/* Floating Notification / Risk Alert (Anchored cleanly above bottom bar) */}
+          {(autoRerouteNotice || activeAlertZone) && (
+            <div
+              onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              className="absolute bottom-[174px] left-3 right-3 z-[425] space-y-2 pointer-events-auto"
+            >
+              {autoRerouteNotice && (
+                <div className="rounded-2xl bg-neutral-950 text-white border border-white/15 shadow-2xl px-3.5 py-2.5 flex items-center justify-between gap-2 animate-in slide-in-from-bottom-2 duration-200">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <ShieldCheck className="w-4 h-4 text-white shrink-0" />
+                    <span className="text-xs font-bold truncate">{autoRerouteNotice}</span>
+                  </div>
                   <button
                     type="button"
-                    onClick={onAcceptReroute}
-                    className="flex-1 py-2 px-3 rounded-xl bg-white text-neutral-950 font-bold text-xs flex items-center justify-center gap-1.5"
+                    onClick={() => setAutoRerouteNotice(null)}
+                    className="text-neutral-400 hover:text-white p-0.5 shrink-0"
+                    aria-label="Fechar aviso"
                   >
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>Desviar para Rota Segura</span>
+                    <X className="w-3.5 h-3.5" />
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => onDismissAlert(activeAlertZone.id)}
-                    className="py-2 px-3 rounded-xl bg-neutral-900 text-neutral-300 border border-neutral-800 text-xs font-semibold"
-                  >
-                    Dispensar
-                  </button>
+                </div>
+              )}
+
+              {activeAlertZone && (
+                <div className="rounded-2xl bg-neutral-950 text-white border border-neutral-800 shadow-2xl p-3.5 space-y-2 animate-in slide-in-from-bottom-3 duration-200">
+                  <div className="flex items-center justify-between border-b border-neutral-800 pb-1.5">
+                    <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
+                      <AlertTriangle className="w-4 h-4 text-white" />
+                      <span>Alerta Defesa Civil SP</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onDismissAlert(activeAlertZone.id)}
+                      className="text-neutral-400 hover:text-white p-0.5"
+                      aria-label="Fechar alerta"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold">{activeAlertZone.neighborhood}</h4>
+                    <p className="text-xs text-neutral-300 mt-0.5 leading-relaxed">
+                      {activeAlertZone.defenseCivilTip}
+                    </p>
+                  </div>
+                  {selectedRoute.type !== 'segura' && (
+                    <div className="flex items-center gap-2 pt-0.5">
+                      <button
+                        type="button"
+                        onClick={onAcceptReroute}
+                        className="flex-1 py-2 px-3 rounded-xl bg-white text-neutral-950 font-bold text-xs flex items-center justify-center gap-1.5"
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span>Desviar para Rota Segura</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDismissAlert(activeAlertZone.id)}
+                        className="py-2 px-3 rounded-xl bg-neutral-900 text-neutral-300 border border-neutral-800 text-xs font-semibold"
+                      >
+                        Dispensar
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           )}
-        </div>
-      )}
 
-      {/* 4. Uber / Google Maps Slide-Over Route Search Drawer */}
-      {isSearchOpen && (
-        <div
-          onMouseDown={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
-          className="absolute inset-0 z-[430] bg-white dark:bg-neutral-950 flex flex-col animate-in fade-in slide-in-from-top-4 duration-200"
-        >
-          <div className="p-3.5 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Navigation className="w-4 h-4 text-neutral-950 dark:text-white" />
-              <span className="text-sm font-bold text-neutral-950 dark:text-white">
-                Definir Trajeto
-              </span>
+          {/* Compact Bottom Action Bar inside Map View */}
+          <div
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            className="absolute bottom-0 left-0 right-0 z-[420] bg-white/96 dark:bg-neutral-950/96 backdrop-blur-xl border-t border-neutral-200 dark:border-neutral-800 rounded-t-[24px] p-3.5 pt-2.5 space-y-2.5 shadow-[0_-10px_30px_rgba(0,0,0,0.2)]"
+          >
+            {isNavigating && (
+              <div className="w-full h-1 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-neutral-950 dark:bg-white transition-all duration-700 rounded-full"
+                  style={{ width: `${progressPercentage}%` }}
+                />
+              </div>
+            )}
+
+            {/* 1-Tap Route Switcher Pills */}
+            {!isNavigating && allRoutes.length > 0 && (
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                {allRoutes.map((route) => {
+                  const isSelected = route.id === selectedRoute.id;
+                  return (
+                    <button
+                      key={route.id}
+                      type="button"
+                      onClick={() => onSelectRoute(route)}
+                      className={`px-2.5 py-1 rounded-xl border text-[11px] font-bold whitespace-nowrap transition-all flex items-center gap-1 shrink-0 ${
+                        isSelected
+                          ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border-neutral-950 dark:border-white'
+                          : 'bg-neutral-100 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-800'
+                      }`}
+                    >
+                      {route.type === 'segura' && <ShieldCheck className="w-3 h-3" />}
+                      <span>{shortRouteLabel(route)}</span>
+                      <span className="font-mono opacity-80">{route.durationMin}m</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* ETA + Primary Drive Action */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <div className="flex items-baseline gap-2 tabular-nums">
+                  <span className="font-display text-2xl font-extrabold tracking-tight text-neutral-950 dark:text-white">
+                    {remainingMin} min
+                  </span>
+                  <span className="text-xs font-mono text-neutral-500">({remainingKm} km)</span>
+                  <span className="px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-[10px] font-mono font-bold text-neutral-900 dark:text-neutral-100">
+                    {selectedRoute.safetyScore}/100
+                  </span>
+                </div>
+                <div className="text-[11px] text-neutral-500 flex items-center gap-1 truncate">
+                  <Clock className="w-3 h-3 shrink-0" />
+                  <span className="truncate">
+                    {isNavigating ? currentStreet : selectedRoute.name}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => onToggleSimSpeed(simSpeed === '1x' ? '2x' : '1x')}
+                  className="px-2 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-[11px] font-mono font-bold text-neutral-700 dark:text-neutral-300 flex items-center gap-1"
+                >
+                  <Gauge className="w-3.5 h-3.5" />
+                  <span>{simSpeed}</span>
+                </button>
+
+                {!isNavigating ? (
+                  <button
+                    type="button"
+                    onClick={onStart}
+                    className="px-4 py-2.5 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs shadow-md flex items-center gap-1.5 active:scale-95 transition-transform"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <span>Iniciar</span>
+                  </button>
+                ) : isPaused ? (
+                  <button
+                    type="button"
+                    onClick={onResume}
+                    className="px-4 py-2.5 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs flex items-center gap-1.5"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <span>Retomar</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onPause}
+                    className="px-4 py-2.5 rounded-xl bg-neutral-800 dark:bg-neutral-200 text-white dark:text-neutral-950 font-bold text-xs flex items-center gap-1.5"
+                  >
+                    <Pause className="w-3.5 h-3.5 fill-current" />
+                    <span>Pausar</span>
+                  </button>
+                )}
+
+                {isNavigating && (
+                  <button
+                    type="button"
+                    onClick={onReset}
+                    className="p-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300"
+                    aria-label="Reiniciar trajeto"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-2">
+
+            {/* Clean Exclusive Section Buttons */}
+            <div className="grid grid-cols-3 gap-1.5 pt-0.5">
               <button
                 type="button"
-                onClick={() => {
-                  onResetPresetRoutes();
-                  setIsSearchOpen(false);
-                }}
-                className="text-xs text-neutral-500 hover:text-neutral-950 dark:hover:text-white px-2 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-900"
+                onClick={() => setActiveScreen('routes')}
+                className="py-2 px-2 rounded-xl text-[11px] font-semibold flex items-center justify-center gap-1 bg-neutral-100 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-800"
               >
-                Padrão
+                <Navigation className="w-3.5 h-3.5" />
+                <span>Rotas</span>
               </button>
               <button
                 type="button"
-                onClick={() => setIsSearchOpen(false)}
-                className="p-1.5 rounded-xl bg-neutral-100 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300"
-                aria-label="Fechar busca"
+                onClick={() => setActiveScreen('steps')}
+                className="py-2 px-2 rounded-xl text-[11px] font-semibold flex items-center justify-center gap-1 bg-neutral-100 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-800"
               >
-                <X className="w-4 h-4" />
+                <ListChecks className="w-3.5 h-3.5" />
+                <span>Passos</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveScreen('alerts')}
+                className="py-2 px-2 rounded-xl text-[11px] font-semibold flex items-center justify-center gap-1 bg-neutral-100 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-800"
+              >
+                <AlertCircle className="w-3.5 h-3.5" />
+                <span>Alertas ({allIncidentsCount})</span>
               </button>
             </div>
           </div>
+        </div>
+      )}
 
-          <div className="p-3.5 space-y-3 overflow-y-auto flex-1">
+      {/* =====================================================================
+          SCREEN 2: FULL SEARCH SCREEN (100% Opaque - Zero Map / Minutes visible)
+         ===================================================================== */}
+      {activeScreen === 'search' && (
+        <div className="w-full h-full bg-white dark:bg-neutral-950 flex flex-col">
+          {renderScreenHeader('Definir Trajeto', 'Digite partida e destino ou toque em um local')}
+
+          <div className="p-4 space-y-3.5 overflow-y-auto flex-1">
             <form onSubmit={handleSubmitSearch} className="space-y-2.5">
-              {/* Origin */}
               <div className="relative flex items-center">
                 <span className="absolute left-3 w-2.5 h-2.5 rounded-full border-2 border-neutral-500 bg-white"></span>
                 <input
@@ -588,7 +719,6 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
                 </div>
               </div>
 
-              {/* Destination + Swap */}
               <div className="flex items-center gap-2">
                 <div className="relative flex-1 flex items-center">
                   <span className="absolute left-3 w-2.5 h-2.5 rounded-full bg-neutral-950 dark:bg-white"></span>
@@ -645,13 +775,12 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
                 ) : (
                   <>
                     <Search className="w-4 h-4" />
-                    <span>Ver rotas seguras no mapa</span>
+                    <span>Traçar Rota Segura</span>
                   </>
                 )}
               </button>
             </form>
 
-            {/* Quick 1-Tap GPS + Popular SP Chips */}
             <div className="space-y-2 pt-1">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
@@ -659,11 +788,13 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
                 </span>
                 <button
                   type="button"
-                  onClick={handleUseGps}
-                  className="text-[11px] font-semibold text-neutral-800 dark:text-neutral-200 flex items-center gap-1"
+                  onClick={() => {
+                    onResetPresetRoutes();
+                    setActiveScreen('map');
+                  }}
+                  className="text-[11px] font-semibold text-neutral-600 dark:text-neutral-300 underline"
                 >
-                  <LocateFixed className="w-3 h-3" />
-                  <span>Minha localização</span>
+                  Restaurar padrão
                 </button>
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -680,11 +811,10 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
               </div>
             </div>
 
-            {/* Address Suggestions */}
             {suggestions.length > 0 && (
               <div className="border-t border-neutral-200 dark:border-neutral-800 pt-2 space-y-1">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-                  {activeField === 'origin' ? 'Sugestões de partida' : 'Sugestões de endereço'}
+                  {activeField === 'origin' ? 'Sugestões de partida' : 'Sugestões de destino'}
                 </div>
                 {suggestions.map((loc, idx) => (
                   <button
@@ -708,286 +838,104 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
         </div>
       )}
 
-      {/* 5. Uber / Google Maps Expandable Bottom Sheet (hidden when Search overlay is open) */}
-      {!isSearchOpen && (
-        <div
-          onMouseDown={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
-          className={`absolute bottom-0 left-0 right-0 z-[420] bg-white/96 dark:bg-neutral-950/96 backdrop-blur-xl border-t border-neutral-200 dark:border-neutral-800 rounded-t-[28px] shadow-[0_-12px_40px_rgba(0,0,0,0.22)] transition-all duration-300 flex flex-col ${
-            sheetExpanded ? 'h-[76%]' : 'h-auto'
-          }`}
-        >
-        {/* Drag Handle + Quick Section Switcher */}
-        <div className="px-4 pt-2 pb-2 border-b border-neutral-100 dark:border-neutral-800/80 space-y-2 shrink-0">
-          <button
-            type="button"
-            onClick={() => setSheetExpanded(!sheetExpanded)}
-            className="w-full flex items-center justify-center py-0.5 text-neutral-400"
-            aria-label={sheetExpanded ? 'Recolher painel' : 'Expandir painel'}
-          >
-            <span className="w-10 h-1 rounded-full bg-neutral-300 dark:bg-neutral-700" />
-          </button>
+      {/* =====================================================================
+          SCREEN 3: EXCLUSIVE ROUTE COMPARISON SCREEN (100% Opaque)
+         ===================================================================== */}
+      {activeScreen === 'routes' && (
+        <div className="w-full h-full bg-white dark:bg-neutral-950 flex flex-col">
+          {renderScreenHeader('Opções de Rota', 'Toque em uma opção para aplicar no mapa')}
 
-          {/* 1-Tap Route Switcher Pills (Uber / Google Maps Style) */}
-          {!isNavigating && allRoutes.length > 0 && (
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
-              {allRoutes.map((route) => {
-                const isSelected = route.id === selectedRoute.id;
-                return (
-                  <button
-                    key={route.id}
-                    type="button"
-                    onClick={() => onSelectRoute(route)}
-                    className={`px-3 py-1.5 rounded-xl border text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 ${
-                      isSelected
-                        ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border-neutral-950 dark:border-white shadow-sm'
-                        : 'bg-neutral-100 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-800'
-                    }`}
-                  >
-                    {route.type === 'segura' && <ShieldCheck className="w-3.5 h-3.5" />}
-                    <span>{shortRouteLabel(route)}</span>
-                    <span className="font-mono opacity-80">{route.durationMin}m</span>
-                    <span className="font-mono text-[10px] opacity-70">({route.safetyScore})</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* ETA + Primary CTA Row */}
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <div className="flex items-baseline gap-2 tabular-nums">
-                <span className="font-display text-2xl font-extrabold tracking-tight text-neutral-950 dark:text-white">
-                  {remainingMin} min
-                </span>
-                <span className="text-xs font-mono text-neutral-500">({remainingKm} km)</span>
-                <span className="px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-[10px] font-mono font-bold text-neutral-900 dark:text-neutral-100">
-                  {selectedRoute.safetyScore}/100
-                </span>
-              </div>
-              <div className="text-[11px] text-neutral-500 flex items-center gap-1.5 truncate">
-                <Clock className="w-3 h-3 shrink-0" />
-                <span className="truncate">
-                  {isNavigating ? `Via: ${currentStreet}` : selectedRoute.name}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                type="button"
-                onClick={() => onToggleSimSpeed(simSpeed === '1x' ? '2x' : '1x')}
-                className="px-2 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-[11px] font-mono font-bold text-neutral-700 dark:text-neutral-300 flex items-center gap-1"
-                title="Velocidade da simulação"
-              >
-                <Gauge className="w-3.5 h-3.5" />
-                <span>{simSpeed}</span>
-              </button>
-
-              {!isNavigating ? (
+          <div className="p-4 space-y-3 overflow-y-auto flex-1">
+            {allRoutes.map((route) => {
+              const isSelected = route.id === selectedRoute.id;
+              return (
                 <button
+                  key={route.id}
                   type="button"
-                  onClick={onStart}
-                  className="px-4 py-2.5 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs shadow-md flex items-center gap-1.5 active:scale-95 transition-transform"
+                  disabled={isNavigating}
+                  onClick={() => {
+                    onSelectRoute(route);
+                    setActiveScreen('map');
+                  }}
+                  className={`w-full text-left p-4 rounded-2xl border transition-all ${
+                    isSelected
+                      ? 'bg-neutral-100 dark:bg-neutral-900 border-neutral-900 dark:border-white shadow-sm'
+                      : 'bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800'
+                  } ${isNavigating ? 'opacity-65' : ''}`}
                 >
-                  <Play className="w-3.5 h-3.5 fill-current" />
-                  <span>Iniciar</span>
-                </button>
-              ) : isPaused ? (
-                <button
-                  type="button"
-                  onClick={onResume}
-                  className="px-4 py-2.5 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs flex items-center gap-1.5"
-                >
-                  <Play className="w-3.5 h-3.5 fill-current" />
-                  <span>Retomar</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={onPause}
-                  className="px-4 py-2.5 rounded-xl bg-neutral-800 dark:bg-neutral-200 text-white dark:text-neutral-950 font-bold text-xs flex items-center gap-1.5"
-                >
-                  <Pause className="w-3.5 h-3.5 fill-current" />
-                  <span>Pausar</span>
-                </button>
-              )}
-
-              {isNavigating && (
-                <button
-                  type="button"
-                  onClick={onReset}
-                  className="p-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300"
-                  aria-label="Reiniciar trajeto"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Live Trip Progress Bar inside Sheet */}
-          {isNavigating && (
-            <div className="w-full h-1 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-neutral-950 dark:bg-white transition-all duration-700 rounded-full"
-                style={{ width: `${progressPercentage}%` }}
-              />
-            </div>
-          )}
-
-          {/* Sheet Quick Sub-Tabs Row */}
-          <div className="grid grid-cols-3 gap-1.5 pt-1">
-            <button
-              type="button"
-              onClick={() => openSheetSection('routes')}
-              className={`py-1.5 px-2 rounded-xl text-[11px] font-semibold flex items-center justify-center gap-1 border transition-colors ${
-                sheetExpanded && sheetTab === 'routes'
-                  ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border-neutral-950 dark:border-white'
-                  : 'bg-neutral-100 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-800'
-              }`}
-            >
-              <Navigation className="w-3 h-3" />
-              <span>Detalhes</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => openSheetSection('itinerary')}
-              className={`py-1.5 px-2 rounded-xl text-[11px] font-semibold flex items-center justify-center gap-1 border transition-colors ${
-                sheetExpanded && sheetTab === 'itinerary'
-                  ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border-neutral-950 dark:border-white'
-                  : 'bg-neutral-100 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-800'
-              }`}
-            >
-              <ListChecks className="w-3 h-3" />
-              <span>Passos</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => openSheetSection('alerts')}
-              className={`py-1.5 px-2 rounded-xl text-[11px] font-semibold flex items-center justify-center gap-1 border transition-colors ${
-                sheetExpanded && sheetTab === 'alerts'
-                  ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border-neutral-950 dark:border-white'
-                  : 'bg-neutral-100 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-800'
-              }`}
-            >
-              <AlertCircle className="w-3 h-3" />
-              <span>Alertas ({allIncidentsCount})</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Expanded Bottom Sheet Content */}
-        {sheetExpanded && (
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-neutral-500">
-                {sheetTab === 'routes'
-                  ? 'Comparativo de Segurança'
-                  : sheetTab === 'itinerary'
-                    ? 'Guia Curva a Curva'
-                    : 'Ocorrências Monitoradas'}
-              </span>
-              <button
-                type="button"
-                onClick={() => setSheetExpanded(false)}
-                className="text-xs font-semibold text-neutral-600 dark:text-neutral-300 flex items-center gap-1"
-              >
-                <span>Ver mapa</span>
-                <ChevronDown className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {sheetTab === 'routes' && (
-              <div className="space-y-2">
-                {allRoutes.map((route) => {
-                  const isSelected = route.id === selectedRoute.id;
-                  return (
-                    <button
-                      key={route.id}
-                      type="button"
-                      disabled={isNavigating}
-                      onClick={() => {
-                        onSelectRoute(route);
-                        setSheetExpanded(false);
-                      }}
-                      className={`w-full text-left p-3.5 rounded-2xl border transition-all ${
-                        isSelected
-                          ? 'bg-neutral-100 dark:bg-neutral-900 border-neutral-900 dark:border-neutral-300 shadow-sm'
-                          : 'bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800'
-                      } ${isNavigating ? 'opacity-65' : ''}`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="font-bold text-xs text-neutral-950 dark:text-white flex items-center gap-1.5">
-                          <span>{route.name}</span>
-                          {route.type === 'segura' && (
-                            <span className="px-1.5 py-0.5 rounded bg-neutral-900 dark:bg-white text-white dark:text-neutral-950 text-[10px] uppercase">
-                              Recomendada
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-xs font-mono font-bold text-neutral-950 dark:text-white">
-                          {route.safetyScore}/100
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="font-bold text-xs text-neutral-950 dark:text-white flex items-center gap-1.5">
+                      <span>{route.name}</span>
+                      {route.type === 'segura' && (
+                        <span className="px-2 py-0.5 rounded bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 text-[10px] uppercase">
+                          Recomendada
                         </span>
-                      </div>
-                      <p className="text-[11px] text-neutral-600 dark:text-neutral-400 mt-1">
-                        {route.description}
-                      </p>
-                      <div className="flex items-center gap-3 text-[11px] font-mono text-neutral-500 mt-2">
-                        <span>{route.durationMin} min</span>
-                        <span>&bull;</span>
-                        <span>{route.distanceKm} km</span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {sheetTab === 'itinerary' && (
-              <RouteItinerary
-                selectedRoute={selectedRoute}
-                isNavigating={isNavigating}
-                progressPercentage={progressPercentage}
-              />
-            )}
-
-            {sheetTab === 'alerts' && (
-              <IncidentList
-                incidents={incidents}
-                loading={loadingIncidents}
-                searchQuery={searchQuery}
-                onSearchChange={onSearchChange}
-                selectedCategory={selectedCategory}
-                onCategoryChange={onCategoryChange}
-                selectedRisk={selectedRisk}
-                onRiskChange={onRiskChange}
-                onConfirm={onConfirmIncident}
-                onUpdateStatus={onUpdateIncidentStatus}
-                onDelete={onDeleteIncident}
-                onResetData={onResetIncidents}
-                onFocusIncident={(coords) => {
-                  onFocusIncident(coords);
-                  setSheetExpanded(false);
-                }}
-              />
-            )}
+                      )}
+                    </div>
+                    <span className="text-xs font-mono font-bold text-neutral-950 dark:text-white">
+                      {route.safetyScore}/100
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-neutral-600 dark:text-neutral-400 mt-1.5 leading-relaxed">
+                    {route.description}
+                  </p>
+                  <div className="flex items-center gap-3 text-[11px] font-mono text-neutral-500 mt-2.5">
+                    <span>{route.durationMin} min</span>
+                    <span>&bull;</span>
+                    <span>{route.distanceKm} km</span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
-        )}
         </div>
       )}
 
-      {/* Expand/Collapse Quick Corner Indicator when Sheet Collapsed */}
-      {!sheetExpanded && !isSearchOpen && (
-        <button
-          type="button"
-          onClick={() => setSheetExpanded(true)}
-          className="sr-only"
-          aria-label="Abrir detalhes"
-        >
-          <ChevronUp className="w-4 h-4" />
-        </button>
+      {/* =====================================================================
+          SCREEN 4: EXCLUSIVE STEP-BY-STEP ITINERARY SCREEN (100% Opaque)
+         ===================================================================== */}
+      {activeScreen === 'steps' && (
+        <div className="w-full h-full bg-white dark:bg-neutral-950 flex flex-col">
+          {renderScreenHeader('Passo a Passo', selectedRoute.name)}
+
+          <div className="p-4 overflow-y-auto flex-1">
+            <RouteItinerary
+              selectedRoute={selectedRoute}
+              isNavigating={isNavigating}
+              progressPercentage={progressPercentage}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          SCREEN 5: EXCLUSIVE ALERTS SCREEN (100% Opaque)
+         ===================================================================== */}
+      {activeScreen === 'alerts' && (
+        <div className="w-full h-full bg-white dark:bg-neutral-950 flex flex-col">
+          {renderScreenHeader('Ocorrências em São Paulo', `${allIncidentsCount} registros ativos`)}
+
+          <div className="p-4 overflow-y-auto flex-1">
+            <IncidentList
+              incidents={incidents}
+              loading={loadingIncidents}
+              searchQuery={searchQuery}
+              onSearchChange={onSearchChange}
+              selectedCategory={selectedCategory}
+              onCategoryChange={onCategoryChange}
+              selectedRisk={selectedRisk}
+              onRiskChange={onRiskChange}
+              onConfirm={onConfirmIncident}
+              onUpdateStatus={onUpdateIncidentStatus}
+              onDelete={onDeleteIncident}
+              onResetData={onResetIncidents}
+              onFocusIncident={(coords) => {
+                onFocusIncident(coords);
+                setActiveScreen('map');
+              }}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

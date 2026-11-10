@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import { X, ArrowLeft } from 'lucide-react';
 import { IncidentCategory, RiskLevel, IncidentReport } from '../types';
 
 interface IncidentReportModalProps {
@@ -44,8 +44,13 @@ export const IncidentReportModal: React.FC<IncidentReportModalProps> = ({
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen || typeof document === 'undefined') return null;
@@ -88,25 +93,35 @@ export const IncidentReportModal: React.FC<IncidentReportModalProps> = ({
       aria-modal="true"
       aria-label="Registrar ocorrência urbana"
       onClick={onClose}
-      className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150"
+      className="fixed inset-0 z-[2000] flex flex-col sm:items-center sm:justify-center sm:p-4 bg-white dark:bg-neutral-950 sm:bg-black/75 sm:backdrop-blur-sm animate-in fade-in duration-150"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-2xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white shadow-2xl"
+        className="w-full h-[100dvh] sm:h-auto sm:max-w-md sm:max-h-[90dvh] flex flex-col sm:rounded-2xl bg-white dark:bg-neutral-950 sm:border border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white shadow-2xl overflow-hidden"
       >
-        <div className="p-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
-          <h3 className="font-bold text-sm">Registrar Ocorrência Urbana</h3>
+        <div className="px-4 py-3.5 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between shrink-0 bg-white dark:bg-neutral-950">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="sm:hidden p-1.5 -ml-1 rounded-xl bg-neutral-100 dark:bg-neutral-900 text-neutral-900 dark:text-white"
+              aria-label="Voltar"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <h3 className="font-bold text-sm tracking-tight">Registrar Ocorrência Urbana</h3>
+          </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white p-1"
+            className="text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white p-1.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-900"
             aria-label="Fechar janela"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-3 text-xs">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 text-xs">
           <div>
             <label className="block text-neutral-600 dark:text-neutral-400 mb-1 font-medium">Título *</label>
             <input

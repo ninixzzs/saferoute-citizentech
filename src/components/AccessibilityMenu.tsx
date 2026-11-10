@@ -9,9 +9,9 @@ import {
   Contrast,
   RotateCcw,
   ChevronDown,
-  X,
   Volume2,
   VolumeX,
+  ArrowLeft,
 } from 'lucide-react';
 import { ThemeMode, FontSizeScale } from '../hooks/useAccessibility';
 
@@ -64,10 +64,16 @@ export const AccessibilityMenu: React.FC<AccessibilityMenuProps> = ({
       }
     };
 
+    const prevOverflow = document.body.style.overflow;
+    if (window.innerWidth < 640) {
+      document.body.style.overflow = 'hidden';
+    }
+
     document.addEventListener('mousedown', handlePointerDown);
     document.addEventListener('touchstart', handlePointerDown, { passive: true });
     window.addEventListener('keydown', handleKeyDown);
     return () => {
+      document.body.style.overflow = prevOverflow;
       document.removeEventListener('mousedown', handlePointerDown);
       document.removeEventListener('touchstart', handlePointerDown);
       window.removeEventListener('keydown', handleKeyDown);
@@ -117,10 +123,11 @@ export const AccessibilityMenu: React.FC<AccessibilityMenuProps> = ({
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="p-2 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200"
-              aria-label="Fechar painel de acessibilidade"
+              className="p-2 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 flex items-center gap-1 text-xs font-semibold"
+              aria-label="Voltar"
             >
-              <X className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4" />
+              <span>Voltar</span>
             </button>
           )}
         </div>
@@ -287,24 +294,18 @@ export const AccessibilityMenu: React.FC<AccessibilityMenuProps> = ({
         </div>
       )}
 
-      {/* Mobile Native Bottom Sheet via Portal (< sm) - Escapes header backdrop-filter containing block */}
+      {/* Mobile Fullscreen Isolated View via Portal (< sm) - Zero map/text behind */}
       {isOpen &&
         typeof document !== 'undefined' &&
         createPortal(
-          <div className="sm:hidden fixed inset-0 z-[1000] flex items-end justify-center">
-            <div
-              onClick={() => setIsOpen(false)}
-              className="fixed inset-0 bg-black/55 backdrop-blur-xs animate-in fade-in duration-150"
-              aria-hidden="true"
-            />
+          <div className="sm:hidden fixed inset-0 z-[2000] bg-white dark:bg-neutral-950 flex flex-col">
             <div
               ref={mobileSheetRef}
               role="dialog"
               aria-modal="true"
               aria-label="Configurações de Acessibilidade e Aparência"
-              className="relative w-full max-w-lg rounded-t-[28px] bg-white dark:bg-neutral-950 border-t border-neutral-200 dark:border-neutral-800 shadow-2xl p-5 pb-7 text-neutral-900 dark:text-neutral-100 max-h-[85dvh] overflow-y-auto animate-in slide-in-from-bottom-6 duration-200"
+              className="w-full h-[100dvh] bg-white dark:bg-neutral-950 p-5 text-neutral-900 dark:text-neutral-100 overflow-y-auto animate-in fade-in duration-150"
             >
-              <div className="w-10 h-1 rounded-full bg-neutral-300 dark:bg-neutral-700 mx-auto mb-3.5" />
               {renderPanelContent(true)}
             </div>
           </div>,
