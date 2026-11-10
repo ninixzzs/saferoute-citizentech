@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Play,
   Pause,
@@ -67,6 +67,18 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
   simSpeed,
   onToggleSimSpeed,
 }) => {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isFullscreen]);
+
   const remainingFactor = Math.max(0, 1 - progressPercentage / 100);
   const remainingMin = isNavigating
     ? Math.max(1, Math.round(selectedRoute.durationMin * remainingFactor))
@@ -96,7 +108,13 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
   };
 
   return (
-    <div className="relative w-full h-[600px] sm:h-[680px] rounded-3xl overflow-hidden border border-neutral-200 dark:border-neutral-800 shadow-2xl bg-neutral-900">
+    <div
+      className={
+        isFullscreen
+          ? 'fixed inset-0 z-50 w-screen h-screen bg-neutral-950 select-none'
+          : 'relative w-full h-[580px] lg:h-[670px] rounded-3xl overflow-hidden border border-neutral-200 dark:border-neutral-800 shadow-2xl bg-neutral-900 select-none'
+      }
+    >
       {/* Main Interactive Map */}
       <NavigationMap
         currentPosition={currentPosition}
@@ -109,41 +127,53 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
         isNavigating={isNavigating}
         focusPoint={focusPoint}
         topControlOffsetClass="top-4"
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
         className="w-full h-full"
       />
 
-      {/* Top-Left Clean Floating Header */}
-      {isNavigating ? (
-        <div className="absolute top-4 left-4 right-16 sm:right-auto sm:min-w-[320px] sm:max-w-md z-[400] bg-neutral-950/92 backdrop-blur-xl text-white rounded-2xl p-3.5 shadow-2xl border border-white/15 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shrink-0 shadow-md">
-            {renderTurnIcon(activeStep?.modifier)}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-baseline gap-2">
-              <span className="text-sm font-bold leading-tight">
-                {activeStep ? activeStep.instruction : 'Siga em frente'}
-              </span>
-              {activeStep?.distanceMeters ? (
-                <span className="text-[11px] font-mono text-neutral-300">
-                  ({activeStep.distanceMeters} m)
-                </span>
-              ) : null}
+      {/* Top-Left Floating Header (Stable height, isolated from map drag) */}
+      <div
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        className="select-none pointer-events-auto"
+      >
+        {isNavigating ? (
+          <div className="absolute top-4 left-4 right-28 sm:right-auto sm:w-[360px] z-[400] bg-neutral-950/92 backdrop-blur-xl text-white rounded-2xl p-3 shadow-2xl border border-white/15 flex items-center gap-3 h-[64px]">
+            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shrink-0 shadow-md">
+              {renderTurnIcon(activeStep?.modifier)}
             </div>
-            <p className="text-xs text-neutral-300 truncate mt-0.5">{currentStreet}</p>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline gap-2">
+                <span className="text-sm font-bold leading-tight truncate">
+                  {activeStep ? activeStep.instruction : 'Siga em frente'}
+                </span>
+                {activeStep?.distanceMeters ? (
+                  <span className="text-[11px] font-mono tabular-nums text-neutral-300 shrink-0">
+                    ({activeStep.distanceMeters} m)
+                  </span>
+                ) : null}
+              </div>
+              <p className="text-xs text-neutral-300 truncate mt-0.5">{currentStreet}</p>
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="hidden sm:flex absolute top-4 left-4 z-[400] max-w-md items-center gap-2 bg-white/95 dark:bg-neutral-950/90 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-lg text-xs text-neutral-800 dark:text-neutral-200">
-          <Navigation className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-          <span className="truncate font-medium">
-            {originLocation.name} &rarr; <strong>{destinationLocation.name}</strong>
-          </span>
-        </div>
-      )}
+        ) : (
+          <div className="hidden sm:flex absolute top-4 left-4 z-[400] max-w-[380px] items-center gap-2 bg-white/95 dark:bg-neutral-950/90 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-lg text-xs text-neutral-800 dark:text-neutral-200">
+            <Navigation className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+            <span className="truncate font-medium">
+              {originLocation.name} &rarr; <strong>{destinationLocation.name}</strong>
+            </span>
+          </div>
+        )}
+      </div>
 
       {/* Floating Defesa Civil Alert */}
       {activeAlertZone && (
-        <div className="absolute top-20 left-4 right-16 sm:right-auto sm:w-96 z-[410] rounded-2xl bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white border border-neutral-200 dark:border-neutral-800 shadow-2xl p-4 space-y-2.5 animate-in slide-in-from-top-4 duration-200">
+        <div
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          className="absolute top-22 left-4 right-16 sm:right-auto sm:w-96 z-[410] rounded-2xl bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white border border-neutral-200 dark:border-neutral-800 shadow-2xl p-4 space-y-2.5 animate-in slide-in-from-top-4 duration-200 select-none"
+        >
           <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-2">
             <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
               <AlertTriangle className="w-4 h-4 text-amber-500" />
@@ -186,36 +216,44 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
         </div>
       )}
 
-      {/* Bottom Floating Navigation HUD */}
-      <div className="absolute bottom-4 left-4 right-4 z-[400] bg-white/95 dark:bg-neutral-950/92 backdrop-blur-xl border border-neutral-200 dark:border-neutral-800 rounded-2xl p-4 shadow-2xl text-neutral-900 dark:text-white space-y-3">
+      {/* Bottom Floating Navigation HUD (Fixed height & tabular-nums so text never jumps) */}
+      <div
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        className="absolute bottom-4 left-4 right-4 z-[400] bg-white/95 dark:bg-neutral-950/92 backdrop-blur-xl border border-neutral-200 dark:border-neutral-800 rounded-2xl p-3.5 px-4 shadow-2xl text-neutral-900 dark:text-white select-none"
+      >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <div className="flex items-baseline gap-2.5 flex-wrap">
-              <span className="text-xl font-extrabold font-mono">{remainingMin} min</span>
-              <span className="text-xs text-neutral-500 dark:text-neutral-400 font-mono">
+            <div className="flex items-center gap-2.5 flex-wrap tabular-nums">
+              <span className="text-xl font-extrabold font-mono min-w-[64px]">
+                {remainingMin} min
+              </span>
+              <span className="text-xs text-neutral-500 dark:text-neutral-400 font-mono min-w-[54px]">
                 ({remainingKm} km)
               </span>
-              <span className="text-[11px] text-neutral-500 dark:text-neutral-400">
+              <span className="text-[11px] text-neutral-500 dark:text-neutral-400 hidden sm:inline">
                 &bull; Chegada{' '}
-                <strong className="text-neutral-900 dark:text-white">
+                <strong className="text-neutral-900 dark:text-white font-mono">
                   {new Date(Date.now() + remainingMin * 60000).toLocaleTimeString([], {
                     hour: '2-digit',
                     minute: '2-digit',
                   })}
                 </strong>
               </span>
-              {isNavigating && (
-                <span className="px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-[11px] font-mono font-bold">
-                  {speedKmH} km/h
-                </span>
-              )}
+              <span
+                className={`px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-[11px] font-mono font-bold min-w-[66px] text-center transition-opacity ${
+                  isNavigating ? 'opacity-100' : 'opacity-0 pointer-events-none hidden sm:inline-block'
+                }`}
+              >
+                {speedKmH} km/h
+              </span>
             </div>
-            <p className="text-xs text-neutral-600 dark:text-neutral-400 truncate mt-0.5">
+            <p className="text-xs text-neutral-600 dark:text-neutral-400 truncate mt-0.5 h-4">
               {isNavigating ? `Via atual: ${currentStreet}` : selectedRoute.name}
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={() => onToggleSimSpeed(simSpeed === '1x' ? '2x' : '1x')}
@@ -267,14 +305,13 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
           </div>
         </div>
 
-        {isNavigating && (
-          <div className="w-full h-1.5 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-blue-600 transition-all duration-700 rounded-full"
-              style={{ width: `${progressPercentage}%` }}
-            />
-          </div>
-        )}
+        {/* Always reserve subtle progress slot so HUD height never shifts when navigating */}
+        <div className="w-full h-1 mt-2.5 bg-neutral-200/70 dark:bg-neutral-800/80 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-blue-600 transition-all duration-700 rounded-full"
+            style={{ width: `${isNavigating ? progressPercentage : 0}%` }}
+          />
+        </div>
       </div>
     </div>
   );

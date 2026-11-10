@@ -253,7 +253,11 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
           </div>
 
           {/* 2. Top Header Overlay */}
-          <div className="absolute top-0 left-0 right-0 z-30 p-2.5 space-y-2 pointer-events-auto">
+          <div
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            className="absolute top-0 left-0 right-0 z-30 p-2.5 space-y-2 pointer-events-auto select-none"
+          >
             {isNavigating ? (
               /* Turn-by-Turn Guidance Header */
               <div className="bg-neutral-900/95 backdrop-blur-md text-white rounded-2xl p-3 shadow-xl flex items-center justify-between gap-3 border border-neutral-800">
@@ -551,12 +555,16 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
           )}
 
           {/* 5. Bottom Navigation Sheet */}
-          <div className="absolute bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-neutral-200 p-3.5 px-4 space-y-2 shadow-2xl text-neutral-900">
+          <div
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            className="absolute bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-neutral-200 p-3.5 px-4 space-y-2 shadow-2xl text-neutral-900 select-none"
+          >
             <div className="w-8 h-1 bg-neutral-300 rounded-full mx-auto -mt-1"></div>
 
             <div className="flex items-center justify-between">
               <div>
-                <div className="flex items-baseline gap-2">
+                <div className="flex items-baseline gap-2 tabular-nums">
                   <span className="text-xl font-bold font-mono text-neutral-950">
                     {remainingMin} min
                   </span>
