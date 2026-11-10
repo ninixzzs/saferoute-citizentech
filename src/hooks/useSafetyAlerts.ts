@@ -42,6 +42,29 @@ export function useSafetyAlerts() {
     try {
       const created = await incidentApi.create(data);
       setIncidents((prev) => [created, ...prev]);
+
+      // Elevate high/critical user reports into active monitored DangerZones so route alerts fire automatically
+      if (created.riskLevel === 'alto' || created.riskLevel === 'critico') {
+        const dynamicZone: DangerZone = {
+          id: `zone-${created.id}`,
+          name: `${created.neighborhood} — ${created.title}`,
+          neighborhood: created.neighborhood,
+          city: 'São Paulo',
+          riskLevel: created.riskLevel,
+          coordinates: created.coordinates,
+          radiusMeters: 450,
+          primaryRisk: created.category,
+          title: created.title,
+          description: created.description,
+          defenseCivilTip:
+            'Área recém-reportada com risco elevado. Mantenha vidros fechados, portas travadas e evite expor o celular em semáforos.',
+          safeAlternativeAdvice: 'Utilize vias principais monitoradas e mantenha atenção redobrada.',
+          recentIncidentsCount: 1,
+          source: 'CitizenTech Rede',
+        };
+        setDangerZones((prev) => [dynamicZone, ...prev]);
+      }
+
       return created;
     } catch (err: any) {
       setError(err?.message || 'Erro ao registrar incidente.');

@@ -1,5 +1,6 @@
 import { NavigationRoute, DangerZone, RouteStep } from '../types';
 import { calculateDistanceMeters } from './api';
+import { SAO_PAULO_LOCATIONS } from '../data/saoPauloLocations';
 
 export interface LocationSuggestion {
   name: string;
@@ -196,15 +197,28 @@ export async function searchAddressSuggestions(query: string): Promise<LocationS
   const clean = query.trim();
   const lower = clean.toLowerCase();
 
-  const localMatches = POPULAR_LOCATIONS.filter(
+  const extraSpSuggestions: LocationSuggestion[] = SAO_PAULO_LOCATIONS.map((entry) => ({
+    name: entry.name,
+    address: `${entry.name} - ${entry.zone}, São Paulo - SP`,
+    coordinates: entry.coordinates,
+  }));
+
+  const combinedCatalog = [...POPULAR_LOCATIONS];
+  for (const spItem of extraSpSuggestions) {
+    if (!combinedCatalog.some((p) => p.name.toLowerCase().includes(spItem.name.toLowerCase()))) {
+      combinedCatalog.push(spItem);
+    }
+  }
+
+  const localMatches = combinedCatalog.filter(
     (loc) =>
       !clean ||
       loc.name.toLowerCase().includes(lower) ||
       loc.address.toLowerCase().includes(lower)
-  ).slice(0, 4);
+  ).slice(0, 6);
 
   if (clean.length < 3) {
-    return localMatches;
+    return localMatches.slice(0, 5);
   }
 
   // Check if user is typing a CEP
@@ -338,11 +352,22 @@ export async function geocodeAddress(
     }
   }
 
-  // 2. Direct local curated match
+  // 2. Direct local curated match (landmarks + 70 SP neighborhoods/corridors)
   const exactLocal = POPULAR_LOCATIONS.find(
     (loc) => loc.name.toLowerCase() === lowerQuery || loc.address.toLowerCase() === lowerQuery
   );
   if (exactLocal) return exactLocal;
+
+  const spMatch = SAO_PAULO_LOCATIONS.find(
+    (sp) => sp.name.toLowerCase() === lowerQuery
+  );
+  if (spMatch) {
+    return {
+      name: spMatch.name,
+      address: `${spMatch.name} - ${spMatch.zone}, São Paulo - SP`,
+      coordinates: spMatch.coordinates,
+    };
+  }
 
   // 3. Brazilian CEP lookup via ViaCEP
   let effectiveQuery = cleanQuery;

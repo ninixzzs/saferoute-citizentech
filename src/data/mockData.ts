@@ -80,6 +80,22 @@ export const INITIAL_DANGER_ZONES: DangerZone[] = [
     safeAlternativeAdvice: 'Permanecer nas faixas centrais da Paulista ou desviar pela Alameda Santos.',
     recentIncidentsCount: 27,
     source: 'SSP-SP'
+  },
+  {
+    id: 'zone-capao-redondo',
+    name: 'Região Capão Redondo & Estrada de Itapecerica',
+    neighborhood: 'Capão Redondo',
+    city: 'São Paulo',
+    riskLevel: 'critico',
+    coordinates: [-23.6698, -46.7795],
+    radiusMeters: 700,
+    primaryRisk: 'assalto',
+    title: 'Alerta Máximo: Capão Redondo — Alto índice de roubos e abordagens',
+    description: 'Trechos de lentidão próximos ao metrô Capão Redondo, Estrada de Itapecerica e Av. Carlos Caldeira Filho com registro frequente de abordagens.',
+    defenseCivilTip: 'Mantenha vidros 100% fechados e portas travadas. Evite celular aceso em suportes no painel perto do vidro; utilize apenas áudio do GPS.',
+    safeAlternativeAdvice: 'Prefira corredores principais iluminados como a Av. Giovanni Gronchi ou Marginal Pinheiros em horários críticos.',
+    recentIncidentsCount: 38,
+    source: 'Defesa Civil SP'
   }
 ];
 
@@ -142,6 +158,21 @@ export const INITIAL_INCIDENT_REPORTS: IncidentReport[] = [
     status: 'resolvido',
     confirmationsCount: 15,
     reportedBy: 'Defesa Civil Monitoramento',
+    isUserCreated: false
+  },
+  {
+    id: 'inc-105',
+    title: 'Alerta crítico: abordagem a motoristas parados no semáforo',
+    category: 'assalto',
+    description: 'Registros recorrentes de abordagem rápida próximo a cruzamentos da Estrada de Itapecerica e Estação Capão Redondo nos horários de pico.',
+    neighborhood: 'Capão Redondo',
+    address: 'Estrada de Itapecerica x Av. Carlos Caldeira Filho',
+    coordinates: [-23.6698, -46.7795],
+    riskLevel: 'critico',
+    timestamp: 'Hoje, às 20:10',
+    status: 'ativo',
+    confirmationsCount: 24,
+    reportedBy: 'Rede CitizenTech Zona Sul',
     isUserCreated: false
   }
 ];
@@ -226,14 +257,14 @@ export const PRESET_ROUTES: NavigationRoute[] = [
 export const DEFESA_CIVIL_SAFETY_GUIDES = [
   {
     id: 'guide-1',
-    title: 'Protocolo de Prevenção: Gangue do Celular',
+    title: 'Protocolo de Prevenção: Gangue do Celular e Trânsito',
     category: 'furto_celular',
     badge: 'Prioridade Alta',
     tips: [
-      'Nunca deixe o celular afixado com ventosa na janela ou saída de ar lateral.',
-      'Mantenha todos os vidros fechados ao parar em semáforos ou trechos lentos.',
-      'Configure comando de voz (Siri / Google Assistente) para não precisar tocar na tela.',
-      'Ao utilizar aplicativos de corrida, mantenha a tela com brilho reduzido à noite.'
+      'Insulfilm e Vidros: mantenha os vidros totalmente fechados em pontos de lentidão, cruzamentos e noites.',
+      'Celular no Suporte: evite deixar a tela acesa em suportes no painel perto do vidro; prefira áudio do GPS ou deixe abaixo da linha do painel.',
+      'Atenção em Cruzamentos: abordagens rápidas ocorrem a pé ou de bicicleta/moto quebrando o vidro do passageiro com o carro parado no semáforo.',
+      'Configure comando de voz (Siri / Google Assistente) e mantenha brilho reduzido à noite.'
     ]
   },
   {

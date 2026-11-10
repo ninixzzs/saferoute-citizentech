@@ -5,6 +5,12 @@ import { localDb } from './db';
 
 const LOCAL_STORAGE_KEY = 'saferoute_incident_reports_v2';
 
+function mergeMissingCuratedIncidents(items: IncidentReport[]): IncidentReport[] {
+  const existingIds = new Set(items.map((i) => i.id));
+  const missing = INITIAL_INCIDENT_REPORTS.filter((def) => !existingIds.has(def.id));
+  return missing.length > 0 ? [...missing, ...items] : items;
+}
+
 export function calculateDistanceMeters(
   lat1: number,
   lon1: number,
@@ -74,8 +80,9 @@ export const incidentApi = {
     try {
       const dbResults = await localDb.getAllIncidents();
       if (dbResults && dbResults.length > 0) {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dbResults));
-        return dbResults;
+        const merged = mergeMissingCuratedIncidents(dbResults);
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(merged));
+        return merged;
       }
     } catch (e) {
       console.warn('IndexedDB read fallback:', e);
@@ -85,7 +92,7 @@ export const incidentApi = {
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (stored) {
-        return JSON.parse(stored);
+        return mergeMissingCuratedIncidents(JSON.parse(stored));
       }
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(INITIAL_INCIDENT_REPORTS));
       return INITIAL_INCIDENT_REPORTS;
