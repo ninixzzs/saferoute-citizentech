@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Search,
-  Navigation,
   MapPin,
   LocateFixed,
   ArrowUpDown,
@@ -18,20 +17,12 @@ import {
   ArrowLeft,
   Gauge,
   Plus,
-  ListChecks,
-  AlertCircle,
   Clock,
   Volume2,
   VolumeX,
   Map as MapIcon,
 } from 'lucide-react';
-import {
-  DangerZone,
-  IncidentCategory,
-  IncidentReport,
-  NavigationRoute,
-  RiskLevel,
-} from '../types';
+import { DangerZone, IncidentReport, NavigationRoute } from '../types';
 import {
   LocationSuggestion,
   POPULAR_LOCATIONS,
@@ -39,8 +30,6 @@ import {
   reverseGeocode,
 } from '../services/routingService';
 import { NavigationMap } from './NavigationMap';
-import { RouteItinerary } from './RouteItinerary';
-import { IncidentList } from './IncidentList';
 
 interface MobileMapExperienceProps {
   currentPosition: [number, number];
@@ -56,19 +45,6 @@ interface MobileMapExperienceProps {
   isCalculatingRoute: boolean;
   dangerZones: DangerZone[];
   incidents: IncidentReport[];
-  allIncidentsCount: number;
-  loadingIncidents: boolean;
-  searchQuery: string;
-  onSearchChange: (q: string) => void;
-  selectedCategory: IncidentCategory | 'todos';
-  onCategoryChange: (c: IncidentCategory | 'todos') => void;
-  selectedRisk: RiskLevel | 'todos';
-  onRiskChange: (r: RiskLevel | 'todos') => void;
-  onConfirmIncident: (id: string) => void;
-  onUpdateIncidentStatus: (id: string, status: IncidentReport['status']) => void;
-  onDeleteIncident: (id: string) => void;
-  onResetIncidents: () => void;
-  onFocusIncident: (coords: [number, number]) => void;
   onOpenReportModal: () => void;
   isNavigating: boolean;
   isPaused: boolean;
@@ -88,8 +64,6 @@ interface MobileMapExperienceProps {
   onToggleSimSpeed: (speed: '1x' | '2x') => void;
 }
 
-type MobileScreen = 'map' | 'search' | 'routes' | 'steps' | 'alerts';
-
 export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
   currentPosition,
   nextPosition,
@@ -104,19 +78,6 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
   isCalculatingRoute,
   dangerZones,
   incidents,
-  allIncidentsCount,
-  loadingIncidents,
-  searchQuery,
-  onSearchChange,
-  selectedCategory,
-  onCategoryChange,
-  selectedRisk,
-  onRiskChange,
-  onConfirmIncident,
-  onUpdateIncidentStatus,
-  onDeleteIncident,
-  onResetIncidents,
-  onFocusIncident,
   onOpenReportModal,
   isNavigating,
   isPaused,
@@ -135,8 +96,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
   simSpeed,
   onToggleSimSpeed,
 }) => {
-  // Single exclusive screen state so nothing ever overlaps or clutters another section
-  const [activeScreen, setActiveScreen] = useState<MobileScreen>('map');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [autoReroute, setAutoReroute] = useState(true);
   const [autoRerouteNotice, setAutoRerouteNotice] = useState<string | null>(null);
 
@@ -157,7 +117,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
     setDestInput(destinationLocation.name);
   }, [destinationLocation]);
 
-  // Smart mobile automation: auto-reroute onto the safe detour when approaching risk
+  // Smart mobile automation: auto-reroute onto the safe route when approaching risk
   useEffect(() => {
     if (
       activeAlertZone &&
@@ -198,7 +158,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
           setOriginInput(loc.name);
           if (destInput.trim()) {
             await onCalculateJourney(loc.address, destInput);
-            setActiveScreen('map');
+            setIsSearchOpen(false);
           }
         } finally {
           setIsLocatingGps(false);
@@ -214,7 +174,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
     if (!destInput.trim() || isNavigating || isCalculatingRoute) return;
     setActiveField(null);
     await onCalculateJourney(originInput, destInput);
-    setActiveScreen('map');
+    setIsSearchOpen(false);
   };
 
   const handleSelectSuggestion = async (loc: LocationSuggestion) => {
@@ -223,13 +183,13 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
       setActiveField(null);
       if (destInput.trim()) {
         await onCalculateJourney(loc.address, destInput);
-        setActiveScreen('map');
+        setIsSearchOpen(false);
       }
     } else {
       setDestInput(loc.name);
       setActiveField(null);
       await onCalculateJourney(originInput, loc.address);
-      setActiveScreen('map');
+      setIsSearchOpen(false);
     }
   };
 
@@ -238,7 +198,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
     setDestInput(loc.name);
     setActiveField(null);
     await onCalculateJourney(originInput, loc.address);
-    setActiveScreen('map');
+    setIsSearchOpen(false);
   };
 
   const remainingFactor = Math.max(0, 1 - progressPercentage / 100);
@@ -275,42 +235,9 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
     return 'Alternativa';
   };
 
-  const renderScreenHeader = (title: string, subtitle?: string) => (
-    <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between bg-white dark:bg-neutral-950 shrink-0">
-      <div className="flex items-center gap-2.5 min-w-0">
-        <button
-          type="button"
-          onClick={() => setActiveScreen('map')}
-          className="p-2 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white shrink-0 active:scale-95 transition-transform"
-          aria-label="Voltar para o mapa"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <div className="min-w-0">
-          <h3 className="text-sm font-bold text-neutral-950 dark:text-white truncate">{title}</h3>
-          {subtitle && (
-            <p className="text-[11px] text-neutral-500 truncate">{subtitle}</p>
-          )}
-        </div>
-      </div>
-
-      <button
-        type="button"
-        onClick={() => setActiveScreen('map')}
-        className="px-2.5 py-1.5 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 text-[11px] font-bold flex items-center gap-1 shrink-0"
-      >
-        <MapIcon className="w-3.5 h-3.5" />
-        <span>Ver Mapa</span>
-      </button>
-    </div>
-  );
-
   return (
-    <div className="relative w-full h-[78dvh] min-h-[550px] max-h-[820px] rounded-[28px] overflow-hidden border border-neutral-200/90 dark:border-neutral-800/90 shadow-[0_18px_50px_rgba(0,0,0,0.16)] dark:shadow-[0_22px_60px_rgba(0,0,0,0.65)] bg-neutral-950 select-none flex flex-col">
-      {/* =====================================================================
-          SCREEN 1: LIVE INTERACTIVE MAP (Clean, Focused Map View)
-         ===================================================================== */}
-      {activeScreen === 'map' && (
+    <div className="relative w-full h-[64dvh] min-h-[460px] max-h-[600px] rounded-[28px] overflow-hidden border border-neutral-200/90 dark:border-neutral-800/90 shadow-[0_18px_50px_rgba(0,0,0,0.16)] dark:shadow-[0_22px_60px_rgba(0,0,0,0.65)] bg-neutral-950 select-none flex flex-col">
+      {!isSearchOpen ? (
         <div className="relative w-full h-full flex-1">
           <NavigationMap
             currentPosition={currentPosition}
@@ -377,7 +304,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
               <div className="w-full bg-white/96 dark:bg-neutral-950/95 backdrop-blur-xl rounded-2xl p-2 pl-2.5 shadow-xl border border-neutral-200 dark:border-neutral-800 flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setActiveScreen('search')}
+                  onClick={() => setIsSearchOpen(true)}
                   className="flex-1 min-w-0 flex items-center gap-2.5 text-left active:scale-[0.99] transition-transform py-0.5"
                 >
                   <div className="w-9 h-9 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0">
@@ -455,7 +382,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
             <div
               onMouseDown={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
-              className="absolute bottom-[174px] left-3 right-3 z-[425] space-y-2 pointer-events-auto"
+              className="absolute bottom-[132px] left-3 right-3 z-[425] space-y-2 pointer-events-auto"
             >
               {autoRerouteNotice && (
                 <div className="rounded-2xl bg-neutral-950 text-white border border-white/15 shadow-2xl px-3.5 py-2.5 flex items-center justify-between gap-2 animate-in slide-in-from-bottom-2 duration-200">
@@ -520,11 +447,11 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
             </div>
           )}
 
-          {/* Compact Bottom Action Bar inside Map View */}
+          {/* Compact Bottom Telemetry + Drive Action Bar ONLY (Details/Steps/Alerts cleanly separated below the map) */}
           <div
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
-            className="absolute bottom-0 left-0 right-0 z-[420] bg-white/96 dark:bg-neutral-950/96 backdrop-blur-xl border-t border-neutral-200 dark:border-neutral-800 rounded-t-[24px] p-3.5 pt-2.5 space-y-2.5 shadow-[0_-10px_30px_rgba(0,0,0,0.2)]"
+            className="absolute bottom-0 left-0 right-0 z-[420] bg-white/96 dark:bg-neutral-950/96 backdrop-blur-xl border-t border-neutral-200 dark:border-neutral-800 rounded-t-[24px] p-3.5 pt-2.5 space-y-2 shadow-[0_-10px_30px_rgba(0,0,0,0.2)]"
           >
             {isNavigating && (
               <div className="w-full h-1 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
@@ -548,7 +475,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
                       className={`px-2.5 py-1 rounded-xl border text-[11px] font-bold whitespace-nowrap transition-all flex items-center gap-1 shrink-0 ${
                         isSelected
                           ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border-neutral-950 dark:border-white'
-                          : 'bg-neutral-100 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-800'
+                          : 'bg-neutral-100 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 border-neutral-200 dark:border-neutral-800'
                       }`}
                     >
                       {route.type === 'segura' && <ShieldCheck className="w-3 h-3" />}
@@ -567,12 +494,14 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
                   <span className="font-display text-2xl font-extrabold tracking-tight text-neutral-950 dark:text-white">
                     {remainingMin} min
                   </span>
-                  <span className="text-xs font-mono text-neutral-500">({remainingKm} km)</span>
-                  <span className="px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-[10px] font-mono font-bold text-neutral-900 dark:text-neutral-100">
+                  <span className="text-xs font-mono text-neutral-600 dark:text-neutral-400">
+                    ({remainingKm} km)
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-[10px] font-mono font-bold text-neutral-950 dark:text-white">
                     {selectedRoute.safetyScore}/100
                   </span>
                 </div>
-                <div className="text-[11px] text-neutral-500 flex items-center gap-1 truncate">
+                <div className="text-[11px] text-neutral-600 dark:text-neutral-400 flex items-center gap-1 truncate">
                   <Clock className="w-3 h-3 shrink-0" />
                   <span className="truncate">
                     {isNavigating ? currentStreet : selectedRoute.name}
@@ -584,7 +513,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
                 <button
                   type="button"
                   onClick={() => onToggleSimSpeed(simSpeed === '1x' ? '2x' : '1x')}
-                  className="px-2 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-[11px] font-mono font-bold text-neutral-700 dark:text-neutral-300 flex items-center gap-1"
+                  className="px-2 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-[11px] font-mono font-bold text-neutral-800 dark:text-neutral-200 flex items-center gap-1"
                 >
                   <Gauge className="w-3.5 h-3.5" />
                   <span>{simSpeed}</span>
@@ -631,44 +560,40 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
                 )}
               </div>
             </div>
-
-            {/* Clean Exclusive Section Buttons */}
-            <div className="grid grid-cols-3 gap-1.5 pt-0.5">
-              <button
-                type="button"
-                onClick={() => setActiveScreen('routes')}
-                className="py-2 px-2 rounded-xl text-[11px] font-semibold flex items-center justify-center gap-1 bg-neutral-100 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-800"
-              >
-                <Navigation className="w-3.5 h-3.5" />
-                <span>Rotas</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveScreen('steps')}
-                className="py-2 px-2 rounded-xl text-[11px] font-semibold flex items-center justify-center gap-1 bg-neutral-100 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-800"
-              >
-                <ListChecks className="w-3.5 h-3.5" />
-                <span>Passos</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveScreen('alerts')}
-                className="py-2 px-2 rounded-xl text-[11px] font-semibold flex items-center justify-center gap-1 bg-neutral-100 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-800"
-              >
-                <AlertCircle className="w-3.5 h-3.5" />
-                <span>Alertas ({allIncidentsCount})</span>
-              </button>
-            </div>
           </div>
         </div>
-      )}
-
-      {/* =====================================================================
-          SCREEN 2: FULL SEARCH SCREEN (100% Opaque - Zero Map / Minutes visible)
-         ===================================================================== */}
-      {activeScreen === 'search' && (
+      ) : (
+        /* Exclusive Full Search Screen */
         <div className="w-full h-full bg-white dark:bg-neutral-950 flex flex-col">
-          {renderScreenHeader('Definir Trajeto', 'Digite partida e destino ou toque em um local')}
+          <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between bg-white dark:bg-neutral-950 shrink-0">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <button
+                type="button"
+                onClick={() => setIsSearchOpen(false)}
+                className="p-2 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white shrink-0"
+                aria-label="Voltar para o mapa"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+              <div className="min-w-0">
+                <h3 className="text-sm font-bold text-neutral-950 dark:text-white truncate">
+                  Definir Trajeto
+                </h3>
+                <p className="text-[11px] text-neutral-500 truncate">
+                  Digite partida e destino ou toque em um local
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsSearchOpen(false)}
+              className="px-2.5 py-1.5 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 text-[11px] font-bold flex items-center gap-1 shrink-0"
+            >
+              <MapIcon className="w-3.5 h-3.5" />
+              <span>Mapa</span>
+            </button>
+          </div>
 
           <div className="p-4 space-y-3.5 overflow-y-auto flex-1">
             <form onSubmit={handleSubmitSearch} className="space-y-2.5">
@@ -790,7 +715,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
                   type="button"
                   onClick={() => {
                     onResetPresetRoutes();
-                    setActiveScreen('map');
+                    setIsSearchOpen(false);
                   }}
                   className="text-[11px] font-semibold text-neutral-600 dark:text-neutral-300 underline"
                 >
@@ -834,106 +759,6 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
                 ))}
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* =====================================================================
-          SCREEN 3: EXCLUSIVE ROUTE COMPARISON SCREEN (100% Opaque)
-         ===================================================================== */}
-      {activeScreen === 'routes' && (
-        <div className="w-full h-full bg-white dark:bg-neutral-950 flex flex-col">
-          {renderScreenHeader('Opções de Rota', 'Toque em uma opção para aplicar no mapa')}
-
-          <div className="p-4 space-y-3 overflow-y-auto flex-1">
-            {allRoutes.map((route) => {
-              const isSelected = route.id === selectedRoute.id;
-              return (
-                <button
-                  key={route.id}
-                  type="button"
-                  disabled={isNavigating}
-                  onClick={() => {
-                    onSelectRoute(route);
-                    setActiveScreen('map');
-                  }}
-                  className={`w-full text-left p-4 rounded-2xl border transition-all ${
-                    isSelected
-                      ? 'bg-neutral-100 dark:bg-neutral-900 border-neutral-900 dark:border-white shadow-sm'
-                      : 'bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800'
-                  } ${isNavigating ? 'opacity-65' : ''}`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="font-bold text-xs text-neutral-950 dark:text-white flex items-center gap-1.5">
-                      <span>{route.name}</span>
-                      {route.type === 'segura' && (
-                        <span className="px-2 py-0.5 rounded bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 text-[10px] uppercase">
-                          Recomendada
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-xs font-mono font-bold text-neutral-950 dark:text-white">
-                      {route.safetyScore}/100
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-neutral-600 dark:text-neutral-400 mt-1.5 leading-relaxed">
-                    {route.description}
-                  </p>
-                  <div className="flex items-center gap-3 text-[11px] font-mono text-neutral-500 mt-2.5">
-                    <span>{route.durationMin} min</span>
-                    <span>&bull;</span>
-                    <span>{route.distanceKm} km</span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* =====================================================================
-          SCREEN 4: EXCLUSIVE STEP-BY-STEP ITINERARY SCREEN (100% Opaque)
-         ===================================================================== */}
-      {activeScreen === 'steps' && (
-        <div className="w-full h-full bg-white dark:bg-neutral-950 flex flex-col">
-          {renderScreenHeader('Passo a Passo', selectedRoute.name)}
-
-          <div className="p-4 overflow-y-auto flex-1">
-            <RouteItinerary
-              selectedRoute={selectedRoute}
-              isNavigating={isNavigating}
-              progressPercentage={progressPercentage}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* =====================================================================
-          SCREEN 5: EXCLUSIVE ALERTS SCREEN (100% Opaque)
-         ===================================================================== */}
-      {activeScreen === 'alerts' && (
-        <div className="w-full h-full bg-white dark:bg-neutral-950 flex flex-col">
-          {renderScreenHeader('Ocorrências em São Paulo', `${allIncidentsCount} registros ativos`)}
-
-          <div className="p-4 overflow-y-auto flex-1">
-            <IncidentList
-              incidents={incidents}
-              loading={loadingIncidents}
-              searchQuery={searchQuery}
-              onSearchChange={onSearchChange}
-              selectedCategory={selectedCategory}
-              onCategoryChange={onCategoryChange}
-              selectedRisk={selectedRisk}
-              onRiskChange={onRiskChange}
-              onConfirm={onConfirmIncident}
-              onUpdateStatus={onUpdateIncidentStatus}
-              onDelete={onDeleteIncident}
-              onResetData={onResetIncidents}
-              onFocusIncident={(coords) => {
-                onFocusIncident(coords);
-                setActiveScreen('map');
-              }}
-            />
           </div>
         </div>
       )}

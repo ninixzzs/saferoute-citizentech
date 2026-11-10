@@ -133,6 +133,9 @@ export function App() {
 
   const handleFocusIncident = (coords: [number, number]) => {
     setFocusPoint({ coords, ts: Date.now() });
+    if (window.innerWidth < 1024) {
+      document.getElementById('mobile-stage')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   const handleTriggerDemoAlert = () => {
@@ -439,88 +442,180 @@ export function App() {
           </aside>
         </div>
 
-        {/* MOBILE APP EXPERIENCE (< lg): Uber / Waze / Google Maps Flow + Optional Phone Prototype */}
-        <div className="lg:hidden">
-          {viewMode === 'map' ? (
-            <MobileMapExperience
-              currentPosition={currentPosition}
-              nextPosition={nextPosition}
-              selectedRoute={selectedRoute}
-              allRoutes={routes}
-              onSelectRoute={selectRoute}
-              originLocation={originLocation}
-              destinationLocation={destinationLocation}
-              onCalculateJourney={(orig, dest) => calculateJourney(orig, dest, dangerZones)}
-              onSwapLocations={() => swapOriginAndDestination(dangerZones)}
-              onResetPresetRoutes={resetToPresetRoutes}
-              isCalculatingRoute={isCalculatingRoute}
-              dangerZones={dangerZones}
-              incidents={incidents}
-              allIncidentsCount={allIncidents.length}
-              loadingIncidents={loading}
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              selectedCategory={selectedCategory}
-              onCategoryChange={setSelectedCategory}
-              selectedRisk={selectedRisk}
-              onRiskChange={setSelectedRisk}
-              onConfirmIncident={confirmIncident}
-              onUpdateIncidentStatus={(id, status) => updateIncident(id, { status })}
-              onDeleteIncident={deleteIncident}
-              onResetIncidents={resetData}
-              onFocusIncident={handleFocusIncident}
-              onOpenReportModal={() => setIsReportModalOpen(true)}
-              isNavigating={isNavigating}
-              isPaused={isPaused}
-              speedKmH={speedKmH}
-              progressPercentage={progressPercentage}
-              activeAlertZone={effectiveAlertZone}
-              voiceEnabled={voiceEnabled}
-              onToggleVoice={() => setVoiceEnabled(!voiceEnabled)}
-              onStart={startNavigation}
-              onPause={pauseNavigation}
-              onResume={resumeNavigation}
-              onReset={handleResetAll}
-              onAcceptReroute={handleAcceptReroute}
-              onDismissAlert={handleDismissEffectiveAlert}
-              focusPoint={focusPoint}
-              simSpeed={simSpeed}
-              onToggleSimSpeed={setSimSpeed}
-            />
-          ) : (
-            <MobilePhoneSimulator
-              currentPosition={currentPosition}
-              nextPosition={nextPosition}
-              selectedRoute={selectedRoute}
-              allRoutes={routes}
-              onSelectRoute={selectRoute}
-              dangerZones={dangerZones}
-              incidents={incidents}
-              isNavigating={isNavigating}
-              isPaused={isPaused}
-              speedKmH={speedKmH}
-              progressPercentage={progressPercentage}
-              activeAlertZone={effectiveAlertZone}
-              voiceEnabled={voiceEnabled}
-              onToggleVoice={() => setVoiceEnabled(!voiceEnabled)}
-              onStart={startNavigation}
-              onPause={pauseNavigation}
-              onResume={resumeNavigation}
-              onReset={handleResetAll}
-              onAcceptReroute={handleAcceptReroute}
-              onDismissAlert={handleDismissEffectiveAlert}
-              onOpenReportModal={() => setIsReportModalOpen(true)}
-              originLocation={originLocation}
-              destinationLocation={destinationLocation}
-              onCalculateJourney={(orig, dest) => calculateJourney(orig, dest, dangerZones)}
-              onSwapLocations={() => swapOriginAndDestination(dangerZones)}
-              isCalculatingRoute={isCalculatingRoute}
-              onResetPresetRoutes={resetToPresetRoutes}
-              simSpeed={simSpeed}
-              onToggleSimSpeed={setSimSpeed}
-              focusPoint={focusPoint}
-            />
-          )}
+        {/* MOBILE APP EXPERIENCE (< lg): Interactive Stage + Separated Details/Steps/Alerts above Footer */}
+        <div className="lg:hidden space-y-5">
+          <div id="mobile-stage">
+            {viewMode === 'map' ? (
+              <MobileMapExperience
+                currentPosition={currentPosition}
+                nextPosition={nextPosition}
+                selectedRoute={selectedRoute}
+                allRoutes={routes}
+                onSelectRoute={selectRoute}
+                originLocation={originLocation}
+                destinationLocation={destinationLocation}
+                onCalculateJourney={(orig, dest) => calculateJourney(orig, dest, dangerZones)}
+                onSwapLocations={() => swapOriginAndDestination(dangerZones)}
+                onResetPresetRoutes={resetToPresetRoutes}
+                isCalculatingRoute={isCalculatingRoute}
+                dangerZones={dangerZones}
+                incidents={incidents}
+                onOpenReportModal={() => setIsReportModalOpen(true)}
+                isNavigating={isNavigating}
+                isPaused={isPaused}
+                speedKmH={speedKmH}
+                progressPercentage={progressPercentage}
+                activeAlertZone={effectiveAlertZone}
+                voiceEnabled={voiceEnabled}
+                onToggleVoice={() => setVoiceEnabled(!voiceEnabled)}
+                onStart={startNavigation}
+                onPause={pauseNavigation}
+                onResume={resumeNavigation}
+                onReset={handleResetAll}
+                onAcceptReroute={handleAcceptReroute}
+                onDismissAlert={handleDismissEffectiveAlert}
+                focusPoint={focusPoint}
+                simSpeed={simSpeed}
+                onToggleSimSpeed={setSimSpeed}
+              />
+            ) : (
+              <MobilePhoneSimulator
+                currentPosition={currentPosition}
+                nextPosition={nextPosition}
+                selectedRoute={selectedRoute}
+                allRoutes={routes}
+                onSelectRoute={selectRoute}
+                dangerZones={dangerZones}
+                incidents={incidents}
+                isNavigating={isNavigating}
+                isPaused={isPaused}
+                speedKmH={speedKmH}
+                progressPercentage={progressPercentage}
+                activeAlertZone={effectiveAlertZone}
+                voiceEnabled={voiceEnabled}
+                onToggleVoice={() => setVoiceEnabled(!voiceEnabled)}
+                onStart={startNavigation}
+                onPause={pauseNavigation}
+                onResume={resumeNavigation}
+                onReset={handleResetAll}
+                onAcceptReroute={handleAcceptReroute}
+                onDismissAlert={handleDismissEffectiveAlert}
+                onOpenReportModal={() => setIsReportModalOpen(true)}
+                originLocation={originLocation}
+                destinationLocation={destinationLocation}
+                onCalculateJourney={(orig, dest) => calculateJourney(orig, dest, dangerZones)}
+                onSwapLocations={() => swapOriginAndDestination(dangerZones)}
+                isCalculatingRoute={isCalculatingRoute}
+                onResetPresetRoutes={resetToPresetRoutes}
+                simSpeed={simSpeed}
+                onToggleSimSpeed={setSimSpeed}
+                focusPoint={focusPoint}
+              />
+            )}
+          </div>
+
+          {/* Separated High-Contrast Details / Steps / Alerts Card Above Footer (for both Mapa and Modo Celular) */}
+          <section
+            aria-label="Detalhes da rota, passo a passo e alertas"
+            className="rounded-[28px] bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-[0_14px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_18px_48px_rgba(0,0,0,0.5)] overflow-hidden"
+          >
+            <div
+              role="tablist"
+              aria-label="Detalhes, passo a passo e alertas"
+              className="grid grid-cols-3 p-1.5 gap-1 bg-neutral-100 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 select-none"
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={sidebarTab === 'routes'}
+                onClick={() => setSidebarTab('routes')}
+                className={`py-2.5 px-2 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                  sidebarTab === 'routes'
+                    ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
+                    : 'text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200/70 dark:hover:bg-neutral-800'
+                }`}
+              >
+                <Navigation className="w-3.5 h-3.5 shrink-0" />
+                <span>Detalhes</span>
+              </button>
+
+              <button
+                type="button"
+                role="tab"
+                aria-selected={sidebarTab === 'itinerary'}
+                onClick={() => setSidebarTab('itinerary')}
+                className={`py-2.5 px-2 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                  sidebarTab === 'itinerary'
+                    ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
+                    : 'text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200/70 dark:hover:bg-neutral-800'
+                }`}
+              >
+                <ListChecks className="w-3.5 h-3.5 shrink-0" />
+                <span>Passos</span>
+              </button>
+
+              <button
+                type="button"
+                role="tab"
+                aria-selected={sidebarTab === 'alerts'}
+                onClick={() => setSidebarTab('alerts')}
+                className={`py-2.5 px-2 rounded-2xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                  sidebarTab === 'alerts'
+                    ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
+                    : 'text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200/70 dark:hover:bg-neutral-800'
+                }`}
+              >
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>Alertas ({allIncidents.length})</span>
+              </button>
+            </div>
+
+            <div className="p-4">
+              {sidebarTab === 'routes' && (
+                <RouteSelector
+                  routes={routes}
+                  selectedRouteId={selectedRoute.id}
+                  onSelectRoute={selectRoute}
+                  isNavigating={isNavigating}
+                  progressPercentage={progressPercentage}
+                  originLocation={originLocation}
+                  destinationLocation={destinationLocation}
+                  onCalculateJourney={(orig, dest) => calculateJourney(orig, dest, dangerZones)}
+                  onSwapLocations={() => swapOriginAndDestination(dangerZones)}
+                  isCalculatingRoute={isCalculatingRoute}
+                  onResetPresetRoutes={resetToPresetRoutes}
+                  simSpeed={simSpeed}
+                  onToggleSimSpeed={setSimSpeed}
+                />
+              )}
+
+              {sidebarTab === 'itinerary' && (
+                <RouteItinerary
+                  selectedRoute={selectedRoute}
+                  isNavigating={isNavigating}
+                  progressPercentage={progressPercentage}
+                />
+              )}
+
+              {sidebarTab === 'alerts' && (
+                <IncidentList
+                  incidents={incidents}
+                  loading={loading}
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  selectedCategory={selectedCategory}
+                  onCategoryChange={setSelectedCategory}
+                  selectedRisk={selectedRisk}
+                  onRiskChange={setSelectedRisk}
+                  onConfirm={confirmIncident}
+                  onUpdateStatus={(id, status) => updateIncident(id, { status })}
+                  onDelete={deleteIncident}
+                  onResetData={resetData}
+                  onFocusIncident={handleFocusIncident}
+                />
+              )}
+            </div>
+          </section>
         </div>
       </main>
 

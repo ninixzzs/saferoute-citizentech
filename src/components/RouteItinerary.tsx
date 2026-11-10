@@ -46,16 +46,16 @@ export const RouteItinerary: React.FC<RouteItineraryProps> = ({
             <h3 className="text-xs font-bold text-neutral-950 dark:text-white truncate">
               {selectedRoute.name}
             </h3>
-            <p className="text-[11px] text-neutral-500 mt-0.5 leading-relaxed">
+            <p className="text-[11px] text-neutral-700 dark:text-neutral-300 mt-0.5 leading-relaxed">
               {selectedRoute.description}
             </p>
           </div>
-          <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-neutral-900 dark:bg-white text-white dark:text-neutral-950 shrink-0">
+          <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shrink-0">
             {selectedRoute.safetyScore}/100
           </span>
         </div>
 
-        <div className="flex items-center gap-4 pt-1 border-t border-neutral-200/70 dark:border-neutral-800 text-[11px] font-mono text-neutral-600 dark:text-neutral-400">
+        <div className="flex items-center gap-4 pt-1 border-t border-neutral-200 dark:border-neutral-800 text-[11px] font-mono text-neutral-700 dark:text-neutral-300">
           <span className="flex items-center gap-1">
             <Clock className="w-3.5 h-3.5" />
             {selectedRoute.durationMin} min
@@ -76,10 +76,10 @@ export const RouteItinerary: React.FC<RouteItineraryProps> = ({
       {/* Turn-by-Turn Steps List */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between px-1">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-700 dark:text-neutral-200">
             Instruções Passo a Passo
           </span>
-          <span className="text-[10px] font-mono text-neutral-400">
+          <span className="text-[10px] font-mono font-semibold text-neutral-600 dark:text-neutral-300">
             {steps.length > 0 ? `${steps.length} etapas` : `${streetNames.length || 1} vias`}
           </span>
         </div>
