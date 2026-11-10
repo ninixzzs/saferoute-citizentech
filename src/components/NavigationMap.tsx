@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { DangerZone, IncidentReport, NavigationRoute } from '../types';
-import { Layers } from 'lucide-react';
+import { Layers, Crosshair } from 'lucide-react';
 
 interface NavigationMapProps {
   currentPosition: [number, number];
+  nextPosition?: [number, number];
   selectedRoute: NavigationRoute;
   dangerZones: DangerZone[];
   incidents: IncidentReport[];
@@ -13,8 +14,30 @@ interface NavigationMapProps {
   className?: string;
 }
 
+/**
+ * Calculates compass bearing in degrees (0 = North, 90 = East) from point A to B
+ */
+function calculateBearing(from: [number, number], to: [number, number]): number {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const toDeg = (r: number) => (r * 180) / Math.PI;
+  const lat1 = toRad(from[0]);
+  const lat2 = toRad(to[0]);
+  const dLng = toRad(to[1] - from[1]);
+
+  if (Math.abs(from[0] - to[0]) < 1e-6 && Math.abs(from[1] - to[1]) < 1e-6) {
+    return 0;
+  }
+
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x =
+    Math.cos(lat1) * Math.sin(lat2) -
+    Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  return (toDeg(Math.atan2(y, x)) + 360) % 360;
+}
+
 export const NavigationMap: React.FC<NavigationMapProps> = ({
   currentPosition,
+  nextPosition,
   selectedRoute,
   dangerZones,
   incidents,
@@ -32,11 +55,11 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
   const zonesLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const incidentsLayerGroupRef = useRef<L.LayerGroup | null>(null);
 
-  // Map Tile Layers refs
   const baseTileLayerRef = useRef<L.TileLayer | null>(null);
   const labelsTileLayerRef = useRef<L.TileLayer | null>(null);
+  const isNavigatingRef = useRef<boolean>(isNavigating);
+  isNavigatingRef.current = isNavigating;
 
-  // 'satellite' (Esri World Imagery + Labels) vs 'street' (CartoDB Voyager / Google Style)
   const [mapType, setMapType] = useState<'satellite' | 'street'>('satellite');
 
   // Initialize Map
@@ -52,22 +75,14 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
       zoomAnimation: true,
     });
 
-    // 1. ESRI Real Photographic Satellite Layer (100% Reliable, Global, High-Res)
     const satLayer = L.tileLayer(
       'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      {
-        maxZoom: 19,
-        attribution: 'Esri World Imagery',
-      }
+      { maxZoom: 19 }
     );
 
-    // 2. Road Labels & Boundaries layer on top of Satellite
     const labelsLayer = L.tileLayer(
       'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-      {
-        maxZoom: 19,
-        opacity: 0.9,
-      }
+      { maxZoom: 19, opacity: 0.92 }
     );
 
     satLayer.addTo(map);
@@ -81,7 +96,6 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
 
     mapInstanceRef.current = map;
 
-    // Trigger initial invalidation
     map.invalidateSize();
     const timer1 = setTimeout(() => map.invalidateSize(), 100);
     const timer2 = setTimeout(() => map.invalidateSize(), 350);
@@ -104,10 +118,11 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
       if (ro) ro.disconnect();
       map.remove();
       mapInstanceRef.current = null;
+      carMarkerRef.current = null;
     };
   }, []);
 
-  // Handle Map Type Switch (Satélite Real vs Mapa Vetor)
+  // Handle Map Type Switch (Satélite Real vs Mapa de Ruas)
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -126,6 +141,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
         { maxZoom: 19 }
       ).addTo(map);
+      satLayer.bringToBack();
 
       const labelsLayer = L.tileLayer(
         'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
@@ -139,14 +155,18 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
         'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
         { maxZoom: 19, subdomains: 'abcd' }
       ).addTo(map);
+      streetLayer.bringToBack();
 
       baseTileLayerRef.current = streetLayer;
     }
 
+    if (routeGlowRef.current) routeGlowRef.current.bringToFront();
+    if (routePolylineRef.current) routePolylineRef.current.bringToFront();
+
     map.invalidateSize();
   }, [mapType]);
 
-  // Update Route Polyline & Destination Marker
+  // Update Route Polyline, Origin & Destination Pins
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map || !selectedRoute.path || selectedRoute.path.length === 0) return;
@@ -158,19 +178,17 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
 
     const isSafe = selectedRoute.type === 'segura';
     const mainColor = isSafe ? '#1a73e8' : '#64748b';
-    const glowColor = 'rgba(0, 0, 0, 0.45)';
+    const glowColor = 'rgba(0, 0, 0, 0.5)';
 
-    // Shadow underlay for high visibility and contrast
     const glowLine = L.polyline(selectedRoute.path, {
       color: glowColor,
       weight: 9,
-      opacity: 0.8,
+      opacity: 0.85,
       lineCap: 'round',
       lineJoin: 'round',
     }).addTo(map);
     routeGlowRef.current = glowLine;
 
-    // Main line
     const mainLine = L.polyline(selectedRoute.path, {
       color: mainColor,
       weight: 5.5,
@@ -180,77 +198,58 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     }).addTo(map);
     routePolylineRef.current = mainLine;
 
-    // Origin Start Marker (Clean White Dot with Shadow)
+    // Origin Pin (Clean White Dot)
     const originCoords = selectedRoute.path[0];
-    const originHtml = `
-      <div style="position: relative; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;">
-        <div style="
-          width: 16px;
-          height: 16px;
-          border-radius: 50%;
-          background: #ffffff;
-          border: 3px solid #0f172a;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-        "></div>
-      </div>
-    `;
     const originIcon = L.divIcon({
-      html: originHtml,
+      html: `
+        <div style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;">
+          <div style="width:15px;height:15px;border-radius:50%;background:#ffffff;border:3px solid #0f172a;box-shadow:0 2px 6px rgba(0,0,0,0.5);"></div>
+        </div>
+      `,
       className: 'origin-pin-marker',
       iconSize: [22, 22],
       iconAnchor: [11, 11],
     });
     const originMarker = L.marker(originCoords, { icon: originIcon }).addTo(map);
     originMarker.bindPopup(`
-      <div style="font-family: system-ui, sans-serif; font-size: 12px; color: #171717; padding: 2px;">
+      <div style="font-family:system-ui,sans-serif;font-size:12px;color:#171717;padding:2px;">
         <strong>Ponto de Partida</strong>
-        <p style="margin: 3px 0 0; font-size: 11px;">Início do trajeto</p>
+        <p style="margin:3px 0 0;font-size:11px;">Início do trajeto</p>
       </div>
     `);
     originMarkerRef.current = originMarker;
 
-    // Destination Pin (Red Pin)
+    // Destination Pin
     const destCoords = selectedRoute.path[selectedRoute.path.length - 1];
-    const destHtml = `
-      <div style="position: relative; width: 34px; height: 42px; display: flex; flex-direction: column; align-items: center; justify-content: center; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.6));">
-        <div style="
-          width: 30px;
-          height: 30px;
-          background: #ef4444;
-          border: 2.5px solid #ffffff;
-          border-radius: 50% 50% 50% 0;
-          transform: rotate(-45deg);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        ">
-          <div style="width: 10px; height: 10px; background: white; border-radius: 50%; transform: rotate(45deg);"></div>
-        </div>
-        <div style="width: 8px; height: 3px; background: rgba(0,0,0,0.5); border-radius: 50%; filter: blur(1px); margin-top: 1px;"></div>
-      </div>
-    `;
-
     const destIcon = L.divIcon({
-      html: destHtml,
+      html: `
+        <div style="position:relative;width:32px;height:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.6));">
+          <div style="width:26px;height:26px;background:#111827;border:2.5px solid #ffffff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;">
+            <div style="width:8px;height:8px;background:white;border-radius:50%;transform:rotate(45deg);"></div>
+          </div>
+          <div style="width:8px;height:3px;background:rgba(0,0,0,0.5);border-radius:50%;filter:blur(1px);margin-top:2px;"></div>
+        </div>
+      `,
       className: 'dest-pin-marker',
-      iconSize: [34, 42],
-      iconAnchor: [17, 39],
+      iconSize: [32, 40],
+      iconAnchor: [16, 37],
     });
-
-    const marker = L.marker(destCoords, { icon: destIcon }).addTo(map);
-    marker.bindPopup(`
-      <div style="font-family: system-ui, sans-serif; font-size: 12px; color: #171717; padding: 2px;">
-        <strong style="color: #ef4444;">📍 Destino</strong>
-        <p style="margin: 3px 0 0; font-size: 11px;">${selectedRoute.name}</p>
+    const destMarker = L.marker(destCoords, { icon: destIcon }).addTo(map);
+    destMarker.bindPopup(`
+      <div style="font-family:system-ui,sans-serif;font-size:12px;color:#171717;padding:2px;">
+        <strong>Destino</strong>
+        <p style="margin:3px 0 0;font-size:11px;">${selectedRoute.name}</p>
       </div>
     `);
-    destinationMarkerRef.current = marker;
+    destinationMarkerRef.current = destMarker;
 
-    // Smoothly fly camera to encompass the full calculated route
-    try {
-      const bounds = L.latLngBounds(selectedRoute.path);
-      map.flyToBounds(bounds, { padding: [45, 45], duration: 1.2 });
-    } catch {}
+    // Only flyToBounds when previewing (avoid conflicting with panTo during active driving)
+    if (!isNavigatingRef.current) {
+      try {
+        const bounds = L.latLngBounds(selectedRoute.path);
+        map.flyToBounds(bounds, { padding: [55, 55], duration: 1.1 });
+      } catch {}
+    }
   }, [selectedRoute]);
 
   // Update Danger Zones
@@ -262,32 +261,30 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
 
     dangerZones.forEach((zone) => {
       const circle = L.circle(zone.coordinates, {
-        color: '#ff334b',
-        fillColor: '#ff1744',
-        fillOpacity: 0.22,
+        color: '#f59e0b',
+        fillColor: '#f59e0b',
+        fillOpacity: 0.16,
         radius: zone.radiusMeters,
-        weight: 2,
+        weight: 1.5,
         dashArray: '5, 5',
       });
 
-      const popupHtml = `
-        <div style="font-family: system-ui, -apple-system, sans-serif; font-size: 12px; line-height: 1.4; color: #171717; min-width: 200px;">
-          <div style="font-weight: 700; color: #dc2626; margin-bottom: 2px;">
-            ⚠️ Alerta &bull; ${zone.neighborhood}
+      circle.bindPopup(`
+        <div style="font-family:system-ui,-apple-system,sans-serif;font-size:12px;line-height:1.4;color:#171717;min-width:200px;">
+          <div style="font-weight:700;color:#171717;margin-bottom:2px;">
+            Zona de Atenção &bull; ${zone.neighborhood}
           </div>
-          <div style="font-weight: 600; margin-bottom: 4px;">
+          <div style="font-weight:600;margin-bottom:4px;font-size:11px;">
             ${zone.name}
           </div>
-          <div style="color: #404040; margin: 4px 0; font-size: 11px;">
+          <div style="color:#404040;margin:4px 0;font-size:11px;">
             ${zone.title}
           </div>
-          <div style="margin-top: 6px; padding: 6px 8px; background: #fef2f2; border-left: 3px solid #dc2626; border-radius: 4px; font-size: 11px; color: #991b1b;">
-            <strong>Dica Defesa Civil:</strong> ${zone.defenseCivilTip}
+          <div style="margin-top:6px;padding:6px 8px;background:#f5f5f5;border-left:3px solid #171717;border-radius:4px;font-size:11px;color:#262626;">
+            <strong>Recomendação:</strong> ${zone.defenseCivilTip}
           </div>
         </div>
-      `;
-
-      circle.bindPopup(popupHtml);
+      `);
       circle.on('click', () => {
         if (onZoneClick) onZoneClick(zone);
       });
@@ -304,30 +301,16 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     layerGroup.clearLayers();
 
     incidents.forEach((inc) => {
-      const iconHtml = `
-        <div style="
-          background: #0f172a;
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          border: 2px solid #ffffff;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          cursor: pointer;
-        ">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M12 9v4"/>
-            <path d="M12 17h.01"/>
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-          </svg>
-        </div>
-      `;
-
       const customIcon = L.divIcon({
-        html: iconHtml,
+        html: `
+          <div style="background:#0f172a;width:24px;height:24px;border-radius:50%;border:2px solid #ffffff;box-shadow:0 2px 6px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;color:white;cursor:pointer;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 9v4"/>
+              <path d="M12 17h.01"/>
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            </svg>
+          </div>
+        `,
         className: 'incident-marker-pin',
         iconSize: [24, 24],
         iconAnchor: [12, 12],
@@ -335,10 +318,10 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
 
       const marker = L.marker(inc.coordinates, { icon: customIcon });
       marker.bindPopup(`
-        <div style="font-family: system-ui, sans-serif; font-size: 12px; color: #171717;">
-          <strong style="color: #b91c1c;">${inc.title}</strong>
-          <p style="margin: 4px 0; color: #404040; font-size: 11px;">${inc.description}</p>
-          <div style="font-size: 10px; color: #737373;">
+        <div style="font-family:system-ui,sans-serif;font-size:12px;color:#171717;">
+          <strong>${inc.title}</strong>
+          <p style="margin:4px 0;color:#404040;font-size:11px;">${inc.description}</p>
+          <div style="font-size:10px;color:#737373;">
             ${inc.neighborhood} &bull; ${inc.confirmationsCount} confirmações
           </div>
         </div>
@@ -348,82 +331,78 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     });
   }, [incidents]);
 
-  // Car Navigation Puck (Google Maps Navigation signature blue arrow)
+  // Update Car Navigation Puck with Real Directional Bearing
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
 
-    const carHtml = `
-      <div style="position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
-        <!-- Directional cone -->
-        <div style="
-          position: absolute;
-          width: 0;
-          height: 0;
-          border-left: 18px solid transparent;
-          border-right: 18px solid transparent;
-          border-bottom: 34px solid rgba(41, 121, 255, 0.35);
-          top: -14px;
-          pointer-events: none;
-        "></div>
-        <!-- Blue navigation puck -->
-        <div style="
-          width: 26px;
-          height: 26px;
-          border-radius: 50%;
-          background: #2979ff;
-          border: 3px solid #ffffff;
-          box-shadow: 0 3px 8px rgba(0,0,0,0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          z-index: 2;
-        ">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="#ffffff">
-            <polygon points="12,2 20,21 12,17 4,21"/>
-          </svg>
-        </div>
-      </div>
-    `;
+    const bearing = nextPosition ? calculateBearing(currentPosition, nextPosition) : 0;
 
     const carIcon = L.divIcon({
-      html: carHtml,
+      html: `
+        <div style="position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center;transform:rotate(${bearing}deg);transition:transform 0.6s ease-out;">
+          <div style="position:absolute;width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-bottom:30px solid rgba(26,115,232,0.35);top:-11px;pointer-events:none;"></div>
+          <div style="width:26px;height:26px;border-radius:50%;background:#1a73e8;border:3px solid #ffffff;box-shadow:0 3px 8px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;color:white;z-index:2;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="#ffffff">
+              <polygon points="12,2 20,21 12,17 4,21"/>
+            </svg>
+          </div>
+        </div>
+      `,
       className: 'car-navigation-marker',
       iconSize: [44, 44],
       iconAnchor: [22, 22],
     });
 
     if (!carMarkerRef.current) {
-      carMarkerRef.current = L.marker(currentPosition, { icon: carIcon }).addTo(map);
+      carMarkerRef.current = L.marker(currentPosition, { icon: carIcon, zIndexOffset: 500 }).addTo(map);
     } else {
+      carMarkerRef.current.setIcon(carIcon);
       carMarkerRef.current.setLatLng(currentPosition);
     }
 
-    // Follow vehicle during active navigation
     if (isNavigating) {
       map.panTo(currentPosition, { animate: true, duration: 0.9 });
     }
-  }, [currentPosition, isNavigating]);
+  }, [currentPosition, nextPosition, isNavigating]);
+
+  const handleRecenter = () => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    if (isNavigating) {
+      map.flyTo(currentPosition, 16, { duration: 0.8 });
+    } else if (selectedRoute.path.length > 0) {
+      try {
+        map.flyToBounds(L.latLngBounds(selectedRoute.path), { padding: [55, 55], duration: 0.8 });
+      } catch {}
+    }
+  };
 
   return (
-    <div className={`relative w-full h-full bg-[#111] overflow-hidden ${className}`}>
-      {/* Real Map Canvas */}
+    <div className={`relative w-full h-full bg-[#0a0a0a] overflow-hidden ${className}`}>
       <div
         ref={mapContainerRef}
         className="w-full h-full"
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
 
-      {/* Layer Toggle Switch (Satélite Real vs Vetor) */}
-      <div className="absolute top-16 right-3 z-[400] pointer-events-auto">
+      {/* Top-right Map Controls: Layers & Recenter */}
+      <div className="absolute top-16 right-3 z-[400] flex flex-col items-end gap-2 pointer-events-auto">
         <button
           onClick={() => setMapType(mapType === 'satellite' ? 'street' : 'satellite')}
           className="px-2.5 py-1.5 rounded-xl bg-black/80 hover:bg-black text-white text-[11px] font-semibold backdrop-blur-md border border-white/20 shadow-lg flex items-center gap-1.5 transition-all active:scale-95"
-          title="Alternar entre Satélite Real e Mapa de Ruas"
+          title="Alternar entre Satélite e Mapa de Ruas"
         >
-          <Layers className="w-3.5 h-3.5 text-blue-400" />
-          <span>{mapType === 'satellite' ? '🛰️ Satélite' : '🗺️ Ruas'}</span>
+          <Layers className="w-3.5 h-3.5 text-neutral-300" />
+          <span>{mapType === 'satellite' ? 'Satélite' : 'Ruas'}</span>
+        </button>
+
+        <button
+          onClick={handleRecenter}
+          className="w-8 h-8 rounded-full bg-black/80 hover:bg-black text-white backdrop-blur-md border border-white/20 shadow-lg flex items-center justify-center transition-all active:scale-90"
+          title="Centralizar mapa no trajeto"
+        >
+          <Crosshair className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>

@@ -43,11 +43,27 @@
 
 /* Leaflet styles and container adjustments */
 .leaflet-container {
-  background-color: #e8eaed !important;
+  background-color: #0a0a0a !important;
   font-family: inherit;
   width: 100% !important;
   height: 100% !important;
   z-index: 1;
+}
+
+/* Sleek minimalist scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .leaflet-popup-content-wrapper {

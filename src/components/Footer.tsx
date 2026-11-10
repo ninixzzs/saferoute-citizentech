@@ -2,7 +2,7 @@ import React from 'react';
 
 export const Footer: React.FC = () => {
   return (
-    <footer className="border-t border-neutral-900 bg-black py-8 text-xs text-neutral-500">
+    <footer className="border-t border-white/10 bg-black/80 backdrop-blur-xl py-8 text-xs text-neutral-500">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
           <span className="font-semibold text-neutral-300">SafeRoute &bull; CitizenTech São Paulo</span>

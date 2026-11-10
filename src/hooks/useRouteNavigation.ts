@@ -8,6 +8,7 @@ import {
   DEFAULT_ORIGIN,
   DEFAULT_DESTINATION,
 } from '../services/routingService';
+import { calculateDistanceMeters } from '../services/api';
 
 export function useRouteNavigation() {
   const [routes, setRoutes] = useState<NavigationRoute[]>(PRESET_ROUTES);
@@ -19,16 +20,12 @@ export function useRouteNavigation() {
   const [speedKmH, setSpeedKmH] = useState<number>(0);
   const [isCalculatingRoute, setIsCalculatingRoute] = useState<boolean>(false);
 
-  // Origin & Destination state
   const [originLocation, setOriginLocation] = useState<LocationSuggestion>(DEFAULT_ORIGIN);
   const [destinationLocation, setDestinationLocation] = useState<LocationSuggestion>(DEFAULT_DESTINATION);
-
-  // Simulation pacing: '1x' (realistic normal speed) or '2x'
   const [simSpeed, setSimSpeed] = useState<'1x' | '2x'>('1x');
 
   const timerRef = useRef<number | null>(null);
 
-  // Switch to a chosen route
   const selectRoute = useCallback((route: NavigationRoute) => {
     setSelectedRoute(route);
     setCurrentStepIndex(0);
@@ -38,21 +35,32 @@ export function useRouteNavigation() {
     setSpeedKmH(0);
   }, []);
 
-  // Instant switch to safe route (e.g. when Defesa Civil warning prompts reroute)
+  // Switch smoothly to safe route from nearest point on the new path
   const switchImmediatelyToSafeRoute = useCallback(() => {
     const safeRoute = routes.find((r) => r.type === 'segura') || routes[1] || routes[0];
+    let closestIdx = 0;
+    let minDist = Infinity;
+
+    safeRoute.path.forEach((pt, idx) => {
+      const d = calculateDistanceMeters(currentPosition[0], currentPosition[1], pt[0], pt[1]);
+      if (d < minDist) {
+        minDist = d;
+        closestIdx = idx;
+      }
+    });
+
     setSelectedRoute(safeRoute);
-    setCurrentStepIndex(0);
-    setCurrentPosition(safeRoute.path[0]);
+    setCurrentStepIndex(closestIdx);
+    setCurrentPosition(safeRoute.path[closestIdx]);
     setIsNavigating(true);
     setIsPaused(false);
-    setSpeedKmH(42);
-  }, [routes]);
+    setSpeedKmH(40);
+  }, [routes, currentPosition]);
 
   const startNavigation = useCallback(() => {
     setIsNavigating(true);
     setIsPaused(false);
-    setSpeedKmH(40);
+    setSpeedKmH(38);
   }, []);
 
   const pauseNavigation = useCallback(() => {
@@ -62,7 +70,7 @@ export function useRouteNavigation() {
 
   const resumeNavigation = useCallback(() => {
     setIsPaused(false);
-    setSpeedKmH(40);
+    setSpeedKmH(38);
   }, []);
 
   const resetNavigation = useCallback(() => {
@@ -73,13 +81,12 @@ export function useRouteNavigation() {
     setSpeedKmH(0);
   }, [selectedRoute]);
 
-  // Calculate routes between Origin and Destination
   const calculateJourney = useCallback(
     async (originText: string, destinationText: string, dangerZones: DangerZone[]) => {
       if (!destinationText.trim()) return null;
       setIsCalculatingRoute(true);
       try {
-        const originLoc = await geocodeAddress(originText || 'Avenida Paulista', originLocation);
+        const originLoc = await geocodeAddress(originText || DEFAULT_ORIGIN.name, originLocation);
         const destLoc = await geocodeAddress(destinationText, destinationLocation);
 
         const newRoutes = await calculateRoutesBetweenPoints(originLoc, destLoc, dangerZones);
@@ -88,7 +95,6 @@ export function useRouteNavigation() {
         setDestinationLocation(destLoc);
         setRoutes(newRoutes);
 
-        // Select the recommended safe route by default
         const safeRoute = newRoutes.find((r) => r.type === 'segura') || newRoutes[0];
         setSelectedRoute(safeRoute);
         setCurrentStepIndex(0);
@@ -108,7 +114,6 @@ export function useRouteNavigation() {
     [originLocation, destinationLocation]
   );
 
-  // Invert origin and destination
   const swapOriginAndDestination = useCallback(
     async (dangerZones: DangerZone[]) => {
       const newOrigin = destinationLocation;
@@ -118,7 +123,6 @@ export function useRouteNavigation() {
     [originLocation, destinationLocation, calculateJourney]
   );
 
-  // Restore preset default routes
   const resetToPresetRoutes = useCallback(() => {
     setRoutes(PRESET_ROUTES);
     setOriginLocation(DEFAULT_ORIGIN);
@@ -131,14 +135,13 @@ export function useRouteNavigation() {
     setSpeedKmH(0);
   }, []);
 
-  // Realistic normal speed simulation loop
+  // Calm city driving loop
   useEffect(() => {
     if (!isNavigating || isPaused) {
       if (timerRef.current) clearInterval(timerRef.current);
       return;
     }
 
-    // Realistic city driving pacing: 4200ms per step in 1x, 2200ms in 2x
     const stepInterval = simSpeed === '1x' ? 4200 : 2200;
 
     timerRef.current = window.setInterval(() => {
@@ -146,11 +149,9 @@ export function useRouteNavigation() {
         const nextIndex = prevIndex + 1;
         if (nextIndex < selectedRoute.path.length) {
           setCurrentPosition(selectedRoute.path[nextIndex]);
-          // Vary speed realistically within normal city limits (36 to 48 km/h)
-          setSpeedKmH(Math.floor(36 + Math.random() * 12));
+          setSpeedKmH(Math.floor(36 + Math.random() * 10));
           return nextIndex;
         } else {
-          // Reached destination
           setIsNavigating(false);
           setSpeedKmH(0);
           return prevIndex;
@@ -166,6 +167,9 @@ export function useRouteNavigation() {
   const progressPercentage = Math.round(
     (currentStepIndex / Math.max(1, selectedRoute.path.length - 1)) * 100
   );
+
+  const nextIdx = Math.min(selectedRoute.path.length - 1, currentStepIndex + 1);
+  const nextPosition = selectedRoute.path[nextIdx] || currentPosition;
 
   return {
     routes,
@@ -184,6 +188,7 @@ export function useRouteNavigation() {
     setSimSpeed,
     currentStepIndex,
     currentPosition,
+    nextPosition,
     speedKmH,
     progressPercentage,
     startNavigation,

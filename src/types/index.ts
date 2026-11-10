@@ -53,6 +53,7 @@ export interface NavigationRoute {
   dangerZoneIds: string[];
   description: string;
   highlights: string[];
+  streetNames?: string[];
 }
 
 export interface NavigationState {
