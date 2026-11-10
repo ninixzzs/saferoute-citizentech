@@ -1,81 +1,65 @@
 import { useState, useCallback, useEffect } from 'react';
+import { speakNaturalPortuguese, stopPortugueseSpeech } from '../services/voiceEngine';
 
 export function useVoiceGuidance() {
   const [enabled, setEnabled] = useState<boolean>(true);
   const [speaking, setSpeaking] = useState<boolean>(false);
 
-  // Play Defesa Civil Emergency Acoustic Tone using Web Audio API
-  const playEmergencyTone = useCallback(() => {
+  // Soft notification chime using Web Audio API
+  const playSoftChime = useCallback(() => {
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
 
-      // High-low alert frequencies (similar to Defesa Civil warning siren)
       const now = ctx.currentTime;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, now); // A5
-      osc.frequency.setValueAtTime(659.25, now + 0.15); // E5
-      osc.frequency.setValueAtTime(880, now + 0.3); // A5
-      osc.frequency.setValueAtTime(659.25, now + 0.45); // E5
+      osc.frequency.setValueAtTime(523.25, now); // C5 gentle chime
+      osc.frequency.setValueAtTime(659.25, now + 0.14); // E5
 
-      gain.gain.setValueAtTime(0.2, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
 
       osc.start(now);
-      osc.stop(now + 0.7);
+      osc.stop(now + 0.45);
     } catch (err) {
       console.warn('Audio synthesis not supported or blocked:', err);
     }
   }, []);
 
-  // Speak text using Web Speech API
+  // Speak text warmly using natural female pt-BR voice
   const speakAlert = useCallback(
     (text: string) => {
       if (!enabled || !('speechSynthesis' in window)) return;
 
-      try {
-        window.speechSynthesis.cancel(); // Cancel any ongoing speech
-        playEmergencyTone();
+      stopPortugueseSpeech();
+      playSoftChime();
 
-        // Small delay to allow chime to play
-        setTimeout(() => {
-          const utterance = new SpeechSynthesisUtterance(text);
-          utterance.lang = 'pt-BR';
-          utterance.rate = 1.05;
-          utterance.pitch = 1.1;
-
-          utterance.onstart = () => setSpeaking(true);
-          utterance.onend = () => setSpeaking(false);
-          utterance.onerror = () => setSpeaking(false);
-
-          window.speechSynthesis.speak(utterance);
-        }, 350);
-      } catch (e) {
-        console.warn('Speech synthesis error:', e);
-      }
+      setTimeout(() => {
+        speakNaturalPortuguese(text, {
+          onStart: () => setSpeaking(true),
+          onEnd: () => setSpeaking(false),
+          onError: () => setSpeaking(false),
+        });
+      }, 320);
     },
-    [enabled, playEmergencyTone]
+    [enabled, playSoftChime]
   );
 
   const stop = useCallback(() => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      setSpeaking(false);
-    }
+    stopPortugueseSpeech();
+    setSpeaking(false);
   }, []);
 
   useEffect(() => {
     return () => {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
+      stopPortugueseSpeech();
     };
   }, []);
 
@@ -84,7 +68,7 @@ export function useVoiceGuidance() {
     setVoiceEnabled: setEnabled,
     speaking,
     speakAlert,
-    playEmergencyTone,
+    playEmergencyTone: playSoftChime,
     stop,
   };
 }

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   MessageSquare,
   Send,
@@ -14,6 +15,8 @@ import {
   Volume2,
   VolumeX,
   MapPin,
+  X,
+  AudioLines,
 } from 'lucide-react';
 import { DangerZone, IncidentReport, NavigationRoute } from '../types';
 import { SaoPauloZone } from '../data/saoPauloLocations';
@@ -24,6 +27,11 @@ import {
   AssistantReply,
   NearbyPlaceResult,
 } from '../services/safetyAssistant';
+import {
+  speakNaturalPortuguese,
+  stopPortugueseSpeech,
+  pickWarmFemalePortugueseVoice,
+} from '../services/voiceEngine';
 
 interface SafetyAssistantChatProps {
   originLocation: LocationSuggestion;
@@ -72,7 +80,12 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
   const [activeRegion, setActiveRegion] = useState<SaoPauloZone | null>(null);
   const [lastTargetPlace, setLastTargetPlace] = useState<string>(destinationLocation.name);
   const [aiVoiceEnabled, setAiVoiceEnabled] = useState(true);
+
+  // Live Floating Voice Orb Mode (Siri / ChatGPT / Gemini style)
+  const [isVoiceOrbOpen, setIsVoiceOrbOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [liveTranscript, setLiveTranscript] = useState('');
   const [micErrorNotice, setMicErrorNotice] = useState<string | null>(null);
 
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
@@ -94,7 +107,7 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
         toneLabel: initial.toneLabel,
         text: `Olá! Que bom falar com você. Antes de iniciar sua rota até ${destinationLocation.name}, posso te orientar com calma sobre o caminho e lugares conhecidos por perto. É a sua primeira vez indo até lá?`,
         tips: [
-          'Você pode escrever ou tocar no microfone para conversar comigo por voz sobre qualquer bairro de São Paulo.',
+          'Toque em "Modo Voz (Orbe)" ou no microfone para conversar comigo por voz em ritmo calmo e natural.',
         ],
         nearbyPlaces: initial.nearbyPlaces,
         suggestSafeRouteSwitch: initial.suggestSafeRouteSwitch,
@@ -124,7 +137,12 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
     [originLocation, destinationLocation, selectedRoute, allRoutes, dangerZones, incidents]
   );
 
-  // Scoped internal chat scroll so outer page never jumps unexpectedly
+  // Warm voice cache early
+  useEffect(() => {
+    pickWarmFemalePortugueseVoice();
+  }, []);
+
+  // Scoped internal chat scroll
   useEffect(() => {
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
@@ -137,29 +155,36 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
     }
   }, [focusInputTrigger]);
 
+  // Body scroll lock & Escape handler while Voice Orb is open
+  useEffect(() => {
+    if (!isVoiceOrbOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleCloseVoiceOrb();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isVoiceOrbOpen]);
+
   useEffect(() => {
     return () => {
       try {
         recognitionRef.current?.stop();
       } catch {}
+      stopPortugueseSpeech();
     };
   }, []);
 
-  const speakTextCalmly = (text: string) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    try {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'pt-BR';
-      utterance.rate = 0.96; // Calm, unhurried pace
-      utterance.pitch = 1.0;
-      const voices = window.speechSynthesis.getVoices();
-      const ptVoice = voices.find((v) => v.lang.toLowerCase().includes('pt'));
-      if (ptVoice) utterance.voice = ptVoice;
-      window.speechSynthesis.speak(utterance);
-    } catch {
-      // Ignore synthesis unavailability cleanly
-    }
+  const speakCalmReply = (text: string) => {
+    speakNaturalPortuguese(text, {
+      onStart: () => setIsSpeaking(true),
+      onEnd: () => setIsSpeaking(false),
+      onError: () => setIsSpeaking(false),
+    });
   };
 
   const askAssistant = (
@@ -207,27 +232,23 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
       askFirstTimePlace: reply.askFirstTimePlace,
     };
 
-    // Instant synchronous update (0 ms delay)
     setMessages((prev) => [...prev, userMsg, botMsg]);
     setInputText('');
 
-    if (options?.speakResponse || aiVoiceEnabled) {
-      speakTextCalmly(reply.text);
+    if (options?.speakResponse || aiVoiceEnabled || isVoiceOrbOpen) {
+      speakCalmReply(reply.text);
     }
   };
 
-  const handleToggleVoiceMic = () => {
+  const startVoiceCapture = () => {
     setMicErrorNotice(null);
-    if (!speechRecognitionSupported) {
-      setMicErrorNotice('Reconhecimento de voz disponível no Chrome, Edge ou Safari.');
-      return;
-    }
+    stopPortugueseSpeech();
+    setIsSpeaking(false);
 
-    if (isListening) {
-      try {
-        recognitionRef.current?.stop();
-      } catch {}
-      setIsListening(false);
+    if (!speechRecognitionSupported) {
+      setMicErrorNotice(
+        'Seu navegador não suporta microfone nativo, mas você pode tocar nas perguntas rápidas abaixo para conversar por voz comigo.'
+      );
       return;
     }
 
@@ -243,6 +264,7 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
 
       recognition.onstart = () => {
         setIsListening(true);
+        setLiveTranscript('');
       };
 
       recognition.onresult = (event: any) => {
@@ -255,9 +277,10 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
             interim += transcript;
           }
         }
-        const liveText = (latestFinalTranscript || interim).trim();
-        if (liveText) {
-          setInputText(liveText);
+        const currentText = (latestFinalTranscript || interim).trim();
+        if (currentText) {
+          setLiveTranscript(currentText);
+          setInputText(currentText);
         }
         if (latestFinalTranscript.trim()) {
           const finalPrompt = latestFinalTranscript.trim();
@@ -272,7 +295,7 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
 
       recognition.onerror = () => {
         setIsListening(false);
-        setMicErrorNotice('Não consegui captar o áudio. Verifique a permissão do microfone.');
+        setMicErrorNotice('Não consegui captar sua voz agora. Tente tocar no orbe novamente ou escolha uma pergunta abaixo.');
       };
 
       recognition.onend = () => {
@@ -283,7 +306,46 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
       recognition.start();
     } catch {
       setIsListening(false);
-      setMicErrorNotice('Não foi possível iniciar o microfone neste navegador.');
+      setMicErrorNotice('Não foi possível acessar o microfone neste navegador.');
+    }
+  };
+
+  const stopVoiceCapture = () => {
+    try {
+      recognitionRef.current?.stop();
+    } catch {}
+    setIsListening(false);
+  };
+
+  const handleOpenVoiceOrb = (autoListen = true) => {
+    setIsVoiceOrbOpen(true);
+    setLiveTranscript('');
+    setMicErrorNotice(null);
+    if (autoListen && speechRecognitionSupported) {
+      setTimeout(() => startVoiceCapture(), 150);
+    }
+  };
+
+  const handleCloseVoiceOrb = () => {
+    stopVoiceCapture();
+    stopPortugueseSpeech();
+    setIsSpeaking(false);
+    setIsVoiceOrbOpen(false);
+  };
+
+  const handleOrbTap = () => {
+    if (isSpeaking) {
+      stopPortugueseSpeech();
+      setIsSpeaking(false);
+      if (speechRecognitionSupported) {
+        setTimeout(() => startVoiceCapture(), 120);
+      }
+      return;
+    }
+    if (isListening) {
+      stopVoiceCapture();
+    } else {
+      startVoiceCapture();
     }
   };
 
@@ -310,6 +372,8 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
     'Ver texto do SMS',
   ];
 
+  const latestAssistantMsg = [...messages].reverse().find((m) => m.sender === 'assistant');
+
   return (
     <div className="space-y-4">
       {/* 1. Prominent Executive AI Spotlight Banner & Voice Chat Console */}
@@ -327,26 +391,40 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
                 </h3>
                 <p className="text-[11px] opacity-80 flex items-center gap-1">
                   <Zap className="w-3 h-3 shrink-0" />
-                  <span>Por texto ou voz &bull; Todas as regiões de São Paulo</span>
+                  <span>Voz feminina calma &bull; Todas as regiões de SP</span>
                 </p>
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                const next = !aiVoiceEnabled;
-                setAiVoiceEnabled(next);
-                if (!next && typeof window !== 'undefined' && 'speechSynthesis' in window) {
-                  window.speechSynthesis.cancel();
-                }
-              }}
-              className="px-2.5 py-1 rounded-full bg-white/15 dark:bg-neutral-950/10 border border-white/25 dark:border-neutral-950/20 text-[10px] font-mono font-bold flex items-center gap-1.5 transition-colors hover:bg-white/25"
-              title="Ativar ou silenciar leitura automática da IA"
-            >
-              {aiVoiceEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-              <span>{aiVoiceEnabled ? 'Voz IA: ON' : 'Voz IA: OFF'}</span>
-            </button>
+            <div className="flex items-center gap-1.5">
+              {/* Siri / ChatGPT / Gemini Live Orb Mode Trigger */}
+              <button
+                type="button"
+                onClick={() => handleOpenVoiceOrb(true)}
+                className="px-3 py-1.5 rounded-full bg-white dark:bg-neutral-950 text-neutral-950 dark:text-white text-[11px] font-bold flex items-center gap-1.5 shadow-sm hover:opacity-90 active:scale-95 transition-all"
+                title="Abrir modo conversa por voz com orbe flutuante"
+              >
+                <AudioLines className="w-3.5 h-3.5" />
+                <span>Orbe de Voz</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !aiVoiceEnabled;
+                  setAiVoiceEnabled(next);
+                  if (!next) {
+                    stopPortugueseSpeech();
+                    setIsSpeaking(false);
+                  }
+                }}
+                className="p-1.5 rounded-full bg-white/15 dark:bg-neutral-950/10 border border-white/25 dark:border-neutral-950/20 transition-colors hover:bg-white/25"
+                title={aiVoiceEnabled ? 'Voz da IA ativada' : 'Voz da IA silenciada'}
+                aria-label={aiVoiceEnabled ? 'Silenciar voz da IA' : 'Ativar voz da IA'}
+              >
+                {aiVoiceEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+              </button>
+            </div>
           </div>
 
           {/* All Regions of São Paulo 1-Tap Explorer */}
@@ -403,9 +481,9 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
                     <div className="flex items-center gap-1.5">
                       <button
                         type="button"
-                        onClick={() => speakTextCalmly(msg.text)}
+                        onClick={() => speakCalmReply(msg.text)}
                         className="p-1 rounded-lg bg-neutral-100 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white"
-                        title="Ouvir esta mensagem"
+                        title="Ouvir esta mensagem com voz suave"
                         aria-label="Ouvir mensagem em voz alta"
                       >
                         <Volume2 className="w-3 h-3" />
@@ -497,29 +575,6 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
           ))}
         </div>
 
-        {/* Live Listening Indicator or Mic Notice */}
-        {(isListening || micErrorNotice) && (
-          <div className="px-3.5 py-2 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 text-xs font-semibold flex items-center justify-between gap-2">
-            <span className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full bg-current ${isListening ? 'animate-ping' : ''}`} />
-              <span>
-                {isListening
-                  ? 'Ouvindo você falar... pode perguntar naturalmente.'
-                  : micErrorNotice}
-              </span>
-            </span>
-            {isListening && (
-              <button
-                type="button"
-                onClick={handleToggleVoiceMic}
-                className="px-2 py-0.5 rounded bg-white/20 dark:bg-black/15 text-[11px] font-bold"
-              >
-                Parar
-              </button>
-            )}
-          </div>
-        )}
-
         {/* Quick 1-Tap Prompt Chips */}
         <div className="px-3.5 py-2 border-t border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex items-center gap-1.5 overflow-x-auto">
           {quickQuestions.map((q) => (
@@ -534,30 +589,19 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
           ))}
         </div>
 
-        {/* High-Visibility Voice + Text Composer */}
+        {/* High-Visibility Voice Orb + Text Composer */}
         <form
           onSubmit={handleSubmit}
           className="p-3 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/80 flex items-center gap-2"
         >
           <button
             type="button"
-            onClick={handleToggleVoiceMic}
-            aria-pressed={isListening}
-            aria-label={isListening ? 'Parar reconhecimento de voz' : 'Perguntar falando no microfone'}
-            title={
-              speechRecognitionSupported
-                ? isListening
-                  ? 'Parar gravação de voz'
-                  : 'Falar com a IA pelo microfone'
-                : 'Microfone não suportado neste navegador'
-            }
-            className={`p-2.5 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 shrink-0 transition-all ${
-              isListening
-                ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border-neutral-950 dark:border-white animate-pulse'
-                : 'bg-white dark:bg-neutral-950 text-neutral-950 dark:text-white border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-            }`}
+            onClick={() => handleOpenVoiceOrb(true)}
+            aria-label="Abrir Orbe de Voz para conversar falando"
+            title="Conversar com o Orbe Flutuante da IA"
+            className="p-2.5 rounded-xl border bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border-neutral-950 dark:border-white font-bold text-xs flex items-center justify-center shrink-0 hover:opacity-90 active:scale-95 transition-all shadow-xs"
           >
-            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            <Mic className="w-4 h-4" />
           </button>
 
           <input
@@ -565,11 +609,7 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder={
-              isListening
-                ? 'Ouvindo sua voz...'
-                : 'Digite ou toque no microfone para perguntar...'
-            }
+            placeholder="Digite ou toque no microfone para o Modo Voz..."
             aria-label="Perguntar ao assistente preventivo"
             className="flex-1 min-w-0 px-3.5 py-2.5 rounded-xl bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-neutral-700 text-xs text-neutral-950 dark:text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-950 dark:focus:border-white"
           />
@@ -600,7 +640,6 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
           </span>
         </div>
 
-        {/* Authentic Monochrome SMS Bubble */}
         <div className="p-3 rounded-2xl rounded-tl-sm bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-2xs space-y-1.5">
           <div className="flex items-center justify-between text-[10px] font-mono text-neutral-500">
             <span>Remetente: SafeRoute · 40199</span>
@@ -646,6 +685,219 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
           </div>
         )}
       </div>
+
+      {/* =====================================================================
+          LIVE VOICE ORB OVERLAY (Siri / ChatGPT / Gemini Monochrome Style)
+         ===================================================================== */}
+      {isVoiceOrbOpen &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Conversa por voz com a Assistente SafeRoute"
+            className="fixed inset-0 z-[2100] bg-neutral-950/98 backdrop-blur-2xl text-white flex flex-col justify-between p-5 sm:p-8 select-none animate-in fade-in duration-200"
+          >
+            {/* Top Header */}
+            <div className="flex items-center justify-between gap-3 max-w-2xl w-full mx-auto">
+              <div className="flex items-center gap-2.5">
+                <span
+                  className={`w-2.5 h-2.5 rounded-full ${
+                    isListening
+                      ? 'bg-white animate-ping'
+                      : isSpeaking
+                        ? 'bg-white animate-pulse'
+                        : 'bg-neutral-500'
+                  }`}
+                />
+                <div>
+                  <span className="font-display text-sm font-bold tracking-tight block leading-none">
+                    SafeRoute &middot; Modo Voz
+                  </span>
+                  <span className="text-[11px] text-neutral-400 font-mono mt-0.5 block">
+                    {isListening
+                      ? 'Ouvindo você...'
+                      : isSpeaking
+                        ? 'Falando com você...'
+                        : 'Toque no orbe para falar'}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCloseVoiceOrb}
+                className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-white transition-colors"
+                aria-label="Fechar modo voz e voltar para o chat"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Centerpiece Animated Monochrome Floating Orb */}
+            <div className="flex-1 flex flex-col items-center justify-center gap-7 max-w-xl w-full mx-auto text-center my-4">
+              <div className="relative flex items-center justify-center">
+                {/* Ambient outer halo rings */}
+                {isListening && (
+                  <>
+                    <span className="absolute w-64 h-64 rounded-full border border-white/25 animate-ping" />
+                    <span className="absolute w-52 h-52 rounded-full border border-white/35 animate-pulse" />
+                  </>
+                )}
+                {isSpeaking && (
+                  <span className="absolute w-56 h-56 rounded-full border border-white/25 animate-pulse" />
+                )}
+
+                {/* Tactile Floating Orb Button */}
+                <button
+                  type="button"
+                  onClick={handleOrbTap}
+                  aria-label={
+                    isSpeaking
+                      ? 'Interromper fala e ouvir novamente'
+                      : isListening
+                        ? 'Parar microfone'
+                        : 'Tocar no orbe para falar'
+                  }
+                  className={`relative w-40 h-40 sm:w-48 sm:h-48 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 ${
+                    isListening
+                      ? 'orb-listening'
+                      : isSpeaking
+                        ? 'orb-speaking'
+                        : 'orb-idle'
+                  }`}
+                  style={{
+                    background:
+                      'radial-gradient(circle at 32% 28%, #ffffff 0%, #d4d4d4 35%, #525252 72%, #171717 100%)',
+                  }}
+                >
+                  {/* Inner Liquid Specular Highlight */}
+                  <span
+                    className="absolute top-5 left-7 w-14 h-8 rounded-full bg-white/55 blur-md pointer-events-none"
+                    aria-hidden="true"
+                  />
+
+                  {/* Subtle Sound Equalizer when speaking or listening */}
+                  <div className="relative z-10 flex items-center justify-center gap-1.5 h-10">
+                    {isSpeaking || isListening ? (
+                      [0, 1, 2, 3, 4].map((bar) => (
+                        <span
+                          key={bar}
+                          className="w-1.5 bg-neutral-950/85 rounded-full orb-wave-bar"
+                          style={{
+                            height: bar % 2 === 0 ? '28px' : '18px',
+                            animationDelay: `${bar * 120}ms`,
+                          }}
+                        />
+                      ))
+                    ) : (
+                      <Mic className="w-8 h-8 text-neutral-950/85" />
+                    )}
+                  </div>
+                </button>
+              </div>
+
+              {/* Live Voice Caption & Calming Subtitles */}
+              <div className="space-y-3 px-2 max-w-lg">
+                {liveTranscript ? (
+                  <p className="text-base sm:text-lg font-medium text-white/95 leading-relaxed">
+                    "{liveTranscript}"
+                  </p>
+                ) : (
+                  latestAssistantMsg && (
+                    <div className="space-y-2.5">
+                      <p className="text-sm sm:text-base text-neutral-200 leading-relaxed max-h-36 overflow-y-auto">
+                        {latestAssistantMsg.text}
+                      </p>
+                      {latestAssistantMsg.nearbyPlaces && latestAssistantMsg.nearbyPlaces.length > 0 && (
+                        <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
+                          {latestAssistantMsg.nearbyPlaces.slice(0, 3).map((p) => (
+                            <span
+                              key={p.name}
+                              className="px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[11px] text-neutral-200 flex items-center gap-1"
+                            >
+                              <MapPin className="w-3 h-3 shrink-0" />
+                              <span>{p.name}</span>
+                              <span className="font-mono text-neutral-400">({p.distanceLabel})</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                )}
+
+                {micErrorNotice && (
+                  <p className="text-xs text-neutral-300 bg-white/10 border border-white/15 rounded-xl px-3 py-2">
+                    {micErrorNotice}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Bottom Quick Voice Starters + Action Controls */}
+            <div className="max-w-xl w-full mx-auto space-y-4">
+              <div className="flex flex-wrap items-center justify-center gap-1.5">
+                {[
+                  'Como está o Capão Redondo?',
+                  'Lugares perto do destino',
+                  'Sim, é minha primeira vez',
+                  'Comparar rota segura',
+                ].map((prompt) => (
+                  <button
+                    key={prompt}
+                    type="button"
+                    onClick={() => {
+                      setLiveTranscript(prompt);
+                      askAssistant(prompt, { speakResponse: true });
+                    }}
+                    className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-medium text-neutral-200 transition-colors"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleOrbTap}
+                  className={`px-6 py-3.5 rounded-full font-bold text-xs flex items-center gap-2 transition-all active:scale-95 ${
+                    isListening
+                      ? 'bg-neutral-800 text-white border border-white/25'
+                      : 'bg-white text-neutral-950 shadow-xl'
+                  }`}
+                >
+                  {isListening ? (
+                    <>
+                      <MicOff className="w-4 h-4" />
+                      <span>Pausar microfone</span>
+                    </>
+                  ) : isSpeaking ? (
+                    <>
+                      <Mic className="w-4 h-4" />
+                      <span>Interromper e falar</span>
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="w-4 h-4" />
+                      <span>Falar com a IA</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCloseVoiceOrb}
+                  className="px-4 py-3.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-semibold text-white transition-colors"
+                >
+                  Voltar ao chat
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
