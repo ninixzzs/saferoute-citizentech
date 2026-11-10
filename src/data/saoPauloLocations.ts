@@ -100,3 +100,60 @@ export const SAO_PAULO_LOCATIONS: SaoPauloLocationEntry[] = [
   { name: 'Marginal Tietê', zone: 'Marginais e Pontes', kind: 'via', coordinates: [-23.5165, -46.6495] },
   { name: 'Ponte da Casa Verde', zone: 'Marginais e Pontes', kind: 'via', coordinates: [-23.5138, -46.6522] },
 ];
+
+export interface NearbyReferencePlace {
+  name: string;
+  category: 'Metrô / Trem' | 'Parque / Lazer' | 'Shopping / Apoio' | 'Hospital / Saúde' | 'Terminal';
+  zone: SaoPauloZone;
+  coordinates: [number, number];
+}
+
+export const SAO_PAULO_NEARBY_PLACES: NearbyReferencePlace[] = [
+  // Centro & Paulista
+  { name: 'MASP & Parque Trianon', category: 'Parque / Lazer', zone: 'Centro', coordinates: [-23.5614, -46.6559] },
+  { name: 'Shopping Cidade São Paulo', category: 'Shopping / Apoio', zone: 'Centro', coordinates: [-23.5633, -46.6524] },
+  { name: 'Estação Sé (Metrô)', category: 'Metrô / Trem', zone: 'Centro', coordinates: [-23.5504, -46.6334] },
+  { name: 'Pinacoteca & Parque da Luz', category: 'Parque / Lazer', zone: 'Centro', coordinates: [-23.5343, -46.6339] },
+  { name: 'Shopping Pátio Higienópolis', category: 'Shopping / Apoio', zone: 'Centro', coordinates: [-23.5426, -46.6579] },
+  { name: 'Hospital das Clínicas / Metrô Clínicas', category: 'Hospital / Saúde', zone: 'Centro', coordinates: [-23.5559, -46.6698] },
+  { name: 'Mercado Municipal de São Paulo', category: 'Shopping / Apoio', zone: 'Centro', coordinates: [-23.5417, -46.6295] },
+  { name: 'SESC 24 de Maio', category: 'Parque / Lazer', zone: 'Centro', coordinates: [-23.5446, -46.6398] },
+
+  // Zona Sul
+  { name: 'Estação Capão Redondo (Linha 5-Lilás)', category: 'Metrô / Trem', zone: 'Zona Sul', coordinates: [-23.6592, -46.7681] },
+  { name: 'Parque Santo Dias (Capão Redondo)', category: 'Parque / Lazer', zone: 'Zona Sul', coordinates: [-23.6634, -46.7734] },
+  { name: 'Shopping Campo Limpo', category: 'Shopping / Apoio', zone: 'Zona Sul', coordinates: [-23.6498, -46.7582] },
+  { name: 'Hospital Municipal do Campo Limpo', category: 'Hospital / Saúde', zone: 'Zona Sul', coordinates: [-23.6475, -46.7485] },
+  { name: 'Parque Ibirapuera', category: 'Parque / Lazer', zone: 'Zona Sul', coordinates: [-23.5874, -46.6576] },
+  { name: 'Shopping Ibirapuera', category: 'Shopping / Apoio', zone: 'Zona Sul', coordinates: [-23.6105, -46.6673] },
+  { name: 'Terminal & Metrô Jabaquara', category: 'Terminal', zone: 'Zona Sul', coordinates: [-23.6462, -46.6410] },
+  { name: 'Estação Santo Amaro / Largo Treze', category: 'Metrô / Trem', zone: 'Zona Sul', coordinates: [-23.6552, -46.7196] },
+  { name: 'Parque Linear Cantinho do Céu (Grajaú)', category: 'Parque / Lazer', zone: 'Zona Sul', coordinates: [-23.7510, -46.6835] },
+  { name: 'Hospital São Paulo / Metrô Santa Cruz', category: 'Hospital / Saúde', zone: 'Zona Sul', coordinates: [-23.5985, -46.6394] },
+  { name: 'Morumbi Shopping / Av. Berrini', category: 'Shopping / Apoio', zone: 'Zona Sul', coordinates: [-23.6231, -46.6987] },
+
+  // Zona Oeste
+  { name: 'Shopping Eldorado & Metrô Faria Lima', category: 'Shopping / Apoio', zone: 'Zona Oeste', coordinates: [-23.5724, -46.6956] },
+  { name: 'Estação Butantã (Metrô)', category: 'Metrô / Trem', zone: 'Zona Oeste', coordinates: [-23.5718, -46.7082] },
+  { name: 'Parque Villa-Lobos', category: 'Parque / Lazer', zone: 'Zona Oeste', coordinates: [-23.5469, -46.7235] },
+  { name: 'Allianz Parque & Bourbon Shopping', category: 'Shopping / Apoio', zone: 'Zona Oeste', coordinates: [-23.5275, -46.6784] },
+  { name: 'Terminal & Metrô Barra Funda', category: 'Terminal', zone: 'Zona Oeste', coordinates: [-23.5262, -46.6644] },
+  { name: 'Beco do Batman (Vila Madalena)', category: 'Parque / Lazer', zone: 'Zona Oeste', coordinates: [-23.5567, -46.6865] },
+  { name: 'Largo da Batata / Metrô Pinheiros', category: 'Metrô / Trem', zone: 'Zona Oeste', coordinates: [-23.5676, -46.7022] },
+
+  // Zona Leste
+  { name: 'Shopping Metrô Tatuapé', category: 'Shopping / Apoio', zone: 'Zona Leste', coordinates: [-23.5403, -46.5764] },
+  { name: 'Shopping Metrô Itaquera & Arena', category: 'Shopping / Apoio', zone: 'Zona Leste', coordinates: [-23.5421, -46.4712] },
+  { name: 'Parque do Carmo', category: 'Parque / Lazer', zone: 'Zona Leste', coordinates: [-23.5805, -46.4694] },
+  { name: 'Mooca Plaza Shopping', category: 'Shopping / Apoio', zone: 'Zona Leste', coordinates: [-23.5802, -46.5944] },
+  { name: 'Terminal Vila Prudente (Metrô / Monotrilho)', category: 'Terminal', zone: 'Zona Leste', coordinates: [-23.5844, -46.5821] },
+  { name: 'Estação Penha (Metrô)', category: 'Metrô / Trem', zone: 'Zona Leste', coordinates: [-23.5335, -46.5425] },
+  { name: 'Terminal São Mateus', category: 'Terminal', zone: 'Zona Leste', coordinates: [-23.6125, -46.4765] },
+
+  // Zona Norte
+  { name: 'Parque da Juventude & Metrô Carandiru', category: 'Parque / Lazer', zone: 'Zona Norte', coordinates: [-23.5089, -46.6238] },
+  { name: 'Shopping Center Norte', category: 'Shopping / Apoio', zone: 'Zona Norte', coordinates: [-23.5162, -46.6184] },
+  { name: 'Estação Santana (Metrô)', category: 'Metrô / Trem', zone: 'Zona Norte', coordinates: [-23.5026, -46.6248] },
+  { name: 'Shopping Metrô Tucuruvi', category: 'Shopping / Apoio', zone: 'Zona Norte', coordinates: [-23.4795, -46.6031] },
+  { name: 'Terminal Rodoviário Tietê', category: 'Terminal', zone: 'Zona Norte', coordinates: [-23.5162, -46.6236] },
+];

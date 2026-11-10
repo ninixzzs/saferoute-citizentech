@@ -296,7 +296,7 @@ export function App() {
                   </span>
                 </div>
                 <p className="text-[11px] text-neutral-600 dark:text-neutral-400 leading-snug mt-0.5">
-                  Consulte qualquer bairro de São Paulo (Centro, Sul, Norte, Leste, Oeste e Marginais) antes de sair, com orientação calma e sem pânico.
+                  Converse por texto ou voz sobre todas as regiões de São Paulo, descubra lugares conhecidos perto do destino e receba orientação calma antes de ir.
                 </p>
               </div>
             </div>

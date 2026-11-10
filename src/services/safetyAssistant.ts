@@ -1,14 +1,28 @@
 import { DangerZone, IncidentReport, NavigationRoute } from '../types';
-import { SAO_PAULO_LOCATIONS, SaoPauloZone } from '../data/saoPauloLocations';
+import {
+  SAO_PAULO_LOCATIONS,
+  SAO_PAULO_NEARBY_PLACES,
+  NearbyReferencePlace,
+  SaoPauloZone,
+} from '../data/saoPauloLocations';
 import { LocationSuggestion } from './routingService';
+import { calculateDistanceMeters } from './api';
+
+export interface NearbyPlaceResult {
+  name: string;
+  category: NearbyReferencePlace['category'];
+  distanceLabel: string;
+}
 
 export interface AssistantReply {
   id: string;
   toneLabel: 'Tranquilo' | 'Atenção Leve' | 'Cuidado Preventivo';
   text: string;
   tips: string[];
+  nearbyPlaces: NearbyPlaceResult[];
   smsPreview: string;
   suggestSafeRouteSwitch?: boolean;
+  askFirstTimePlace?: string;
 }
 
 export interface AssistantContext {
@@ -27,42 +41,87 @@ function normalizeText(value: string): string {
     .replace(/[\u0300-\u036f]/g, '');
 }
 
-const REGION_KEYWORDS: { zone: SaoPauloZone; aliases: string[]; summary: string }[] = [
+function formatDistanceLabel(meters: number): string {
+  if (meters < 1000) return `${Math.max(100, Math.round(meters / 10) * 10)} m`;
+  return `${(meters / 1000).toFixed(1).replace('.', ',')} km`;
+}
+
+export function findNearbyPlaces(
+  coordinates: [number, number],
+  preferredZone?: SaoPauloZone
+): NearbyPlaceResult[] {
+  const pool =
+    preferredZone && preferredZone !== 'Marginais e Pontes'
+      ? SAO_PAULO_NEARBY_PLACES
+      : SAO_PAULO_NEARBY_PLACES;
+
+  return pool
+    .map((place) => ({
+      name: place.name,
+      category: place.category,
+      distanceMeters: calculateDistanceMeters(
+        coordinates[0],
+        coordinates[1],
+        place.coordinates[0],
+        place.coordinates[1]
+      ),
+    }))
+    .sort((a, b) => a.distanceMeters - b.distanceMeters)
+    .slice(0, 4)
+    .map((p) => ({
+      name: p.name,
+      category: p.category,
+      distanceLabel: formatDistanceLabel(p.distanceMeters),
+    }));
+}
+
+const REGION_KEYWORDS: {
+  zone: SaoPauloZone;
+  aliases: string[];
+  coords: [number, number];
+  summary: string;
+}[] = [
   {
     zone: 'Zona Sul',
     aliases: ['zona sul', 'sul de sp', 'regiao sul'],
+    coords: [-23.628, -46.678],
     summary:
-      'Na Zona Sul (como Vila Mariana, Moema, Santo Amaro, Jabaquara, Campo Limpo, Capão Redondo e Grajaú), o deslocamento flui bem pela maioria dos corredores principais. Em trechos como Capão Redondo, Estrada de Itapecerica e cruzamentos das avenidas Santo Amaro, Berrini e Washington Luís nos horários de pico, recomenda-se atenção preventiva simples nos semáforos.',
+      'Na Zona Sul (como Vila Mariana, Moema, Santo Amaro, Jabaquara, Campo Limpo, Capão Redondo e Grajaú), o deslocamento flui muito bem pelos corredores principais. Em pontos como Capão Redondo e cruzamentos movimentados da Berrini ou Washington Luís no horário de pico, basta manter vidros fechados nos semáforos e seguir com calma.',
   },
   {
     zone: 'Centro',
     aliases: ['centro', 'regiao central', 'centro historico'],
+    coords: [-23.548, -46.638],
     summary:
-      'No Centro (Sé, República, Luz, Santa Ifigênia, Brás, Liberdade, Consolação e Bela Vista), o movimento intenso de pedestres e cruzamentos lentos pede cuidado preventivo ao parar no trânsito, especialmente perto de grandes estações e viadutos. Já vias iluminadas e o contorno pelo corredor 23 de Maio ou Av. Paulista mantêm ótima previsibilidade.',
+      'No Centro (Sé, República, Luz, Santa Ifigênia, Brás, Liberdade, Consolação e Bela Vista), há bastante movimento de pedestres e comércios. Vale apenas manter uma atenção serena ao parar perto de grandes estações e viadutos, preferindo vias iluminadas e o contorno pela 23 de Maio ou Av. Paulista.',
   },
   {
     zone: 'Zona Oeste',
     aliases: ['zona oeste', 'regiao oeste', 'oeste de sp'],
+    coords: [-23.56, -46.69],
     summary:
-      'A Zona Oeste (Pinheiros, Lapa, Perdizes, Butantã, Vila Leopoldina, Faria Lima e Rebouças) costuma apresentar boa circulação geral. Os pontos que pedem maior atenção calma são os afunilamentos em horários de pico nas avenidas Rebouças, Henrique Schaumann, Francisco Matarazzo e alças da Ponte Eusébio Matoso.',
+      'A Zona Oeste (Pinheiros, Lapa, Perdizes, Butantã, Vila Madalena e Faria Lima) tem circulação bem organizada no geral. Nos horários de maior movimento na Rebouças, Henrique Schaumann e Ponte Eusébio Matoso, manter o celular guardado e usar o GPS por voz deixa a viagem bem leve.',
   },
   {
     zone: 'Zona Leste',
     aliases: ['zona leste', 'regiao leste', 'leste de sp'],
+    coords: [-23.548, -46.555],
     summary:
-      'Na Zona Leste (Tatuapé, Mooca, Penha, Vila Prudente, Itaquera e São Mateus), o tráfego pelos grandes eixos como Radial Leste, Salim Farah Maluf, Anhaia Mello, Celso Garcia e Aricanduva exige atenção tranquila em retenções sob viadutos e semáforos extensos — mantendo vidros fechados e orientação por áudio, você segue com segurança.',
+      'Na Zona Leste (Tatuapé, Mooca, Penha, Vila Prudente, Itaquera e São Mateus), os grandes corredores como Radial Leste, Salim Farah Maluf e Anhaia Mello são bem conectados. Em retenções sob viadutos e sinais mais longos, mantenha os vidros fechados para seguir tranquilo.',
   },
   {
     zone: 'Zona Norte',
     aliases: ['zona norte', 'regiao norte', 'norte de sp'],
+    coords: [-23.5, -46.625],
     summary:
-      'Na Zona Norte (Santana, Vila Guilherme, Tucuruvi e Freguesia do Ó), os principais corredores como Av. Cruzeiro do Sul, Ataliba Leonel, Caetano Álvares e Av. Otaviano Alves de Lima são bem movimentados. Nos acessos próximos à Rodoviária do Tietê e semáforos de saída das pontes, vale manter o celular fora de suportes visíveis.',
+      'Na Zona Norte (Santana, Vila Guilherme, Tucuruvi e Freguesia do Ó), vias como Cruzeiro do Sul, Ataliba Leonel e Caetano Álvares são bem movimentadas e fáceis de navegar. Nos acessos próximos à Rodoviária do Tietê e saídas de pontes, vale deixar o celular longe do vidro.',
   },
   {
     zone: 'Marginais e Pontes',
     aliases: ['marginais', 'marginal', 'pontes', 'vias expressas', 'tiete', 'pinheiros'],
+    coords: [-23.525, -46.665],
     summary:
-      'Nas Marginais Tietê e Pinheiros e em pontes como Casa Verde, Cidade Universitária, Jaguaré e Morumbi, o ponto principal de atenção são alças de saída e retenções sob pontilhões, além de pontos de chuva forte. Mantenha distância do veículo à frente e prefira usar o GPS apenas por voz.',
+      'Nas Marginais Tietê e Pinheiros e em pontes como Casa Verde, Cidade Universitária, Jaguaré e Morumbi, o ideal é manter uma distância confortável do carro da frente em alças de saída e acompanhar desvios de chuva forte pelos corredores elevados.',
   },
 ];
 
@@ -120,16 +179,17 @@ export function buildPreTripSmsMessage(context: AssistantContext): {
 }
 
 /**
- * Instant, zero-delay context-aware safety advisor covering all regions of São Paulo calmly.
+ * Instant, zero-delay conversational safety companion covering all São Paulo regions, nearby landmarks, and first-time guidance.
  */
 export function generateSafetyAssistantReply(
   question: string,
-  context: AssistantContext
+  context: AssistantContext,
+  lastTargetPlace?: string
 ): AssistantReply {
   const qNorm = normalizeText(question);
   const { destination, selectedRoute, allRoutes, dangerZones, incidents } = context;
 
-  // 1. Match specific neighborhood or corridor (longest name first to prefer specific streets like "Av. Paulista")
+  // 1. Match specific neighborhood or corridor (longest first for precision)
   const sortedLocations = [...SAO_PAULO_LOCATIONS].sort(
     (a, b) => b.name.length - a.name.length
   );
@@ -137,12 +197,36 @@ export function generateSafetyAssistantReply(
     qNorm.includes(normalizeText(loc.name))
   );
 
-  // 2. Match region if no single specific neighborhood was matched
+  // 2. Match region if no specific neighborhood
   const mentionedRegion = !mentionedSp
     ? REGION_KEYWORDS.find((reg) => reg.aliases.some((alias) => qNorm.includes(alias)))
     : undefined;
 
+  const focusName = mentionedSp?.name || lastTargetPlace || destination.name;
+  const focusCoords = mentionedSp?.coordinates || destination.coordinates;
+  const focusZone = mentionedSp?.zone;
+  const nearbyPlaces = findNearbyPlaces(
+    mentionedRegion ? mentionedRegion.coords : focusCoords,
+    mentionedRegion?.zone || focusZone
+  );
+
   const safeRoute = allRoutes.find((r) => r.type === 'segura');
+  const isFirstTimeYes =
+    qNorm.includes('primeira vez') && !qNorm.includes('nao e') ||
+    qNorm.includes('nunca fui') ||
+    qNorm.includes('nao conheco') ||
+    qNorm === 'sim';
+  const isAlreadyKnow =
+    qNorm.includes('ja conheco') ||
+    qNorm.includes('ja fui') ||
+    qNorm.includes('conheco sim') ||
+    qNorm === 'nao';
+  const asksNearby =
+    qNorm.includes('perto') ||
+    qNorm.includes('redor') ||
+    qNorm.includes('lugar') ||
+    qNorm.includes('ponto') ||
+    qNorm.includes('apoio');
   const asksRouteCompare =
     qNorm.includes('rota') ||
     qNorm.includes('desvio') ||
@@ -165,15 +249,65 @@ export function generateSafetyAssistantReply(
       : destination,
   });
 
+  // First-time visitor warm guidance
+  if (isFirstTimeYes) {
+    return {
+      id: `reply-${Date.now()}`,
+      toneLabel: 'Atenção Leve',
+      text: `Que bom saber! Como é a sua primeira vez indo para ${focusName}, fique tranquilo(a): preparei referências conhecidas e bem movimentadas ali perto caso queira se localizar ou fazer uma parada segura, e recomendo ir ouvindo o áudio do trajeto para dirigir sem pressa.`,
+      tips: [
+        'Antes de sair, dê uma olhada rápida nos pontos de referência logo abaixo — são estações, parques ou shoppings fáceis de identificar.',
+        'Nos semáforos, deixe os vidros fechados e evite apoiar o celular no painel alto perto da janela.',
+        safeRoute && selectedRoute.type !== 'segura'
+          ? 'Se preferir o caminho mais calmo e iluminado desde o início, clique em "Aplicar Desvio Seguro" abaixo.'
+          : 'Com a Rota Segura ativa, eu aviso você com calma antes de qualquer cruzamento que mereça atenção.',
+      ],
+      nearbyPlaces,
+      smsPreview: preSms.smsText,
+      suggestSafeRouteSwitch: selectedRoute.type !== 'segura' && Boolean(safeRoute),
+    };
+  }
+
+  // Returning visitor warm response
+  if (isAlreadyKnow) {
+    return {
+      id: `reply-${Date.now()}`,
+      toneLabel: 'Tranquilo',
+      text: `Perfeito! Como você já conhece ${focusName}, fica bem mais fácil aproveitar a viagem. Deixei os pontos de referência próximos listados aqui caso precise de uma parada rápida, e sigo monitorando qualquer ocorrência no seu caminho.`,
+      tips: [
+        'Você já tem o SMS pré-viagem atualizado pronto logo abaixo se quiser conferir antes de partir.',
+        'Ative o guia por voz ou o Auto-Desvio para fazer todo o percurso com tranquilidade.',
+      ],
+      nearbyPlaces,
+      smsPreview: preSms.smsText,
+      suggestSafeRouteSwitch: false,
+    };
+  }
+
+  if (asksNearby) {
+    return {
+      id: `reply-${Date.now()}`,
+      toneLabel: 'Tranquilo',
+      text: `Perto de ${focusName}, você tem ótimos pontos conhecidos e de fácil acesso para se orientar ou parar com tranquilidade caso precise. Listei os mais próximos logo abaixo com a distância estimada!`,
+      tips: [
+        'Locais como estações de metrô, shoppings e parques movimentados são boas referências visuais se precisar recalcular a rota.',
+        'Quer que eu verifique mais algum bairro de São Paulo antes de sair?',
+      ],
+      nearbyPlaces,
+      smsPreview: preSms.smsText,
+      askFirstTimePlace: focusName,
+    };
+  }
+
   if (asksSms) {
     return {
       id: `reply-${Date.now()}`,
       toneLabel: preSms.toneLabel,
-      text: `Aqui está seu SMS informativo pronto para enviar ou ler antes da saída — redigido em tom sereno, sem alarmismo: "${preSms.smsText}"`,
+      text: `Prontinho! Deixei seu SMS informativo preparado com calma, sem gerar nenhum alarme desnecessário: "${preSms.smsText}"`,
       tips: [
-        'Use o cartão de SMS abaixo para testar o recebimento ou abrir direto no app de mensagens do celular.',
-        'Sempre que você alterar origem ou destino, o SMS pré-viagem é atualizado na hora.',
+        'Você pode testar o recebimento ou abrir direto no aplicativo de SMS do seu celular logo abaixo.',
       ],
+      nearbyPlaces,
       smsPreview: preSms.smsText,
       suggestSafeRouteSwitch: selectedRoute.type !== 'segura' && Boolean(safeRoute),
     };
@@ -198,17 +332,18 @@ export function generateSafetyAssistantReply(
     return {
       id: `reply-${Date.now()}`,
       toneLabel: hasRegionAlert ? 'Cuidado Preventivo' : 'Atenção Leve',
-      text: mentionedRegion.summary,
+      text: `${mentionedRegion.summary} É a sua primeira vez circulando por essa parte da ${mentionedRegion.zone}?`,
       tips: [
-        `Locais acompanhados em ${mentionedRegion.zone}: ${regionLocations
-          .slice(0, 6)
+        `Principais pontos em ${mentionedRegion.zone}: ${regionLocations
+          .slice(0, 5)
           .map((l) => l.name)
-          .join(', ')} e vias adjacentes.`,
-        'Mantenha vidros fechados em semáforos lentos e evite apoiar o celular perto da janela.',
-        'Ative o guia por voz para percorrer toda a região mantendo os olhos apenas no trânsito.',
+          .join(', ')}.`,
+        'Mantenha os vidros fechados em semáforos lentos e use o áudio do GPS para manter a atenção no trânsito.',
       ],
+      nearbyPlaces,
       smsPreview: preSms.smsText,
       suggestSafeRouteSwitch: selectedRoute.type !== 'segura' && Boolean(safeRoute),
+      askFirstTimePlace: mentionedRegion.zone,
     };
   }
 
@@ -216,11 +351,12 @@ export function generateSafetyAssistantReply(
     return {
       id: `reply-${Date.now()}`,
       toneLabel: 'Atenção Leve',
-      text: `Em dias de chuva forte em São Paulo, o cuidado principal é evitar baixadas e acessos sob viadutos das Marginais Tietê e Pinheiros, Glicério/Tamanduateí e Av. do Estado. O percurso segue tranquilo escolhendo corredores elevados.`,
+      text: `Em dias de chuva forte em São Paulo, o mais importante é manter a calma e evitar baixadas e acessos sob viadutos das Marginais, Glicério/Tamanduateí e Av. do Estado. Buscando ruas mais altas, você segue tranquilo(a).`,
       tips: [
-        'Se a água atingir metade da altura da roda, não avance — busque uma via lateral elevada.',
-        'Você também pode acompanhar comunicados oficiais da Defesa Civil enviando seu CEP por SMS gratuito para 40199.',
+        'Se a água atingir metade da altura da roda, busque um ponto elevado como os listados abaixo até o nível baixar.',
+        'A Defesa Civil envia boletins gratuitos por SMS quando você envia seu CEP para 40199.',
       ],
+      nearbyPlaces,
       smsPreview: preSms.smsText,
       suggestSafeRouteSwitch: selectedRoute.type !== 'segura' && Boolean(safeRoute),
     };
@@ -233,19 +369,18 @@ export function generateSafetyAssistantReply(
       toneLabel: selectedRoute.type === 'segura' ? 'Tranquilo' : 'Atenção Leve',
       text:
         selectedRoute.type === 'segura'
-          ? `Você já está com a Rota Segura ativa (${safeRoute.safetyScore}/100, ${safeRoute.durationMin} min). Ela prioriza avenidas iluminadas e contorna pontos de lentidão em todas as regiões.`
-          : `Para ${destination.name}, a Rota Segura tem índice ${safeRoute.safetyScore}/100 e leva cerca de ${diffMin > 0 ? `+${diffMin} min` : 'quase o mesmo tempo'} evitando cruzamentos mais visados. É uma troca simples que traz tranquilidade extra.`,
+          ? `Você já escolheu a Rota Segura (${safeRoute.safetyScore}/100, ${safeRoute.durationMin} min)! Ela prioriza avenidas amplas, iluminadas e contorna pontos mais visados.`
+          : `Para ${destination.name}, a Rota Segura alcança ${safeRoute.safetyScore}/100 levando apenas cerca de ${diffMin > 0 ? `+${diffMin} min` : 'o mesmo tempo'}, evitando cruzamentos de trânsito muito parado.`,
       tips: [
-        'Mesmo se optar pela rota mais rápida, os alertas de aproximação avisam você com calma antes de entrar em áreas de atenção.',
-        'No celular, deixe a opção Auto ON ligada para o desvio acontecer automaticamente se surgir algo na via.',
+        'Mesmo na rota rápida, eu e o alerta sonoro avisamos antes de qualquer zona de atenção.',
       ],
+      nearbyPlaces,
       smsPreview: preSms.smsText,
       suggestSafeRouteSwitch: selectedRoute.type !== 'segura',
     };
   }
 
-  const targetPlace = mentionedSp ? mentionedSp.name : destination.name;
-  const targetNorm = normalizeText(targetPlace);
+  const targetNorm = normalizeText(focusName);
 
   const matchedZones = dangerZones.filter((z) => {
     const zNorm = normalizeText(`${z.neighborhood} ${z.name}`);
@@ -269,23 +404,22 @@ export function generateSafetyAssistantReply(
 
   if (hasCritical || hasHigh) {
     const mainZone = matchedZones[0];
-    const zoneName = mainZone ? mainZone.neighborhood : targetPlace;
+    const zoneName = mainZone ? mainZone.neighborhood : focusName;
     const regionLabel = mentionedSp ? ` (${mentionedSp.zone})` : '';
 
     return {
       id: `reply-${Date.now()}`,
       toneLabel: 'Cuidado Preventivo',
-      text: `Você pode se deslocar até ${zoneName}${regionLabel} mantendo cuidados simples de prevenção. Essa região registra maior atenção em semáforos e horários de lentidão${asksNight ? ' (especialmente à noite)' : ''} — não precisa se assustar, apenas redobre a tranquilidade com as medidas abaixo.`,
+      text: `Você pode ir até ${zoneName}${regionLabel} com calma seguindo cuidados simples de rotina: essa região tem semáforos e cruzamentos movimentados${asksNight ? ' (especialmente à noite)' : ''} que pedem atenção preventiva, sem motivo para pânico. Aliás, é a sua primeira vez indo para ${zoneName}?`,
       tips: [
         mainZone?.defenseCivilTip ||
-          'Mantenha os vidros fechados e portas travadas principalmente ao reduzir a velocidade.',
-        'Prefira ocultar o celular abaixo da linha do painel e seguir pelas orientações por voz.',
-        safeRoute && selectedRoute.type !== 'segura'
-          ? 'Você pode ativar o Desvio Seguro agora mesmo pelo botão abaixo antes de partir.'
-          : 'Mantenha distância segura do veículo à frente para ter espaço de manobra em cruzamentos.',
+          'Mantenha vidros fechados e portas travadas principalmente ao reduzir a velocidade.',
+        'Prefira esconder o celular abaixo do painel e acompanhar as curvas apenas pelo áudio do GPS.',
       ],
+      nearbyPlaces,
       smsPreview: preSms.smsText,
       suggestSafeRouteSwitch: selectedRoute.type !== 'segura' && Boolean(safeRoute),
+      askFirstTimePlace: zoneName,
     };
   }
 
@@ -293,27 +427,26 @@ export function generateSafetyAssistantReply(
     return {
       id: `reply-${Date.now()}`,
       toneLabel: 'Atenção Leve',
-      text: `A região de ${targetPlace}${mentionedSp ? ` (${mentionedSp.zone})` : ''} está com circulação regular e movimento intenso em alguns cruzamentos. Com cuidados básicos de trânsito urbano, seu trajeto segue tranquilo.`,
+      text: `A região de ${focusName}${mentionedSp ? ` (${mentionedSp.zone})` : ''} está com circulação normal e bom movimento comercial. Basta manter cuidados simples nos semáforos. É a sua primeira vez indo por lá?`,
       tips: [
-        'Mantenha vidros fechados ao aguardar semáforos em vias de grande fluxo.',
-        'Deixe o áudio da navegação ligado para evitar distrações na tela.',
+        'Mantenha vidros fechados em cruzamentos lentos e prefira orientação por voz.',
       ],
+      nearbyPlaces,
       smsPreview: preSms.smsText,
-      suggestSafeRouteSwitch: false,
+      askFirstTimePlace: focusName,
     };
   }
 
   return {
     id: `reply-${Date.now()}`,
     toneLabel: 'Tranquilo',
-    text: mentionedSp
-      ? `No monitoramento atual, ${targetPlace} (${mentionedSp.zone}) não apresenta alertas críticos concentrados agora${asksNight ? ' para este período' : ''}. O percurso tende a ser tranquilo mantendo os hábitos preventivos usuais da cidade.`
-      : `Analisei sua pergunta para toda a malha de São Paulo${destination.name ? ` e seu destino (${destination.name}, segurança ${selectedRoute.safetyScore}/100)` : ''}: não há alertas críticos concentrados neste momento. Você pode seguir viagem com calma e receberá avisos preventivos caso surja qualquer ocorrência no caminho.`,
+    text: `Boas notícias! No acompanhamento atual, ${focusName}${mentionedSp ? ` (${mentionedSp.zone})` : ''} não concentra alertas críticos ativos nesta faixa${asksNight ? ' neste horário' : ''}. Você pode fazer uma viagem bem tranquila. É a sua primeira vez indo até esse local?`,
     tips: [
-      'Cobertura ativa em todas as regiões de São Paulo: Centro, Zonas Sul, Oeste, Leste, Norte e Marginais.',
-      'Mantenha sempre as portas travadas, prefira vias iluminadas à noite e conte com nosso SMS informativo antes de partir.',
+      'Cobertura ativa em todas as regiões de São Paulo: Centro, Sul, Oeste, Leste, Norte e Marginais.',
+      'Deixei abaixo alguns lugares conhecidos próximos para servir de referência no seu caminho.',
     ],
+    nearbyPlaces,
     smsPreview: preSms.smsText,
-    suggestSafeRouteSwitch: false,
+    askFirstTimePlace: focusName,
   };
 }
