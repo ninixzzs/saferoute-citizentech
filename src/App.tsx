@@ -41,6 +41,10 @@ export function App() {
     selectedRoute,
     selectRoute,
     switchImmediatelyToSafeRoute,
+    calculateRouteForAddress,
+    resetToPresetRoutes,
+    currentDestination,
+    isCalculatingRoute,
     isNavigating,
     isPaused,
     currentPosition,
@@ -135,6 +139,10 @@ export function App() {
               onAcceptReroute={handleAcceptReroute}
               onDismissAlert={dismissAlert}
               onOpenReportModal={() => setIsReportModalOpen(true)}
+              onSearchDestination={(addr) => calculateRouteForAddress(addr, dangerZones)}
+              isCalculatingRoute={isCalculatingRoute}
+              currentDestination={currentDestination}
+              onResetPresetRoutes={resetToPresetRoutes}
             />
           </div>
 
@@ -147,6 +155,10 @@ export function App() {
                 selectedRouteId={selectedRoute.id}
                 onSelectRoute={selectRoute}
                 isNavigating={isNavigating}
+                onSearchDestination={(addr) => calculateRouteForAddress(addr, dangerZones)}
+                isCalculatingRoute={isCalculatingRoute}
+                currentDestination={currentDestination}
+                onResetPresetRoutes={resetToPresetRoutes}
               />
             </div>
 

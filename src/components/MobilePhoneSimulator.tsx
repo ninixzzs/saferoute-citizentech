@@ -14,9 +14,12 @@ import {
   Mic,
   MessageSquare,
   ArrowRight,
-  Plus
+  Plus,
+  Loader2,
+  MapPin
 } from 'lucide-react';
 import { DangerZone, NavigationRoute, IncidentReport } from '../types';
+import { LocationSuggestion, POPULAR_DESTINATIONS } from '../services/routingService';
 import { NavigationMap } from './NavigationMap';
 
 interface MobilePhoneSimulatorProps {
@@ -38,6 +41,10 @@ interface MobilePhoneSimulatorProps {
   onAcceptReroute: () => void;
   onDismissAlert: (id: string) => void;
   onOpenReportModal: () => void;
+  onSearchDestination?: (address: string) => Promise<any> | void;
+  isCalculatingRoute?: boolean;
+  currentDestination?: LocationSuggestion | null;
+  onResetPresetRoutes?: () => void;
 }
 
 export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
@@ -59,9 +66,22 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
   onAcceptReroute,
   onDismissAlert,
   onOpenReportModal,
+  onSearchDestination,
+  isCalculatingRoute = false,
+  currentDestination = null,
+  onResetPresetRoutes,
 }) => {
   // Manual message simulation trigger
   const [testMessageActive, setTestMessageActive] = useState<boolean>(false);
+  const [phoneSearchInput, setPhoneSearchInput] = useState<string>('');
+  const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false);
+
+  // Sync phone input when current destination changes
+  useEffect(() => {
+    if (currentDestination) {
+      setPhoneSearchInput(currentDestination.name);
+    }
+  }, [currentDestination]);
 
   // Play audio chime when message arrives
   const playMessageChime = () => {
@@ -95,13 +115,28 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
     }
   }, [effectiveAlert]);
 
+  const handlePhoneSearchSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!phoneSearchInput.trim() || isNavigating || !onSearchDestination) return;
+    setIsSearchFocused(false);
+    onSearchDestination(phoneSearchInput.trim());
+  };
+
+  const handleSelectSuggestion = (suggestion: LocationSuggestion) => {
+    setPhoneSearchInput(suggestion.name);
+    setIsSearchFocused(false);
+    if (onSearchDestination) {
+      onSearchDestination(suggestion.address);
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center w-full py-2">
       {/* Phone Hardware Mockup */}
       <div className="relative w-full max-w-[390px] h-[750px] rounded-[50px] bg-black border-[10px] border-neutral-900 shadow-[0_25px_60px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col select-none ring-1 ring-neutral-800">
         
         {/* Dynamic Island / Speaker Pill */}
-        <div className="absolute top-2.5 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center w-28 h-6 bg-black rounded-full pointer-events-none">
+        <div className="absolute top-2.5 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center w-28 h-6 bg-black pointer-events-none">
           <div className="w-2.5 h-2.5 rounded-full bg-neutral-900 border border-neutral-800 mr-2.5"></div>
           <div className="w-9 h-1 rounded-full bg-neutral-950"></div>
         </div>
@@ -132,7 +167,7 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
             />
           </div>
 
-          {/* 2. Top Navigation Banner OR Search Card */}
+          {/* 2. Top Navigation Banner OR Search Bar for tracing route */}
           <div className="absolute top-0 left-0 right-0 z-30 p-2.5 space-y-2 pointer-events-auto">
             {isNavigating ? (
               /* Turn-by-Turn Header */
@@ -147,7 +182,7 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
                       <span className="text-[11px] text-neutral-200">vire à direita</span>
                     </div>
                     <p className="text-xs font-medium text-white/95 line-clamp-1">
-                      {effectiveAlert ? effectiveAlert.neighborhood : 'Rua dos Gusmões &bull; Centro SP'}
+                      {effectiveAlert ? effectiveAlert.neighborhood : selectedRoute.name}
                     </p>
                   </div>
                 </div>
@@ -170,15 +205,96 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
                 </div>
               </div>
             ) : (
-              /* Google Maps Idle Search Bar */
-              <div className="bg-white rounded-xl p-2.5 px-3.5 shadow-md border border-neutral-300 flex items-center justify-between gap-2 text-neutral-800">
-                <div className="flex items-center gap-2 flex-1">
-                  <Search className="w-4 h-4 text-neutral-600 shrink-0" />
-                  <span className="text-xs text-neutral-600 font-medium">
-                    Pesquisar ruas em São Paulo...
-                  </span>
-                </div>
-                <Mic className="w-4 h-4 text-neutral-400" />
+              /* Google Maps Interactive Search & Route Bar */
+              <div className="relative">
+                <form
+                  onSubmit={handlePhoneSearchSubmit}
+                  className="bg-white rounded-xl p-2 px-3 shadow-lg border border-neutral-300 flex items-center justify-between gap-2 text-neutral-800 transition-all focus-within:ring-2 focus-within:ring-neutral-900/20"
+                >
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    {isCalculatingRoute ? (
+                      <Loader2 className="w-4 h-4 text-neutral-700 animate-spin shrink-0" />
+                    ) : (
+                      <Search className="w-4 h-4 text-neutral-600 shrink-0" />
+                    )}
+                    <input
+                      type="text"
+                      value={phoneSearchInput}
+                      onChange={(e) => setPhoneSearchInput(e.target.value)}
+                      onFocus={() => setIsSearchFocused(true)}
+                      placeholder="Para onde vamos? (Digite qualquer endereço)..."
+                      disabled={isNavigating || isCalculatingRoute}
+                      className="w-full text-xs text-neutral-800 placeholder-neutral-400 bg-transparent outline-none truncate font-medium"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    {phoneSearchInput && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPhoneSearchInput('');
+                          if (currentDestination && onResetPresetRoutes) {
+                            onResetPresetRoutes();
+                          }
+                        }}
+                        className="p-1 text-neutral-400 hover:text-neutral-700 rounded-full"
+                        title="Limpar endereço"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={!phoneSearchInput.trim() || isCalculatingRoute}
+                      className="p-1.5 rounded-lg bg-neutral-900 text-white disabled:opacity-40 hover:bg-neutral-800 transition-colors shadow-xs"
+                      title="Traçar Rota"
+                    >
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </form>
+
+                {/* Suggestions popup on the phone screen */}
+                {isSearchFocused && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setIsSearchFocused(false)}
+                    />
+                    <div className="absolute top-full left-0 right-0 mt-1.5 bg-white rounded-xl shadow-2xl border border-neutral-200 overflow-hidden z-20 max-h-56 overflow-y-auto">
+                      <div className="p-2 border-b border-neutral-100 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-neutral-500 bg-neutral-50">
+                        <span>Destinos sugeridos em SP</span>
+                        <span className="text-[9px] lowercase font-normal">toque para traçar</span>
+                      </div>
+                      <div className="divide-y divide-neutral-100">
+                        {POPULAR_DESTINATIONS.filter((d) =>
+                          !phoneSearchInput.trim() ||
+                          d.name.toLowerCase().includes(phoneSearchInput.toLowerCase()) ||
+                          d.address.toLowerCase().includes(phoneSearchInput.toLowerCase())
+                        ).map((dest) => (
+                          <div
+                            key={dest.name}
+                            onClick={() => handleSelectSuggestion(dest)}
+                            className="p-2.5 hover:bg-neutral-50 cursor-pointer flex items-center gap-2 transition-colors"
+                          >
+                            <div className="w-6 h-6 rounded-full bg-neutral-100 flex items-center justify-center shrink-0 text-neutral-600">
+                              <MapPin className="w-3.5 h-3.5 text-neutral-700" />
+                            </div>
+                            <div className="flex-1 min-w-0 text-left">
+                              <div className="text-xs font-semibold text-neutral-900 truncate">
+                                {dest.name}
+                              </div>
+                              <div className="text-[10px] text-neutral-500 truncate">
+                                {dest.address}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
@@ -308,17 +424,13 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
               </div>
 
               {/* Safety badge */}
-              <span className={`px-2 py-1 rounded text-xs font-mono font-bold ${
-                isSafe
-                  ? 'bg-neutral-100 text-neutral-900 border border-neutral-300'
-                  : 'bg-neutral-100 text-neutral-900 border border-neutral-300'
-              }`}>
+              <span className="px-2 py-1 rounded text-xs font-mono font-bold bg-neutral-100 text-neutral-900 border border-neutral-300">
                 Segurança: {selectedRoute.safetyScore}/100
               </span>
             </div>
 
             {/* Current route label */}
-            <div className="text-xs text-neutral-600 truncate border-t border-neutral-100 pt-1">
+            <div className="text-xs text-neutral-600 truncate border-t border-neutral-100 pt-1 font-medium">
               {selectedRoute.name}
             </div>
 

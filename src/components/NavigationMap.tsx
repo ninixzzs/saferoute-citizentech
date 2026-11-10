@@ -24,6 +24,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const carMarkerRef = useRef<L.Marker | null>(null);
+  const destinationMarkerRef = useRef<L.Marker | null>(null);
   const routePolylineRef = useRef<L.Polyline | null>(null);
   const zonesLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const incidentsLayerGroupRef = useRef<L.LayerGroup | null>(null);
@@ -99,6 +100,51 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     }).addTo(map);
 
     routePolylineRef.current = polyline;
+
+    // Update Destination Pin Marker
+    if (destinationMarkerRef.current) {
+      destinationMarkerRef.current.remove();
+      destinationMarkerRef.current = null;
+    }
+
+    if (selectedRoute.path.length > 0) {
+      const destCoords = selectedRoute.path[selectedRoute.path.length - 1];
+      const destHtml = `
+        <div style="position: relative; width: 32px; height: 38px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+          <div style="
+            width: 28px;
+            height: 28px;
+            background: #ea4335;
+            border: 2.5px solid #ffffff;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.45);
+          ">
+            <div style="width: 9px; height: 9px; background: white; border-radius: 50%; transform: rotate(45deg);"></div>
+          </div>
+          <div style="width: 8px; height: 3px; background: rgba(0,0,0,0.3); border-radius: 50%; filter: blur(1px); margin-top: 2px;"></div>
+        </div>
+      `;
+
+      const destIcon = L.divIcon({
+        html: destHtml,
+        className: 'dest-navigation-marker',
+        iconSize: [32, 38],
+        iconAnchor: [16, 36],
+      });
+
+      const marker = L.marker(destCoords, { icon: destIcon }).addTo(map);
+      marker.bindPopup(`
+        <div style="font-family: system-ui, sans-serif; font-size: 12px; color: #171717; padding: 2px;">
+          <strong style="color: #ea4335;">Destino</strong>
+          <p style="margin: 3px 0 0; font-size: 11px;">${selectedRoute.name}</p>
+        </div>
+      `);
+      destinationMarkerRef.current = marker;
+    }
 
     map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
     setTimeout(() => map.invalidateSize(), 100);
