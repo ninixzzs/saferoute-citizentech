@@ -220,6 +220,7 @@ export function useRouteNavigation() {
     routes,
     setRoutes,
     selectedRoute,
+    setSelectedRoute,
     selectRoute,
     switchImmediatelyToSafeRoute,
     calculateJourney,

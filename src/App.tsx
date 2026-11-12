@@ -85,6 +85,7 @@ export function App() {
   const {
     routes,
     selectedRoute,
+    setSelectedRoute,
     selectRoute,
     switchImmediatelyToSafeRoute,
     calculateJourney,
@@ -128,24 +129,48 @@ export function App() {
   const [isTipsDrawerOpen, setIsTipsDrawerOpen] = useState(false);
   const [pendingTripBriefing, setPendingTripBriefing] = useState<PreTripBriefing | null>(null);
 
-  // Dynamic travel mode switcher with live recalculation of transit durations
+  // Dynamic travel mode switcher with live recalculation of realistic transit durations
   const handleSelectTravelMode = useCallback(
     (mode: TravelMode) => {
       setTravelMode(mode);
-      setRoutes((prevRoutes: import('./types').NavigationRoute[]) =>
-        prevRoutes.map((r: import('./types').NavigationRoute) => {
-          let factor = 1.0;
-          if (mode === 'moto') factor = 0.65;
-          if (mode === 'a_pe') factor = 2.4;
-          const newDuration = Math.max(5, Math.round(r.durationMin * factor));
+      setRoutes((prevRoutes: import('./types').NavigationRoute[]) => {
+        const updated = prevRoutes.map((r: import('./types').NavigationRoute) => {
+          const baseDuration =
+            r.baseDurationMin ??
+            (r.id === 'route-fast'
+              ? 18
+              : r.id === 'route-safe'
+              ? 22
+              : r.id === 'route-alternative'
+              ? 20
+              : r.durationMin);
+
+          let newDuration = baseDuration;
+          if (mode === 'moto') {
+            // SP traffic corridor filtering (corredor de motos): ~40% faster
+            newDuration = Math.max(3, Math.round(baseDuration * 0.6));
+          } else if (mode === 'a_pe') {
+            // SP pedestrian walking speed ~4.8 km/h => 1 km takes ~12.5 minutes
+            newDuration = Math.max(5, Math.round(r.distanceKm * 12.5));
+          }
+
           return {
             ...r,
+            baseDurationMin: baseDuration,
             durationMin: newDuration,
           };
-        })
-      );
+        });
+
+        // Also update selectedRoute so header pills, maps, HUD and cards re-render immediately
+        setSelectedRoute((prevSelected) => {
+          const match = updated.find((u) => u.id === prevSelected.id);
+          return match || updated[0];
+        });
+
+        return updated;
+      });
     },
-    [setRoutes]
+    [setRoutes, setSelectedRoute]
   );
 
   // Scroll reveal observer for silky smooth on-scroll animations & text choreographies
@@ -183,7 +208,7 @@ export function App() {
   const handleEnterCriticalZone = useCallback(
     (zone: DangerZone) => {
       speakAlert(
-        `Alerta Defesa Civil: Você está entrando em área de atenção em ${zone.neighborhood}. ${zone.defenseCivilTip}`
+        `Alerta SafeRoute: Você está entrando em área de atenção em ${zone.neighborhood}. ${zone.defenseCivilTip}`
       );
     },
     [speakAlert]
@@ -231,7 +256,7 @@ export function App() {
     if (targetZone) {
       setSimulatedAlertZone(targetZone);
       speakAlert(
-        `Alerta Defesa Civil: Área de risco próxima em ${targetZone.neighborhood}. ${targetZone.defenseCivilTip}`
+        `Alerta SafeRoute: Área de risco próxima em ${targetZone.neighborhood}. ${targetZone.defenseCivilTip}`
       );
     }
   };
@@ -412,7 +437,7 @@ export function App() {
                   type="button"
                   onClick={handleTriggerDemoAlert}
                   className="px-4 py-3 rounded-2xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 hover:bg-neutral-100 dark:hover:bg-neutral-900 text-neutral-950 dark:text-white text-xs sm:text-sm font-semibold shadow-2xs flex items-center gap-2 transition-all active:scale-97 hover-glass-glow"
-                  title="Simular recebimento de alerta da Defesa Civil no aparelho"
+                  title="Simular recebimento de alerta SafeRoute no aparelho"
                 >
                   <MessageSquareWarning className="w-4 h-4" />
                   <span>Testar Alerta</span>
@@ -423,7 +448,7 @@ export function App() {
             {/* Right Column: Authentic Flagship Smartphone with 3D Tilt & Mini App Video (Desktop Only - Hidden on Mobile) */}
             <div className="hidden lg:flex lg:col-span-5 justify-center items-center scroll-reveal-scale reveal-delay-2">
               <Interactive3DPhone className="w-full">
-                <PhoneMiniAppSimulation />
+                <PhoneMiniAppSimulation travelMode={travelMode} />
               </Interactive3DPhone>
             </div>
           </div>

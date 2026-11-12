@@ -226,7 +226,7 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
           <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-2">
             <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
               <AlertTriangle className="w-4 h-4 text-neutral-900 dark:text-white" />
-              <span>Alerta Defesa Civil SP</span>
+              <span>Alerta SafeRoute</span>
             </span>
             <button
               type="button"

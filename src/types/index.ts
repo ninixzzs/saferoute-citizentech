@@ -57,6 +57,7 @@ export interface NavigationRoute {
   type: 'rapida' | 'segura' | 'alternativa';
   distanceKm: number;
   durationMin: number;
+  baseDurationMin?: number;
   safetyScore: number; // 0 - 100
   path: [number, number][];
   dangerZoneIds: string[];

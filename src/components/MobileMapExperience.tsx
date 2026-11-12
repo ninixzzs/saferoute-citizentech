@@ -456,7 +456,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
                   <div className="flex items-center justify-between border-b border-neutral-800 pb-1.5">
                     <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
                       <AlertTriangle className="w-4 h-4 text-white" />
-                      <span>Alerta Defesa Civil SP</span>
+                      <span>Alerta SafeRoute</span>
                     </span>
                     <button
                       type="button"

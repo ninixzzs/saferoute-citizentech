@@ -168,7 +168,7 @@ export const EarlyAlertShowcase: React.FC<EarlyAlertShowcaseProps> = ({
                     <div className="flex items-center justify-between text-[10px] text-neutral-400 font-mono">
                       <span className="flex items-center gap-1 font-bold text-white">
                         <ShieldAlert className="w-3.5 h-3.5 text-white" />
-                        SafeRoute Defesa Civil
+                        Alerta SafeRoute
                       </span>
                       <span>agora</span>
                     </div>

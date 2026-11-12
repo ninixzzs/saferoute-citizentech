@@ -339,9 +339,9 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
 
     ctx.fillStyle = '#e4e4e7';
     ctx.font = '26px sans-serif';
-    ctx.fillText('Desvio 100% monitorado pela Defesa Civil SP', 234, 360);
+    ctx.fillText('Desvio 100% monitorado SafeRoute SP', 234, 360);
 
-    // 8. Animated Slide-Down Defesa Civil Alert Notification
+    // 8. Animated Slide-Down SafeRoute Alert Notification
     if (showAlertBanner) {
       ctx.fillStyle = 'rgba(24, 24, 27, 0.96)';
       ctx.beginPath();
@@ -353,7 +353,7 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
 
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 28px sans-serif';
-      ctx.fillText('Alerta Defesa Civil SP', 104, 474);
+      ctx.fillText('Alerta SafeRoute', 104, 474);
 
       ctx.fillStyle = '#d4d4d8';
       ctx.font = '24px sans-serif';

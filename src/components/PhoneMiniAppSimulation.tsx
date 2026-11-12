@@ -13,10 +13,12 @@ import {
 
 interface PhoneMiniAppSimulationProps {
   className?: string;
+  travelMode?: 'carro' | 'moto' | 'a_pe';
 }
 
 export const PhoneMiniAppSimulation: React.FC<PhoneMiniAppSimulationProps> = ({
   className = '',
+  travelMode = 'carro',
 }) => {
   const [isPlaying, setIsPlaying] = useState(true);
   const [simSpeed, setSimSpeed] = useState<1 | 2>(1);
@@ -63,32 +65,38 @@ export const PhoneMiniAppSimulation: React.FC<PhoneMiniAppSimulationProps> = ({
   const carY = p0.y + (p1.y - p0.y) * subProgress;
   const carAngle = Math.atan2(p1.y - p0.y, p1.x - p0.x) * (180 / Math.PI);
 
+  const isMoto = travelMode === 'moto';
+  const isWalk = travelMode === 'a_pe';
+
   // Dynamic phase details
   let phaseText = 'Desvio SafeRoute Ativo';
-  let speedKmH = 42;
+  let speedKmH = isWalk ? 5 : isMoto ? 52 : 42;
   let turnText = 'Siga na Av. Rebouças';
-  let showAlert = false;
+
+  // 1-second clean subtle alert notification (exactly 1.0 second in 16s loop: 1000ms / 16000ms = 0.0625)
+  const showAlert = progress >= 0.50 && progress <= 0.5625;
 
   if (progress < 0.22) {
     phaseText = 'Iniciando Desvio';
-    speedKmH = Math.round(25 + progress * 70);
+    speedKmH = isWalk ? 5 : Math.round((isMoto ? 35 : 25) + progress * 70);
     turnText = 'Partida: Av. Faria Lima';
   } else if (progress < 0.55) {
     phaseText = 'Monitoramento SP 24h';
-    speedKmH = Math.round(44 + Math.sin(progress * 20) * 5);
+    speedKmH = isWalk ? 5 : Math.round((isMoto ? 54 : 44) + Math.sin(progress * 20) * 5);
     turnText = 'Acesse Av. Rebouças (Segura)';
   } else if (progress < 0.85) {
     phaseText = 'Área Crítica Evitada';
-    speedKmH = Math.round(38 + Math.sin(progress * 15) * 4);
+    speedKmH = isWalk ? 5 : Math.round((isMoto ? 48 : 38) + Math.sin(progress * 15) * 4);
     turnText = 'Vire à direita na Av. Paulista';
-    showAlert = true;
   } else {
     phaseText = 'Chegada Segura';
-    speedKmH = Math.max(0, Math.round((1 - progress) * 110));
+    speedKmH = isWalk ? 3 : Math.max(0, Math.round((1 - progress) * 110));
     turnText = 'Destino alcançado com sucesso!';
   }
 
-  const remainingMin = Math.max(1, Math.round(21 * (1 - progress)));
+  // Realistic trip duration based on travel mode in São Paulo
+  const baseMinutes = isMoto ? 13 : isWalk ? 89 : 21;
+  const remainingMin = Math.max(1, Math.round(baseMinutes * (1 - progress)));
   const remainingKm = Math.max(0.2, +(7.4 * (1 - progress)).toFixed(1)).toFixed(1);
 
   return (
@@ -226,22 +234,25 @@ export const PhoneMiniAppSimulation: React.FC<PhoneMiniAppSimulationProps> = ({
               {turnText}
             </div>
             <div className="text-[10px] text-neutral-400 truncate">
-              Desvio 100% monitorado &bull; Defesa Civil SP
+              Desvio 100% monitorado &bull; SafeRoute SP
             </div>
           </div>
         </div>
       </div>
 
-      {/* 4. Sliding Defesa Civil Warning Alert */}
+      {/* 4. Sliding SafeRoute Warning Alert - exactly 1 second unobtrusive toast */}
       {showAlert && (
-        <div className="relative z-10 px-3.5 pt-1 animate-in slide-in-from-top-2 duration-300">
-          <div className="p-2.5 rounded-xl bg-neutral-900/95 border border-white/30 backdrop-blur-xl flex items-center gap-2 shadow-lg">
-            <div className="w-6 h-6 rounded-lg bg-white text-black flex items-center justify-center shrink-0">
+        <div className="relative z-10 px-3.5 pt-1 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="p-2.5 rounded-xl bg-neutral-900/95 border border-white/30 backdrop-blur-xl flex items-center gap-2.5 shadow-2xl ring-1 ring-white/10">
+            <div className="w-6 h-6 rounded-lg bg-white text-black flex items-center justify-center shrink-0 shadow-sm">
               <AlertTriangle className="w-3.5 h-3.5 fill-current" />
             </div>
             <div className="min-w-0 flex-1 text-[11px] leading-tight">
-              <div className="font-bold text-white">Alerta Defesa Civil SP</div>
-              <div className="text-[10px] text-neutral-300 truncate">
+              <div className="font-bold text-white flex items-center justify-between">
+                <span>Alerta SafeRoute</span>
+                <span className="text-[9px] font-mono text-neutral-400">1s</span>
+              </div>
+              <div className="text-[10px] text-neutral-300 truncate mt-0.5">
                 Área de risco à frente evitada pelo SafeRoute.
               </div>
             </div>

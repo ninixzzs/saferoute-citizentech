@@ -27,7 +27,7 @@ export const DefesaCivilModal: React.FC<DefesaCivilModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-black uppercase tracking-widest bg-black/30 px-2 py-0.5 rounded">
-                  DEFESA CIVIL ALERTA
+                  ALERTA SAFEROUTE
                 </span>
                 <span className="flex items-center gap-1 text-[11px] font-medium text-amber-200">
                   <Radio className="w-3 h-3 animate-ping" />

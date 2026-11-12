@@ -649,7 +649,7 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
                 <div className="flex items-center justify-between text-[11px] text-neutral-400 border-b border-neutral-800 pb-1.5">
                   <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-neutral-200">
                     <AlertTriangle className="w-3.5 h-3.5 text-neutral-400" />
-                    <span>DEFESA CIVIL SP &bull; ALERTA</span>
+                    <span>ALERTA SAFEROUTE</span>
                   </div>
                   <button
                     onClick={handleDismiss}

@@ -28,7 +28,7 @@ export const AlertBanner: React.FC<AlertBannerProps> = ({
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-red-500 text-white font-mono">
-                ALERTA DEFESA CIVIL
+                ALERTA SAFEROUTE
               </span>
               <span className="text-xs font-semibold text-red-300">
                 {zone.neighborhood} - {zone.name}
