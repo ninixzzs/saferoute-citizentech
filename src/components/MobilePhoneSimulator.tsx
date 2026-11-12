@@ -25,6 +25,9 @@ import {
   Lock,
   Unlock,
   HelpCircle,
+  Car,
+  Bike,
+  Footprints,
 } from 'lucide-react';
 import { DangerZone, NavigationRoute, IncidentReport } from '../types';
 import {
@@ -71,6 +74,7 @@ interface MobilePhoneSimulatorProps {
   onToggleLock?: (locked: boolean) => void;
   onOpenOnboarding?: () => void;
   travelMode?: 'carro' | 'moto' | 'a_pe';
+  onSelectTravelMode?: (mode: 'carro' | 'moto' | 'a_pe') => void;
 }
 
 export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
@@ -108,6 +112,7 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
   onToggleLock,
   onOpenOnboarding,
   travelMode = 'carro',
+  onSelectTravelMode,
 }) => {
   const [originInput, setOriginInput] = useState<string>(originLocation.name);
   const [destInput, setDestInput] = useState<string>(destinationLocation.name);
@@ -265,9 +270,38 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
         <div className="relative z-40 w-full px-5 pt-3 pb-1 flex items-center justify-between text-[11px] font-semibold text-neutral-800 bg-white/95 backdrop-blur-md border-b border-neutral-200">
           <div className="flex items-center gap-2">
             <span className="font-mono">{phoneClock}</span>
-            <span className="text-[10px] uppercase font-mono px-1 py-0.2 rounded bg-neutral-200 text-neutral-700">
-              {travelMode === 'carro' ? 'Carro' : travelMode === 'moto' ? 'Moto' : 'A pé'}
-            </span>
+            <div className="flex items-center gap-0.5 bg-neutral-200/90 rounded-md p-0.5">
+              <button
+                type="button"
+                onClick={() => onSelectTravelMode?.('carro')}
+                className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all ${
+                  travelMode === 'carro' ? 'bg-neutral-950 text-white shadow-xs' : 'text-neutral-600 hover:text-neutral-950'
+                }`}
+                title="Modo Carro"
+              >
+                Carro
+              </button>
+              <button
+                type="button"
+                onClick={() => onSelectTravelMode?.('moto')}
+                className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all ${
+                  travelMode === 'moto' ? 'bg-neutral-950 text-white shadow-xs' : 'text-neutral-600 hover:text-neutral-950'
+                }`}
+                title="Modo Moto"
+              >
+                Moto
+              </button>
+              <button
+                type="button"
+                onClick={() => onSelectTravelMode?.('a_pe')}
+                className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all ${
+                  travelMode === 'a_pe' ? 'bg-neutral-950 text-white shadow-xs' : 'text-neutral-600 hover:text-neutral-950'
+                }`}
+                title="Modo A pé"
+              >
+                A pé
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center gap-1.5 font-mono text-[10px]">
@@ -640,6 +674,53 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
                     )}
                   </form>
                 )}
+              </div>
+            )}
+
+            {/* Travel Mode Selector Capsule ('Carro' | 'Moto' | 'A pé') */}
+            {!isExpandedPlanner && (
+              <div className="flex items-center justify-center gap-1 p-1 mx-auto w-fit rounded-2xl bg-neutral-950/92 backdrop-blur-xl border border-neutral-700/80 shadow-2xl select-none animate-in fade-in duration-200">
+                <button
+                  type="button"
+                  onClick={() => onSelectTravelMode?.('carro')}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                    travelMode === 'carro'
+                      ? 'bg-white text-neutral-950 shadow-md font-extrabold scale-102'
+                      : 'text-neutral-400 hover:text-white'
+                  }`}
+                  title="Modo Carro (Trânsito Convencional)"
+                >
+                  <Car className="w-3.5 h-3.5" />
+                  <span>Carro</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onSelectTravelMode?.('moto')}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                    travelMode === 'moto'
+                      ? 'bg-white text-neutral-950 shadow-md font-extrabold scale-102'
+                      : 'text-neutral-400 hover:text-white'
+                  }`}
+                  title="Modo Moto (Corredores Ágeis)"
+                >
+                  <Bike className="w-3.5 h-3.5" />
+                  <span>Moto</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onSelectTravelMode?.('a_pe')}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                    travelMode === 'a_pe'
+                      ? 'bg-white text-neutral-950 shadow-md font-extrabold scale-102'
+                      : 'text-neutral-400 hover:text-white'
+                  }`}
+                  title="Modo A pé (Vias Iluminadas e Calçadas Monitoradas)"
+                >
+                  <Footprints className="w-3.5 h-3.5" />
+                  <span>A pé</span>
+                </button>
               </div>
             )}
 

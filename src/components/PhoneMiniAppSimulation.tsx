@@ -9,16 +9,21 @@ import {
   Sparkles,
   ArrowUpRight,
   Navigation,
+  Car,
+  Bike,
+  Footprints,
 } from 'lucide-react';
 
 interface PhoneMiniAppSimulationProps {
   className?: string;
   travelMode?: 'carro' | 'moto' | 'a_pe';
+  onSelectTravelMode?: (mode: 'carro' | 'moto' | 'a_pe') => void;
 }
 
 export const PhoneMiniAppSimulation: React.FC<PhoneMiniAppSimulationProps> = ({
   className = '',
   travelMode = 'carro',
+  onSelectTravelMode,
 }) => {
   const [isPlaying, setIsPlaying] = useState(true);
   const [simSpeed, setSimSpeed] = useState<1 | 2>(1);
@@ -237,6 +242,60 @@ export const PhoneMiniAppSimulation: React.FC<PhoneMiniAppSimulationProps> = ({
               Desvio 100% monitorado &bull; SafeRoute SP
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Travel Mode Selector Capsule ('Carro' | 'Moto' | 'A pé') */}
+      <div className="relative z-10 px-3.5 pt-1.5 flex justify-center">
+        <div className="flex items-center gap-1 p-0.5 rounded-xl bg-neutral-900/90 border border-white/20 backdrop-blur-md shadow-lg select-none">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectTravelMode?.('carro');
+            }}
+            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
+              travelMode === 'carro'
+                ? 'bg-white text-black font-extrabold shadow-sm scale-102'
+                : 'text-neutral-400 hover:text-white'
+            }`}
+            title="Modo Carro"
+          >
+            <Car className="w-3 h-3" />
+            <span>Carro</span>
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectTravelMode?.('moto');
+            }}
+            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
+              travelMode === 'moto'
+                ? 'bg-white text-black font-extrabold shadow-sm'
+                : 'text-neutral-400 hover:text-white'
+            }`}
+            title="Modo Moto"
+          >
+            <Bike className="w-3 h-3" />
+            <span>Moto</span>
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectTravelMode?.('a_pe');
+            }}
+            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
+              travelMode === 'a_pe'
+                ? 'bg-white text-black font-extrabold shadow-sm'
+                : 'text-neutral-400 hover:text-white'
+            }`}
+            title="Modo A pé"
+          >
+            <Footprints className="w-3 h-3" />
+            <span>A pé</span>
+          </button>
         </div>
       </div>
 

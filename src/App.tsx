@@ -448,7 +448,10 @@ export function App() {
             {/* Right Column: Authentic Flagship Smartphone with 3D Tilt & Mini App Video (Desktop Only - Hidden on Mobile) */}
             <div className="hidden lg:flex lg:col-span-5 justify-center items-center scroll-reveal-scale reveal-delay-2">
               <Interactive3DPhone className="w-full">
-                <PhoneMiniAppSimulation travelMode={travelMode} />
+                <PhoneMiniAppSimulation
+                  travelMode={travelMode}
+                  onSelectTravelMode={handleSelectTravelMode}
+                />
               </Interactive3DPhone>
             </div>
           </div>
@@ -810,6 +813,7 @@ export function App() {
                 onToggleLock={setIsPhoneLocked}
                 onOpenOnboarding={() => setIsOnboardingOpen(true)}
                 travelMode={travelMode}
+                onSelectTravelMode={handleSelectTravelMode}
               />
             )}
           </section>
@@ -1040,6 +1044,7 @@ export function App() {
                     onToggleLock={setIsPhoneLocked}
                     onOpenOnboarding={() => setIsOnboardingOpen(true)}
                     travelMode={travelMode}
+                    onSelectTravelMode={handleSelectTravelMode}
                   />
                 )}
               </div>
