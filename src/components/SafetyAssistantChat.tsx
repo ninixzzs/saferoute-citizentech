@@ -23,6 +23,7 @@ import {
   Loader2,
   ShieldAlert,
   KeyRound,
+  ArrowRight,
 } from 'lucide-react';
 import { DangerZone, IncidentReport, NavigationRoute } from '../types';
 import { PolicePostResult } from '../data/policePosts';
@@ -76,6 +77,60 @@ interface ChatMessage {
 }
 
 const INITIAL_GREETING_TEXT = 'Oi, tudo bem? Qual é o seu nome?';
+const SP_KNOWN_LOCALITIES = [
+  'Paulista',
+  'Avenida Paulista',
+  'Brás',
+  'Sé',
+  'Praça da Sé',
+  'Ibirapuera',
+  'Parque Ibirapuera',
+  'Vila Madalena',
+  'Pinheiros',
+  'Tatuapé',
+  'Itaquera',
+  'Moema',
+  'Liberdade',
+  'Santana',
+  'Santo Amaro',
+  'Morumbi',
+  'Consolação',
+  'Bela Vista',
+  'Jardins',
+  'Mooca',
+  'Barra Funda',
+  'República',
+  'Vila Olímpia',
+  'Berrini',
+  'Lapa',
+];
+
+function resolveDestinationTarget(
+  msg: ChatMessage,
+  currentDestName?: string
+): string | null {
+  if (msg.suggestedDestination && msg.suggestedDestination.trim().length > 0) {
+    return msg.suggestedDestination.trim();
+  }
+  if (msg.nearbyPlaces && msg.nearbyPlaces.length > 0) {
+    return msg.nearbyPlaces[0].name;
+  }
+  for (const loc of SP_KNOWN_LOCALITIES) {
+    if (new RegExp(`\\b${loc}\\b`, 'i').test(msg.text)) {
+      return loc;
+    }
+  }
+  const match = msg.text.match(/(?:ir para|indo para|rota para|caminho para|chegar em|destino:?)\s+([A-ZÀ-Úa-zà-ú0-9\s]+?)(?:[.,!?\n]|$)/i);
+  if (match && match[1]) {
+    const val = match[1].trim();
+    if (val.length >= 3 && val.length <= 35) return val;
+  }
+  if (currentDestName && currentDestName.trim().length > 0 && (msg.text.includes('rota') || msg.text.includes('trajeto') || msg.text.includes('viagem') || msg.text.includes('destino'))) {
+    return currentDestName.trim();
+  }
+  return null;
+}
+
 const AI_SESSION_KEY = 'saferoute_ai_session_v1';
 
 interface PersistedAiSession {
@@ -898,20 +953,22 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                       {msg.nearbyPlaces.map((place) => (
-                        <div
+                        <button
                           key={place.name}
-                          className="p-2 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 flex items-center justify-between gap-2"
+                          type="button"
+                          onClick={() => onSelectCustomDestination && onSelectCustomDestination(place.name)}
+                          className="p-2 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 flex items-center justify-between gap-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-left transition-colors group cursor-pointer"
                         >
                           <div className="min-w-0">
-                            <div className="text-[11px] font-semibold text-neutral-950 dark:text-white truncate">
+                            <div className="text-[11px] font-semibold text-neutral-950 dark:text-white truncate group-hover:underline">
                               {place.name}
                             </div>
-                            <div className="text-[10px] text-neutral-500">{place.category}</div>
+                            <div className="text-[10px] text-neutral-500">Traçar rota &bull; {place.category}</div>
                           </div>
                           <span className="text-[10px] font-mono font-bold text-neutral-700 dark:text-neutral-300 shrink-0">
                             {place.distanceLabel}
                           </span>
-                        </div>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -987,16 +1044,27 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
                   </ul>
                 )}
 
-                {msg.suggestedDestination && onSelectCustomDestination && (
-                  <button
-                    type="button"
-                    onClick={() => onSelectCustomDestination(msg.suggestedDestination!)}
-                    className="w-full mt-1 py-2.5 px-3 rounded-xl border border-neutral-950 dark:border-white bg-neutral-100 dark:bg-neutral-900 text-neutral-950 dark:text-white text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors"
-                  >
-                    <Navigation className="w-3.5 h-3.5" />
-                    <span>Traçar rota para {msg.suggestedDestination}</span>
-                  </button>
-                )}
+                {/* Prominent "Traçar rota para" Balloon */}
+                {(() => {
+                  const targetDest = resolveDestinationTarget(msg, destinationLocation?.name);
+                  if (!targetDest || !onSelectCustomDestination) return null;
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => onSelectCustomDestination(targetDest)}
+                      className="w-full mt-2.5 py-3 px-4 rounded-2xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 text-xs font-black shadow-lg flex items-center justify-between gap-2 hover:scale-[1.01] active:scale-98 transition-all border border-neutral-800 dark:border-neutral-200 group"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Navigation className="w-4 h-4 shrink-0 fill-current" />
+                        <span className="truncate">Traçar rota para {targetDest}</span>
+                      </div>
+                      <span className="flex items-center gap-1 text-[11px] font-mono opacity-80 group-hover:translate-x-0.5 transition-transform shrink-0">
+                        <span>Ver no Mapa</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </span>
+                    </button>
+                  );
+                })()}
 
                 {msg.suggestSafeRouteSwitch && selectedRoute.type !== 'segura' && (
                   <button

@@ -694,29 +694,6 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
             )}
           </div>
 
-          {/* 4. Floating Quick AI & Add Report Buttons */}
-          <div className="absolute right-3 top-36 z-20 flex flex-col gap-2 pointer-events-auto">
-            {onOpenAssistant && (
-              <button
-                type="button"
-                onClick={onOpenAssistant}
-                className="w-9 h-9 rounded-full bg-neutral-950 text-white hover:bg-neutral-800 border border-white/30 shadow-xl flex items-center justify-center transition-transform active:scale-90 relative"
-                title="Perguntar à SafeRoute IA"
-                aria-label="Perguntar à SafeRoute IA"
-              >
-                <Sparkles className="w-4 h-4" />
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-white animate-pulse" />
-              </button>
-            )}
-            <button
-              onClick={onOpenReportModal}
-              className="w-9 h-9 rounded-full bg-neutral-900/95 backdrop-blur-md text-white hover:bg-neutral-800 border border-white/20 shadow-lg flex items-center justify-center transition-transform active:scale-90"
-              title="Registrar ocorrência no mapa"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          </div>
-
           {/* Speedometer */}
           {isNavigating && (
             <div className="absolute bottom-32 left-3 z-20 flex flex-col items-center pointer-events-none animate-in fade-in duration-200">

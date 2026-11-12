@@ -225,6 +225,36 @@ export function App() {
     }
   };
 
+  const handlePlotRouteAndGoToMap = useCallback(
+    (destName: string) => {
+      // 1. Calculate journey to chosen destination
+      calculateJourney(originLocation.name, destName, dangerZones);
+
+      // 2. Direct user straight to map in their chosen version (phone or map):
+      if (window.innerWidth < 1024) {
+        const targetView = mobileView === 'ai' ? 'map' : mobileView;
+        setMobileView(targetView);
+        setSidebarTab('routes');
+
+        setTimeout(() => {
+          document.getElementById('mobile-stage')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 90);
+      } else {
+        // Desktop: switch to routes tab and scroll down to the workspace (map or phone simulator)
+        setSidebarTab('routes');
+
+        setTimeout(() => {
+          document.getElementById('desktop-workspace')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 90);
+      }
+
+      if (voiceEnabled) {
+        speakAlert(`Traçando rota para ${destName}. Trajeto carregado no mapa.`);
+      }
+    },
+    [calculateJourney, originLocation.name, dangerZones, mobileView, voiceEnabled, speakAlert]
+  );
+
   return (
     <div
       className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${
@@ -833,9 +863,7 @@ export function App() {
                   incidents={incidents}
                   currentPosition={currentPosition}
                   onSwitchToSafeRoute={handleAcceptReroute}
-                  onSelectCustomDestination={(destName) =>
-                    calculateJourney(originLocation.name, destName, dangerZones)
-                  }
+                  onSelectCustomDestination={handlePlotRouteAndGoToMap}
                   focusInputTrigger={assistantFocusTrigger}
                 />
               )}
@@ -856,9 +884,7 @@ export function App() {
                 incidents={incidents}
                 currentPosition={currentPosition}
                 onSwitchToSafeRoute={handleAcceptReroute}
-                onSelectCustomDestination={(destName) =>
-                  calculateJourney(originLocation.name, destName, dangerZones)
-                }
+                onSelectCustomDestination={handlePlotRouteAndGoToMap}
                 focusInputTrigger={assistantFocusTrigger}
               />
             </section>
