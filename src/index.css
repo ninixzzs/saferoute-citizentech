@@ -19,6 +19,19 @@
   font-family: 'Syne', 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
+.font-hero-alt {
+  font-family: 'Unbounded', 'Syne', sans-serif;
+  letter-spacing: -0.04em;
+}
+
+.perspective-1200 {
+  perspective: 1200px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
 /* Automatically scale micro pixel utility labels when accessibility font scale increases */
 html[data-font-scale="lg"] [class*="text-\[10px\]"] {
   font-size: 0.72rem;

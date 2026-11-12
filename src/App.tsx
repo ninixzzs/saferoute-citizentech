@@ -11,6 +11,7 @@ import { ExpandedMapWorkspace } from './components/ExpandedMapWorkspace';
 import { SafetyAssistantChat } from './components/SafetyAssistantChat';
 import { SplashScreen } from './components/SplashScreen';
 import { OnboardingModal, TravelMode } from './components/OnboardingModal';
+import { Interactive3DPhone } from './components/Interactive3DPhone';
 import { Footer } from './components/Footer';
 
 import { useSafetyAlerts } from './hooks/useSafetyAlerts';
@@ -32,6 +33,7 @@ import {
   MessageSquareWarning,
   Sparkles,
   ArrowRight,
+  ArrowDown,
   RefreshCw,
   Play,
   X,
@@ -39,6 +41,9 @@ import {
   Layers,
   Activity,
   ChevronDown,
+  Move,
+  RotateCcw,
+  Compass,
 } from 'lucide-react';
 
 export function App() {
@@ -231,18 +236,18 @@ export function App() {
       {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
 
       {/* Main Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
-        {/* Dobra 1 — Hero Section (Curiosidade & Impacto) */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-6 sm:space-y-8">
+        {/* Dobra 1 — Hero Section (Frase Monumental de Entrada & Modelo 3D Interativo) */}
         <section
           aria-label="Apresentação do SafeRoute"
-          className="rounded-[24px] sm:rounded-[32px] bg-white/95 dark:bg-neutral-950/90 border border-neutral-200/90 dark:border-neutral-800/90 backdrop-blur-2xl p-4 sm:p-7 shadow-[0_12px_40px_rgba(0,0,0,0.06)] dark:shadow-[0_16px_50px_rgba(0,0,0,0.6)] space-y-5"
+          className="rounded-[28px] sm:rounded-[36px] bg-white/95 dark:bg-neutral-950/90 border border-neutral-200/90 dark:border-neutral-800/90 backdrop-blur-2xl p-5 sm:p-8 lg:p-10 shadow-[0_16px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_24px_64px_rgba(0,0,0,0.7)] space-y-8"
         >
-          {/* Top Slogan Badge */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-neutral-950 dark:bg-white animate-pulse" />
-              <span className="text-[11px] font-mono font-bold tracking-wider uppercase text-neutral-950 dark:text-white">
-                &ldquo;Vá com segurança. Vá de SafeRoute.&rdquo;
+          {/* Top Badge Strip */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xs">
+              <span className="w-2.5 h-2.5 rounded-full bg-neutral-950 dark:bg-white animate-pulse" />
+              <span className="text-[11px] font-mono font-bold tracking-widest uppercase text-neutral-950 dark:text-white">
+                SISTEMA INTELIGENTE DE ROTAS &bull; SÃO PAULO
               </span>
             </div>
 
@@ -250,7 +255,7 @@ export function App() {
               <button
                 type="button"
                 onClick={() => setIsOnboardingOpen(true)}
-                className="px-3 py-1.5 rounded-xl bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-xs font-bold border border-neutral-200 dark:border-neutral-800 flex items-center gap-1.5 transition-all active:scale-97"
+                className="px-3.5 py-1.5 rounded-xl bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-xs font-bold border border-neutral-200 dark:border-neutral-800 flex items-center gap-1.5 transition-all active:scale-97"
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
                 <span>Como Funciona (3 passos)</span>
@@ -258,58 +263,143 @@ export function App() {
             </div>
           </div>
 
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6">
-            {/* Hero Title & Description */}
-            <div className="space-y-2 max-w-2xl">
-              <h1 className="font-display text-[1.5rem] sm:text-[2.2rem] lg:text-[2.5rem] font-extrabold tracking-[-0.03em] text-neutral-950 dark:text-white leading-[1.08]">
-                Com o SafeRoute, você sabe dos riscos antes mesmo de chegar até eles.
-              </h1>
+          {/* Hero Grid: Left Content (Headline & Slogan) + Right 3D Interactive Phone */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
+            {/* Left Column (7 cols): Monumental Headline, Subtitle, Slogan & Actions */}
+            <div className="lg:col-span-7 space-y-6">
+              <div className="space-y-3">
+                <h1 className="font-display text-[1.95rem] sm:text-[2.85rem] lg:text-[3.35rem] font-black tracking-[-0.04em] text-neutral-950 dark:text-white leading-[1.06] animate-in fade-in slide-in-from-bottom-3 duration-500">
+                  Com o SafeRoute, você sabe dos riscos antes mesmo de chegar até eles.
+                </h1>
 
-              <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed max-w-xl">
-                O SafeRoute compara o caminho mais rápido com um desvio seguro e envia um alerta no seu celular quando você se aproxima de uma área de risco em São Paulo.
-              </p>
+                <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 leading-relaxed max-w-xl">
+                  Tecnologia cidadã georreferenciada para motoristas, motociclistas e pedestres. O traçado inteligente antecipa alertas da Defesa Civil e sugere desvios 100% monitorados em todas as regiões de São Paulo.
+                </p>
+              </div>
 
-              {/* Quick CTAs */}
-              <div className="flex flex-wrap items-center gap-2.5 pt-1">
+              {/* Slogan de Impacto (Assinatura Escultural UX/UI) */}
+              <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-neutral-950 text-white border border-white/20 shadow-xl flex items-center justify-between gap-4 transition-all hover:border-white/40 group">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-11 h-11 rounded-2xl bg-white text-black flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform">
+                    <Shield className="w-5 h-5 fill-current" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 font-bold block">Assinatura do Ecossistema</span>
+                    <span className="text-base sm:text-lg font-black tracking-tight text-white">
+                      &ldquo;Vá com segurança. Vá de SafeRoute.&rdquo;
+                    </span>
+                  </div>
+                </div>
+                <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/10 text-[11px] font-mono text-neutral-300">
+                  <Sparkles className="w-3 h-3 text-white" />
+                  <span>São Paulo 24h</span>
+                </div>
+              </div>
+
+              {/* CTAs */}
+              <div className="flex flex-wrap items-center gap-3 pt-1">
                 <button
                   type="button"
                   onClick={() => {
-                    setViewMode('map');
-                    setIsPhoneLocked(false);
                     document.getElementById('interactive-experience')?.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  className="px-4 py-2.5 rounded-xl bg-neutral-950 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-neutral-950 text-xs font-bold shadow-sm flex items-center gap-2 transition-all active:scale-97"
+                  className="px-5 py-3 rounded-2xl bg-neutral-950 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-neutral-950 text-xs sm:text-sm font-bold shadow-md flex items-center gap-2 transition-all active:scale-97"
                 >
-                  <Map className="w-3.5 h-3.5" />
-                  <span>Explorar Mapa em Tempo Real</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <Map className="w-4 h-4" />
+                  <span>Explorar Rotas &amp; Mapa</span>
+                  <ArrowDown className="w-4 h-4 animate-bounce" />
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setViewMode('phone');
-                    document.getElementById('interactive-experience')?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="px-3.5 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-950 dark:text-white text-xs font-bold border border-neutral-300 dark:border-neutral-700 flex items-center gap-1.5 transition-all active:scale-97"
+                  onClick={handleOpenAssistant}
+                  className="px-4 py-3 rounded-2xl bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-950 dark:text-white text-xs sm:text-sm font-bold border border-neutral-300 dark:border-neutral-700 flex items-center gap-2 transition-all active:scale-97"
                 >
-                  <Smartphone className="w-3.5 h-3.5" />
-                  <span>Simulador de Celular</span>
+                  <Sparkles className="w-4 h-4" />
+                  <span>Perguntar à SafeRoute IA</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={handleTriggerDemoAlert}
-                  className="px-3.5 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 hover:bg-neutral-100 dark:hover:bg-neutral-900 text-neutral-950 dark:text-white text-xs font-semibold shadow-2xs flex items-center justify-center gap-1.5 transition-all active:scale-97"
+                  className="px-4 py-3 rounded-2xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 hover:bg-neutral-100 dark:hover:bg-neutral-900 text-neutral-950 dark:text-white text-xs sm:text-sm font-semibold shadow-2xs flex items-center gap-2 transition-all active:scale-97"
                   title="Simular recebimento de alerta da Defesa Civil no aparelho"
                 >
-                  <MessageSquareWarning className="w-3.5 h-3.5" />
+                  <MessageSquareWarning className="w-4 h-4" />
                   <span>Testar Alerta</span>
                 </button>
               </div>
             </div>
 
-            {/* Interactive Quick Actions & Universal Map/Phone Switcher (Mobile + Desktop) */}
+            {/* Right Column (5 cols): Interactive 3D Phone Model (Gira, inclina e mexe ao vivo) */}
+            <div className="lg:col-span-5 flex justify-center items-center">
+              <Interactive3DPhone
+                isStandbyLocked={isPhoneLocked}
+                onToggleLock={setIsPhoneLocked}
+              >
+                <MobilePhoneSimulator
+                  currentPosition={currentPosition}
+                  nextPosition={nextPosition}
+                  selectedRoute={selectedRoute}
+                  allRoutes={routes}
+                  onSelectRoute={selectRoute}
+                  dangerZones={dangerZones}
+                  incidents={incidents}
+                  isNavigating={isNavigating}
+                  isPaused={isPaused}
+                  speedKmH={speedKmH}
+                  progressPercentage={progressPercentage}
+                  activeAlertZone={effectiveAlertZone}
+                  voiceEnabled={voiceEnabled}
+                  onToggleVoice={() => setVoiceEnabled(!voiceEnabled)}
+                  onStart={handleRequestStartTrip}
+                  onPause={pauseNavigation}
+                  onResume={resumeNavigation}
+                  onReset={handleResetAll}
+                  onAcceptReroute={handleAcceptReroute}
+                  onDismissAlert={handleDismissEffectiveAlert}
+                  onOpenReportModal={() => setIsReportModalOpen(true)}
+                  originLocation={originLocation}
+                  destinationLocation={destinationLocation}
+                  onCalculateJourney={(orig, dest) => calculateJourney(orig, dest, dangerZones)}
+                  onSwapLocations={() => swapOriginAndDestination(dangerZones)}
+                  isCalculatingRoute={isCalculatingRoute}
+                  onResetPresetRoutes={resetToPresetRoutes}
+                  simSpeed={simSpeed}
+                  onToggleSimSpeed={setSimSpeed}
+                  focusPoint={focusPoint}
+                  onOpenAssistant={handleOpenAssistant}
+                  isStandbyLocked={isPhoneLocked}
+                  onToggleLock={setIsPhoneLocked}
+                  onOpenOnboarding={() => setIsOnboardingOpen(true)}
+                  travelMode={travelMode}
+                />
+              </Interactive3DPhone>
+            </div>
+          </div>
+        </section>
+
+        {/* Dobra 2 — Cabeçalho Escultural & Plataforma Interativa */}
+        <section
+          id="interactive-experience"
+          aria-label="Plataforma de Rotas e Segurança"
+          className="rounded-[28px] sm:rounded-[36px] bg-white/95 dark:bg-neutral-950/90 border border-neutral-200/90 dark:border-neutral-800/90 backdrop-blur-2xl p-5 sm:p-7 shadow-[0_12px_44px_rgba(0,0,0,0.06)] dark:shadow-[0_20px_56px_rgba(0,0,0,0.6)] space-y-5"
+        >
+          {/* Header com a fonte diferenciada (font-hero-alt / Unbounded) */}
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6 pb-2 border-b border-neutral-200/80 dark:border-neutral-800/80">
+            <div className="space-y-2 max-w-3xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">
+                <span>Navegação Preventiva em Tempo Real</span>
+              </div>
+              <h2 className="font-hero-alt text-2xl sm:text-3xl lg:text-[2.6rem] font-black tracking-tight text-neutral-950 dark:text-white leading-[1.12]">
+                Rotas que avisam antes do risco.
+              </h2>
+              <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed max-w-2xl">
+                O SafeRoute compara o caminho mais rápido com um desvio seguro e manda uma mensagem no celular quando você chega perto de uma área de risco em São Paulo.
+              </p>
+            </div>
+
+            {/* Interactive Quick Actions & Universal Map/Phone Switcher */}
             <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-2.5 sm:gap-3 shrink-0 tabular-nums select-none">
               {/* Desktop Telemetry Pills */}
               <div className="hidden lg:flex flex-wrap items-center gap-2">
@@ -335,7 +425,7 @@ export function App() {
 
               {/* Action Controls: Desktop Map/Phone Switcher + Mobile Map/Phone/AI Tab Switcher */}
               <div className="flex flex-wrap items-center gap-2">
-                {/* Desktop Switcher (Untouched >= lg) */}
+                {/* Desktop Switcher */}
                 <div
                   role="tablist"
                   aria-label="Modo de visualização"
@@ -371,7 +461,7 @@ export function App() {
                   </button>
                 </div>
 
-                {/* Mobile 3-Tab Switcher (< lg): Dedicated isolated IA tab */}
+                {/* Mobile 3-Tab Switcher (< lg) */}
                 <div
                   role="tablist"
                   aria-label="Abas principais no celular"
@@ -424,8 +514,8 @@ export function App() {
             </div>
           </div>
 
-          {/* Dobra 2 — Pilares do Sistema SafeRoute (Exibição Lateral & Cartões de Destaque) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3 border-t border-neutral-200/80 dark:border-neutral-800/80">
+          {/* Pilares do Sistema SafeRoute */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
             <div className="p-3.5 rounded-2xl bg-neutral-50/80 dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800/80 space-y-1">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-lg bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0">
@@ -469,7 +559,7 @@ export function App() {
             </div>
           </div>
 
-          {/* Prominent Featured AI Assistant & All-São-Paulo Coverage Strip (Desktop >= lg; mobile uses dedicated IA tab above) */}
+          {/* Prominent Featured AI Assistant Strip */}
           <div className="hidden lg:flex pt-1 border-t border-neutral-200/80 dark:border-neutral-800/80 flex-row items-center justify-between gap-3">
             <div className="flex items-start sm:items-center gap-2.5 min-w-0">
               <div className="w-8 h-8 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0 shadow-xs">
@@ -529,7 +619,7 @@ export function App() {
         </div>
 
         {/* DESKTOP LAYOUT (>= lg): Map Prototype on LEFT (7 cols), Information on RIGHT (5 cols) */}
-        <div id="interactive-experience" className="hidden lg:grid lg:grid-cols-12 gap-6 items-start">
+        <div id="desktop-workspace" className="hidden lg:grid lg:grid-cols-12 gap-6 items-start">
           {/* LEFT: Interactive Map Stage / Mobile Prototype (7 cols) */}
           <section
             aria-label="Protótipo do mapa interativo"
