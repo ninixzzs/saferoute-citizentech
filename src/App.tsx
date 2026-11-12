@@ -125,6 +125,25 @@ export function App() {
   const [isTipsDrawerOpen, setIsTipsDrawerOpen] = useState(false);
   const [pendingTripBriefing, setPendingTripBriefing] = useState<PreTripBriefing | null>(null);
 
+  // Scroll reveal observer for silky smooth on-scroll animations
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed');
+          }
+        });
+      },
+      { threshold: 0.08, rootMargin: '0px 0px -30px 0px' }
+    );
+
+    const elements = document.querySelectorAll('.scroll-reveal');
+    elements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
+
   const handleEnterCriticalZone = useCallback(
     (zone: DangerZone) => {
       speakAlert(
@@ -240,7 +259,7 @@ export function App() {
         {/* Dobra 1 — Hero Section (Frase Monumental de Entrada & Modelo 3D Interativo) */}
         <section
           aria-label="Apresentação do SafeRoute"
-          className="rounded-[28px] sm:rounded-[36px] bg-white/95 dark:bg-neutral-950/90 border border-neutral-200/90 dark:border-neutral-800/90 backdrop-blur-2xl p-5 sm:p-8 lg:p-10 shadow-[0_16px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_24px_64px_rgba(0,0,0,0.7)] space-y-8"
+          className="scroll-reveal rounded-[28px] sm:rounded-[36px] bg-white/95 dark:bg-neutral-950/90 border border-neutral-200/90 dark:border-neutral-800/90 backdrop-blur-2xl p-5 sm:p-8 lg:p-10 shadow-[0_16px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_24px_64px_rgba(0,0,0,0.7)] space-y-8"
         >
           {/* Top Badge Strip */}
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -265,16 +284,12 @@ export function App() {
 
           {/* Hero Grid: Left Content (Headline & Slogan) + Right 3D Interactive Phone */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
-            {/* Left Column (7 cols): Monumental Headline, Subtitle, Slogan & Actions */}
+            {/* Left Column (7 cols): Monumental Headline, Slogan & Actions */}
             <div className="lg:col-span-7 space-y-6">
-              <div className="space-y-3">
-                <h1 className="font-display text-[1.95rem] sm:text-[2.85rem] lg:text-[3.35rem] font-black tracking-[-0.04em] text-neutral-950 dark:text-white leading-[1.06] animate-in fade-in slide-in-from-bottom-3 duration-500">
+              <div>
+                <h1 className="font-display text-[2.1rem] sm:text-[3rem] lg:text-[3.5rem] font-black tracking-[-0.04em] text-neutral-950 dark:text-white leading-[1.04] animate-in fade-in slide-in-from-bottom-3 duration-500">
                   Com o SafeRoute, você sabe dos riscos antes mesmo de chegar até eles.
                 </h1>
-
-                <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 leading-relaxed max-w-xl">
-                  Tecnologia cidadã georreferenciada para motoristas, motociclistas e pedestres. O traçado inteligente antecipa alertas da Defesa Civil e sugere desvios 100% monitorados em todas as regiões de São Paulo.
-                </p>
               </div>
 
               {/* Slogan de Impacto (Assinatura Escultural UX/UI) */}
@@ -383,7 +398,7 @@ export function App() {
         <section
           id="interactive-experience"
           aria-label="Plataforma de Rotas e Segurança"
-          className="rounded-[28px] sm:rounded-[36px] bg-white/95 dark:bg-neutral-950/90 border border-neutral-200/90 dark:border-neutral-800/90 backdrop-blur-2xl p-5 sm:p-7 shadow-[0_12px_44px_rgba(0,0,0,0.06)] dark:shadow-[0_20px_56px_rgba(0,0,0,0.6)] space-y-5"
+          className="scroll-reveal rounded-[28px] sm:rounded-[36px] bg-white/95 dark:bg-neutral-950/90 border border-neutral-200/90 dark:border-neutral-800/90 backdrop-blur-2xl p-5 sm:p-7 shadow-[0_12px_44px_rgba(0,0,0,0.06)] dark:shadow-[0_20px_56px_rgba(0,0,0,0.6)] space-y-5"
         >
           {/* Header com a fonte diferenciada (font-hero-alt / Unbounded) */}
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6 pb-2 border-b border-neutral-200/80 dark:border-neutral-800/80">
@@ -592,7 +607,7 @@ export function App() {
 
         {/* Live Always-Updating Danger Zones Ticker (Hidden inside mobile dedicated AI tab for zero clutter) */}
         <div
-          className={`${
+          className={`scroll-reveal reveal-delay-1 ${
             mobileView === 'ai' ? 'hidden lg:flex' : 'flex'
           } items-center justify-between gap-2 px-4 py-2.5 rounded-2xl bg-white/90 dark:bg-neutral-950/85 border border-neutral-200/90 dark:border-neutral-800/90 text-xs shadow-2xs`}
         >
@@ -619,7 +634,7 @@ export function App() {
         </div>
 
         {/* DESKTOP LAYOUT (>= lg): Map Prototype on LEFT (7 cols), Information on RIGHT (5 cols) */}
-        <div id="desktop-workspace" className="hidden lg:grid lg:grid-cols-12 gap-6 items-start">
+        <div id="desktop-workspace" className="scroll-reveal reveal-delay-2 hidden lg:grid lg:grid-cols-12 gap-6 items-start">
           {/* LEFT: Interactive Map Stage / Mobile Prototype (7 cols) */}
           <section
             aria-label="Protótipo do mapa interativo"
@@ -829,7 +844,7 @@ export function App() {
         </div>
 
         {/* MOBILE APP EXPERIENCE (< lg): Dedicated AI tab OR Interactive Stage + 3-Tab Hub */}
-        <div className="lg:hidden space-y-5">
+        <div className="scroll-reveal reveal-delay-2 lg:hidden space-y-5">
           {mobileView === 'ai' ? (
             <section id="mobile-ai-tab" aria-label="Assistente IA SafeRoute">
               <SafetyAssistantChat
