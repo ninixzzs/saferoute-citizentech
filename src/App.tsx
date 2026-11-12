@@ -12,6 +12,7 @@ import { SafetyAssistantChat } from './components/SafetyAssistantChat';
 import { SplashScreen } from './components/SplashScreen';
 import { OnboardingModal, TravelMode } from './components/OnboardingModal';
 import { Interactive3DPhone } from './components/Interactive3DPhone';
+import { Phone3DCanvas } from './components/Phone3DCanvas';
 import { Footer } from './components/Footer';
 
 import { useSafetyAlerts } from './hooks/useSafetyAlerts';
@@ -376,50 +377,13 @@ export function App() {
               </div>
             </div>
 
-            {/* Right Column (5 cols): Interactive 3D Phone Model (Gira, inclina e mexe ao vivo) */}
+            {/* Right Column (5 cols): Real Three.js WebGL 3D Flagship Phone */}
             <div className="lg:col-span-5 flex justify-center items-center">
-              <Interactive3DPhone
-                isStandbyLocked={isPhoneLocked}
-                onToggleLock={setIsPhoneLocked}
-              >
-                <MobilePhoneSimulator
-                  currentPosition={currentPosition}
-                  nextPosition={nextPosition}
-                  selectedRoute={selectedRoute}
-                  allRoutes={routes}
-                  onSelectRoute={selectRoute}
-                  dangerZones={dangerZones}
-                  incidents={incidents}
-                  isNavigating={isNavigating}
-                  isPaused={isPaused}
-                  speedKmH={speedKmH}
-                  progressPercentage={progressPercentage}
-                  activeAlertZone={effectiveAlertZone}
-                  voiceEnabled={voiceEnabled}
-                  onToggleVoice={() => setVoiceEnabled(!voiceEnabled)}
-                  onStart={handleRequestStartTrip}
-                  onPause={pauseNavigation}
-                  onResume={resumeNavigation}
-                  onReset={handleResetAll}
-                  onAcceptReroute={handleAcceptReroute}
-                  onDismissAlert={handleDismissEffectiveAlert}
-                  onOpenReportModal={() => setIsReportModalOpen(true)}
-                  originLocation={originLocation}
-                  destinationLocation={destinationLocation}
-                  onCalculateJourney={(orig, dest) => calculateJourney(orig, dest, dangerZones)}
-                  onSwapLocations={() => swapOriginAndDestination(dangerZones)}
-                  isCalculatingRoute={isCalculatingRoute}
-                  onResetPresetRoutes={resetToPresetRoutes}
-                  simSpeed={simSpeed}
-                  onToggleSimSpeed={setSimSpeed}
-                  focusPoint={focusPoint}
-                  onOpenAssistant={handleOpenAssistant}
-                  isStandbyLocked={isPhoneLocked}
-                  onToggleLock={setIsPhoneLocked}
-                  onOpenOnboarding={() => setIsOnboardingOpen(true)}
-                  travelMode={travelMode}
-                />
-              </Interactive3DPhone>
+              <Phone3DCanvas
+                onExploreWorkspace={() => {
+                  document.getElementById('interactive-experience')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              />
             </div>
           </div>
         </section>
