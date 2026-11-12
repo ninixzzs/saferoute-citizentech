@@ -66,14 +66,14 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
 
   // Waypoints for the vehicle trajectory in SP (Pinheiros -> Rebouças -> Paulista)
   const trajectoryPoints = [
-    { x: 220, y: 1620 },
-    { x: 290, y: 1450 },
-    { x: 330, y: 1280 },
-    { x: 330, y: 1050 },
-    { x: 420, y: 820 },
-    { x: 580, y: 640 },
-    { x: 740, y: 530 },
-    { x: 820, y: 480 },
+    { x: 220, y: 1720 },
+    { x: 290, y: 1520 },
+    { x: 330, y: 1320 },
+    { x: 330, y: 1080 },
+    { x: 420, y: 860 },
+    { x: 580, y: 680 },
+    { x: 740, y: 560 },
+    { x: 820, y: 500 },
   ];
 
   // Helper to interpolate point along trajectory
@@ -133,7 +133,7 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
 
     // 1. Dark Vector Map Background
     ctx.fillStyle = '#050505';
-    ctx.fillRect(0, 0, 1024, 2048);
+    ctx.fillRect(0, 0, 1024, 2180);
 
     // Subtle Grid
     ctx.strokeStyle = '#18181b';
@@ -141,10 +141,10 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
     for (let x = 0; x < 1024; x += 80) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
-      ctx.lineTo(x, 2048);
+      ctx.lineTo(x, 2180);
       ctx.stroke();
     }
-    for (let y = 0; y < 2048; y += 80) {
+    for (let y = 0; y < 2180; y += 80) {
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(1024, y);
@@ -155,21 +155,21 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
     ctx.strokeStyle = '#27272a';
     ctx.lineWidth = 6;
     ctx.beginPath();
-    ctx.moveTo(100, 1800);
-    ctx.lineTo(920, 1200);
+    ctx.moveTo(100, 1920);
+    ctx.lineTo(920, 1300);
     ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(80, 800);
-    ctx.lineTo(960, 950);
+    ctx.moveTo(80, 850);
+    ctx.lineTo(960, 1000);
     ctx.stroke();
     ctx.beginPath();
     ctx.moveTo(500, 100);
-    ctx.lineTo(450, 1950);
+    ctx.lineTo(450, 2080);
     ctx.stroke();
 
     // 2. Monitored Danger Zone Polygon (Brás / Centro SP) with Animated Radar Ring
     const zoneCenterX = 680;
-    const zoneCenterY = 880;
+    const zoneCenterY = 920;
     const radarPulseRadius = 160 + (Math.sin(time * 4) * 20 + 20);
 
     // Concentric Radar Scan
@@ -193,31 +193,31 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
     // Warning Tag inside Risk Zone
     ctx.fillStyle = 'rgba(15, 15, 18, 0.95)';
     ctx.beginPath();
-    ctx.roundRect(550, 850, 260, 60, 16);
+    ctx.roundRect(550, 890, 260, 60, 16);
     ctx.fill();
     ctx.strokeStyle = '#52525b';
     ctx.lineWidth = 2;
     ctx.stroke();
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 22px monospace';
-    ctx.fillText('ZONA DE ATENÇÃO SP', 568, 888);
+    ctx.fillText('ZONA DE ATENÇÃO SP', 568, 928);
 
     // 3. Alternative Route (Fast, passes straight through warning zone - dashed gray)
     ctx.strokeStyle = '#52525b';
     ctx.lineWidth = 9;
     ctx.setLineDash([20, 14]);
     ctx.beginPath();
-    ctx.moveTo(220, 1620);
-    ctx.lineTo(400, 1200);
-    ctx.lineTo(680, 880); // Through danger zone!
-    ctx.lineTo(820, 480);
+    ctx.moveTo(220, 1720);
+    ctx.lineTo(400, 1260);
+    ctx.lineTo(680, 920); // Through danger zone!
+    ctx.lineTo(820, 500);
     ctx.stroke();
     ctx.setLineDash([]);
 
     // Label for Fast Route
     ctx.fillStyle = '#71717a';
     ctx.font = 'bold 22px monospace';
-    ctx.fillText('Rota Rápida (Passa por risco)', 430, 1140);
+    ctx.fillText('Rota Rápida (Passa por risco)', 430, 1200);
 
     // 4. SafeRoute Detour (100% Monitored Safe Bypass - Glowing Solid White)
     ctx.shadowColor = 'rgba(255, 255, 255, 0.9)';
@@ -237,17 +237,17 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
     // Origin Pin (Faria Lima)
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(220, 1620, 22, 0, Math.PI * 2);
+    ctx.arc(220, 1720, 22, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#050505';
     ctx.beginPath();
-    ctx.arc(220, 1620, 9, 0, Math.PI * 2);
+    ctx.arc(220, 1720, 9, 0, Math.PI * 2);
     ctx.fill();
 
     // Destination Pin (Av. Paulista)
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(820, 480, 26, 0, Math.PI * 2);
+    ctx.arc(820, 500, 26, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = '#050505';
     ctx.lineWidth = 6;
@@ -363,7 +363,7 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
     // 9. Floating Speedometer Widget
     ctx.fillStyle = 'rgba(15, 15, 18, 0.92)';
     ctx.beginPath();
-    ctx.arc(130, 1420, 60, 0, Math.PI * 2);
+    ctx.arc(130, 1500, 60, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
     ctx.lineWidth = 3;
@@ -372,22 +372,22 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
     ctx.fillStyle = '#ffffff';
     ctx.font = '900 44px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(`${speed}`, 130, 1425);
+    ctx.fillText(`${speed}`, 130, 1505);
     ctx.font = 'bold 18px monospace';
     ctx.fillStyle = '#a1a1aa';
-    ctx.fillText('KM/H', 130, 1455);
+    ctx.fillText('KM/H', 130, 1535);
     ctx.textAlign = 'left';
 
     // 10. Bottom Navigation Sheet
     ctx.fillStyle = 'rgba(255, 255, 255, 0.98)';
     ctx.beginPath();
-    ctx.roundRect(64, 1530, 896, 430, 50);
+    ctx.roundRect(64, 1620, 896, 450, 48);
     ctx.fill();
 
     // Sheet Handle
     ctx.fillStyle = '#d4d4d8';
     ctx.beginPath();
-    ctx.roundRect(472, 1550, 80, 8, 4);
+    ctx.roundRect(472, 1640, 80, 8, 4);
     ctx.fill();
 
     // Telemetry: Remaining Minutes & Distance
@@ -395,49 +395,49 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
     const remainingKm = Math.max(0.2, +(7.4 * (1 - progress)).toFixed(1)).toFixed(1);
 
     ctx.fillStyle = '#050505';
-    ctx.font = '900 76px monospace';
-    ctx.fillText(`${remainingMin} min`, 104, 1640);
+    ctx.font = '900 74px monospace';
+    ctx.fillText(`${remainingMin} min`, 104, 1730);
 
     ctx.fillStyle = '#71717a';
     ctx.font = 'bold 36px monospace';
-    ctx.fillText(`(${remainingKm} km)`, 410, 1630);
+    ctx.fillText(`(${remainingKm} km)`, 410, 1720);
 
     // Safety Pill
     ctx.fillStyle = '#050505';
     ctx.beginPath();
-    ctx.roundRect(660, 1580, 264, 68, 22);
+    ctx.roundRect(660, 1670, 264, 68, 22);
     ctx.fill();
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 26px monospace';
-    ctx.fillText('SEGURANÇA 94/100', 680, 1624);
+    ctx.fillText('SEGURANÇA 94/100', 680, 1714);
 
     ctx.fillStyle = '#52525b';
     ctx.font = 'bold 30px sans-serif';
-    ctx.fillText('Destino: Av. Paulista (Monitorado)', 104, 1705);
+    ctx.fillText('Destino: Av. Paulista (Monitorado)', 104, 1795);
 
     // Bottom Action / Status Button
     ctx.fillStyle = '#050505';
     ctx.beginPath();
-    ctx.roundRect(96, 1750, 832, 106, 32);
+    ctx.roundRect(96, 1840, 832, 104, 30);
     ctx.fill();
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = '900 34px sans-serif';
+    ctx.font = '900 32px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(progress > 0.85 ? 'Destino Alcançado com Segurança' : 'Navegação SafeRoute em Andamento', 512, 1815);
+    ctx.fillText(progress > 0.85 ? 'Destino Alcançado com Segurança' : 'Navegação SafeRoute em Andamento', 512, 1904);
     ctx.textAlign = 'left';
 
     // Impact Slogan inside Screen
     ctx.fillStyle = '#71717a';
     ctx.font = 'bold 24px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('“Vá com segurança. Vá de SafeRoute.”', 512, 1905);
+    ctx.fillText('“Vá com segurança. Vá de SafeRoute.”', 512, 2000);
     ctx.textAlign = 'left';
 
     // iOS Home Indicator
     ctx.fillStyle = '#71717a';
     ctx.beginPath();
-    ctx.roundRect(372, 1990, 280, 12, 6);
+    ctx.roundRect(372, 2100, 280, 14, 7);
     ctx.fill();
   }, [trajectoryPoints]);
 
@@ -453,8 +453,8 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
-    camera.position.set(0, 0, 7.8);
+    const camera = new THREE.PerspectiveCamera(36, width / height, 0.1, 100);
+    camera.position.set(0, 0, 9.2);
     cameraRef.current = camera;
 
     // 2. Renderer with High Dynamic Range Tone Mapping
@@ -488,26 +488,44 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
     scene.add(phoneGroup);
     phoneGroupRef.current = phoneGroup;
 
-    const phoneW = 3.0;
-    const phoneH = 6.2;
-    const phoneD = 0.28;
+    // Authentic 19.5:9 flagship proportions (width: 2.65, height: 5.50, depth: 0.22)
+    const phoneW = 2.65;
+    const phoneH = 5.50;
+    const phoneD = 0.22;
+    const cornerRadius = 0.32;
+
+    const createRoundedRectShape = (w: number, h: number, r: number) => {
+      const s = new THREE.Shape();
+      const x = -w / 2;
+      const y = -h / 2;
+      s.moveTo(x + r, y);
+      s.lineTo(x + w - r, y);
+      s.quadraticCurveTo(x + w, y, x + w, y + r);
+      s.lineTo(x + w, y + h - r);
+      s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      s.lineTo(x + r, y + h);
+      s.quadraticCurveTo(x, y + h, x, y + h - r);
+      s.lineTo(x, y + r);
+      s.quadraticCurveTo(x, y, x + r, y);
+      return s;
+    };
 
     const titaniumMaterial = new THREE.MeshStandardMaterial({
-      color: 0x1f1f22,
-      metalness: 0.85,
-      roughness: 0.25,
+      color: 0x222226,
+      metalness: 0.88,
+      roughness: 0.28,
     });
 
     const backGlassMaterial = new THREE.MeshStandardMaterial({
-      color: 0x0c0c0e,
-      metalness: 0.2,
-      roughness: 0.45,
+      color: 0x0a0a0c,
+      metalness: 0.35,
+      roughness: 0.4,
     });
 
     // Create Offscreen Screen Canvas & Texture for 60fps Living Mini-App Video
     const screenCanvas = document.createElement('canvas');
     screenCanvas.width = 1024;
-    screenCanvas.height = 2048;
+    screenCanvas.height = 2180;
     const screenCtx = screenCanvas.getContext('2d');
 
     const screenTexture = new THREE.CanvasTexture(screenCanvas);
@@ -521,56 +539,85 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
       metalness: 0.05,
     });
 
-    // Main Phone Body
-    const bodyGeo = new THREE.BoxGeometry(phoneW, phoneH, phoneD);
-    const bodyMaterials = [
-      titaniumMaterial,
-      titaniumMaterial,
-      titaniumMaterial,
-      titaniumMaterial,
-      screenMaterial,
-      backGlassMaterial,
-    ];
-    const phoneBody = new THREE.Mesh(bodyGeo, bodyMaterials);
+    // 1. Phone Chassis with Rounded Corners & Chamfered Bevel
+    const bodyShape = createRoundedRectShape(phoneW, phoneH, cornerRadius);
+    const bodyGeo = new THREE.ExtrudeGeometry(bodyShape, {
+      depth: phoneD,
+      bevelEnabled: true,
+      bevelSegments: 5,
+      steps: 1,
+      bevelSize: 0.035,
+      bevelThickness: 0.035,
+    });
+    bodyGeo.center();
+    const phoneBody = new THREE.Mesh(bodyGeo, titaniumMaterial);
     phoneGroup.add(phoneBody);
 
-    // Perimeter Rim
-    const rimGeo = new THREE.BoxGeometry(phoneW + 0.04, phoneH + 0.04, phoneD - 0.04);
-    const rimMesh = new THREE.Mesh(rimGeo, titaniumMaterial);
-    phoneGroup.add(rimMesh);
+    // 2. Front Screen Mesh with Matching Rounded Corners
+    const screenW = phoneW - 0.14;
+    const screenH = phoneH - 0.14;
+    const screenShape = createRoundedRectShape(screenW, screenH, cornerRadius - 0.06);
+    const screenGeo = new THREE.ShapeGeometry(screenShape);
+    const screenMesh = new THREE.Mesh(screenGeo, screenMaterial);
+    screenMesh.position.set(0, 0, phoneD / 2 + 0.036);
+    phoneGroup.add(screenMesh);
 
-    // Side Buttons
-    const buttonMat = new THREE.MeshStandardMaterial({ color: 0x27272a, metalness: 0.9, roughness: 0.2 });
-    const volUp = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.45, 0.08), buttonMat);
-    volUp.position.set(-phoneW / 2 - 0.02, 1.1, 0);
+    // 3. Back Frosted Glass Plate
+    const backShape = createRoundedRectShape(screenW, screenH, cornerRadius - 0.06);
+    const backGeo = new THREE.ShapeGeometry(backShape);
+    const backMesh = new THREE.Mesh(backGeo, backGlassMaterial);
+    backMesh.rotation.y = Math.PI;
+    backMesh.position.set(0, 0, -phoneD / 2 - 0.036);
+    phoneGroup.add(backMesh);
+
+    // 4. Side Buttons (Volume Up/Down, Action Button on left, Power on right)
+    const buttonMat = new THREE.MeshStandardMaterial({ color: 0x3f3f46, metalness: 0.92, roughness: 0.2 });
+
+    const volUp = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.42, 0.07), buttonMat);
+    volUp.position.set(-phoneW / 2 - 0.035, 0.95, 0);
     phoneGroup.add(volUp);
 
-    const volDown = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.45, 0.08), buttonMat);
-    volDown.position.set(-phoneW / 2 - 0.02, 0.5, 0);
+    const volDown = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.42, 0.07), buttonMat);
+    volDown.position.set(-phoneW / 2 - 0.035, 0.42, 0);
     phoneGroup.add(volDown);
 
-    const powerBtn = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.7, 0.08), buttonMat);
-    powerBtn.position.set(phoneW / 2 + 0.02, 0.8, 0);
+    const actionBtn = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.24, 0.07), buttonMat);
+    actionBtn.position.set(-phoneW / 2 - 0.035, 1.45, 0);
+    phoneGroup.add(actionBtn);
+
+    const powerBtn = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.65, 0.07), buttonMat);
+    powerBtn.position.set(phoneW / 2 + 0.035, 0.75, 0);
     phoneGroup.add(powerBtn);
 
-    // Camera Plateau & 3 Sapphire Lenses
-    const cameraIslandMat = new THREE.MeshStandardMaterial({ color: 0x141416, metalness: 0.4, roughness: 0.3 });
-    const cameraIsland = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.25, 0.12), cameraIslandMat);
-    cameraIsland.position.set(-phoneW / 2 + 0.8, phoneH / 2 - 0.85, -phoneD / 2 - 0.06);
+    // 5. Camera Plateau & 3 Sapphire Lenses
+    const cameraIslandShape = createRoundedRectShape(1.05, 1.10, 0.22);
+    const cameraIslandGeo = new THREE.ExtrudeGeometry(cameraIslandShape, {
+      depth: 0.08,
+      bevelEnabled: true,
+      bevelSegments: 3,
+      steps: 1,
+      bevelSize: 0.02,
+      bevelThickness: 0.02,
+    });
+    cameraIslandGeo.center();
+    const cameraIslandMat = new THREE.MeshStandardMaterial({ color: 0x141418, metalness: 0.5, roughness: 0.3 });
+    const cameraIsland = new THREE.Mesh(cameraIslandGeo, cameraIslandMat);
+    cameraIsland.position.set(-phoneW / 2 + 0.68, phoneH / 2 - 0.72, -phoneD / 2 - 0.08);
     phoneGroup.add(cameraIsland);
 
-    const lensRingGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.1, 32);
+    // 3 Camera Lenses
+    const lensRingGeo = new THREE.CylinderGeometry(0.18, 0.18, 0.08, 32);
     lensRingGeo.rotateX(Math.PI / 2);
-    const lensRingMat = new THREE.MeshStandardMaterial({ color: 0x3f3f46, metalness: 0.95, roughness: 0.15 });
+    const lensRingMat = new THREE.MeshStandardMaterial({ color: 0x52525b, metalness: 0.95, roughness: 0.15 });
 
-    const lensGlassGeo = new THREE.CylinderGeometry(0.17, 0.17, 0.11, 32);
+    const lensGlassGeo = new THREE.CylinderGeometry(0.14, 0.14, 0.09, 32);
     lensGlassGeo.rotateX(Math.PI / 2);
     const lensGlassMat = new THREE.MeshStandardMaterial({ color: 0x050508, metalness: 0.1, roughness: 0.05 });
 
     const lensPositions = [
-      { x: -0.32, y: 0.32 },
-      { x: -0.32, y: -0.32 },
-      { x: 0.32, y: 0 },
+      { x: -0.26, y: 0.26 },
+      { x: -0.26, y: -0.26 },
+      { x: 0.26, y: 0 },
     ];
 
     lensPositions.forEach((pos) => {
@@ -582,6 +629,21 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
       glass.position.set(ring.position.x, ring.position.y, ring.position.z - 0.01);
       phoneGroup.add(glass);
     });
+
+    // Flash & LiDAR
+    const flashGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.04, 16);
+    flashGeo.rotateX(Math.PI / 2);
+    const flashMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+    const flashMesh = new THREE.Mesh(flashGeo, flashMat);
+    flashMesh.position.set(cameraIsland.position.x + 0.26, cameraIsland.position.y + 0.30, cameraIsland.position.z - 0.04);
+    phoneGroup.add(flashMesh);
+
+    const lidarGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.04, 16);
+    lidarGeo.rotateX(Math.PI / 2);
+    const lidarMat = new THREE.MeshBasicMaterial({ color: 0x18181b });
+    const lidarMesh = new THREE.Mesh(lidarGeo, lidarMat);
+    lidarMesh.position.set(cameraIsland.position.x + 0.26, cameraIsland.position.y - 0.30, cameraIsland.position.z - 0.04);
+    phoneGroup.add(lidarMesh);
 
     // Back Laser Logo
     const logoCanvas = document.createElement('canvas');
@@ -604,9 +666,9 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
     }
     const logoTex = new THREE.CanvasTexture(logoCanvas);
     const logoMat = new THREE.MeshBasicMaterial({ map: logoTex, transparent: true, opacity: 0.5 });
-    const logoMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9), logoMat);
+    const logoMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 0.85), logoMat);
     logoMesh.rotation.y = Math.PI;
-    logoMesh.position.set(0, 0, -phoneD / 2 - 0.005);
+    logoMesh.position.set(0, 0, -phoneD / 2 - 0.04);
     phoneGroup.add(logoMesh);
 
     // Floor Shadow
@@ -623,11 +685,11 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
       sCtx.fillRect(0, 0, 256, 256);
     }
     const shadowTexture = new THREE.CanvasTexture(shadowCanvas);
-    const shadowGeo = new THREE.PlaneGeometry(4.6, 2.4);
+    const shadowGeo = new THREE.PlaneGeometry(4.2, 2.2);
     const shadowMat = new THREE.MeshBasicMaterial({ map: shadowTexture, transparent: true, opacity: 0.75 });
     const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
     shadowMesh.rotation.x = -Math.PI / 2;
-    shadowMesh.position.set(0, -3.5, 0);
+    shadowMesh.position.set(0, -phoneH / 2 - 0.30, 0);
     scene.add(shadowMesh);
     shadowMeshRef.current = shadowMesh;
 
@@ -787,17 +849,22 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
 
   return (
     <div className={`relative flex flex-col items-center justify-center w-full select-none ${className}`}>
+      {/* Studio Lighting Ambient Glow Aura behind Phone */}
+      <div className="absolute inset-0 -z-10 flex items-center justify-center pointer-events-none">
+        <div className="w-[320px] h-[520px] rounded-full bg-radial from-neutral-300/40 dark:from-white/10 to-transparent blur-3xl opacity-80 animate-ambient-breathe" />
+      </div>
+
       {/* Real WebGL Three.js Viewport (ZERO TEXT ABOVE) */}
       <div
         ref={mountRef}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        className="w-full h-[520px] sm:h-[600px] max-w-[430px] flex items-center justify-center cursor-grab active:cursor-grabbing touch-none select-none relative"
+        className="w-full h-[540px] sm:h-[620px] max-w-[440px] flex items-center justify-center cursor-grab active:cursor-grabbing touch-none select-none relative"
       />
 
       {/* Mini App Video Simulation Control Capsule (Tactile & Luxurious Glassmorphism) */}
-      <div className="w-full max-w-[400px] px-4 py-2.5 rounded-2xl bg-neutral-900/90 dark:bg-neutral-950/90 border border-neutral-800 backdrop-blur-2xl shadow-2xl flex flex-col gap-2 z-20 -mt-2">
+      <div className="w-full max-w-[400px] px-4 py-2.5 rounded-2xl bg-neutral-900/90 dark:bg-neutral-950/90 border border-neutral-800 backdrop-blur-2xl shadow-2xl flex flex-col gap-2 z-20 -mt-2 hover-glass-glow">
         {/* Top Control Bar: Video Play/Pause, Scrubber & Status */}
         <div className="flex items-center justify-between gap-2 text-[11px] font-mono">
           <div className="flex items-center gap-2">

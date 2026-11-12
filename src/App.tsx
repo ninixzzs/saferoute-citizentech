@@ -126,7 +126,7 @@ export function App() {
   const [isTipsDrawerOpen, setIsTipsDrawerOpen] = useState(false);
   const [pendingTripBriefing, setPendingTripBriefing] = useState<PreTripBriefing | null>(null);
 
-  // Scroll reveal observer for silky smooth on-scroll animations
+  // Scroll reveal observer for silky smooth on-scroll animations & text choreographies
   React.useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -136,14 +136,27 @@ export function App() {
           }
         });
       },
-      { threshold: 0.08, rootMargin: '0px 0px -30px 0px' }
+      { threshold: 0.06, rootMargin: '0px 0px -25px 0px' }
     );
 
-    const elements = document.querySelectorAll('.scroll-reveal');
-    elements.forEach((el) => observer.observe(el));
+    const observeAll = () => {
+      const elements = document.querySelectorAll(
+        '.scroll-reveal, .scroll-reveal-title, .scroll-reveal-text, .scroll-reveal-badge, .scroll-reveal-scale'
+      );
+      elements.forEach((el) => observer.observe(el));
+    };
 
-    return () => observer.disconnect();
-  }, []);
+    observeAll();
+
+    const t1 = setTimeout(observeAll, 600);
+    const t2 = setTimeout(observeAll, 1800);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      observer.disconnect();
+    };
+  }, [showSplash]);
 
   const handleEnterCriticalZone = useCallback(
     (zone: DangerZone) => {
@@ -294,18 +307,18 @@ export function App() {
         >
           {/* Top Badge Strip */}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xs">
+            <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xs scroll-reveal-badge">
               <span className="w-2.5 h-2.5 rounded-full bg-neutral-950 dark:bg-white animate-pulse" />
               <span className="text-[11px] font-mono font-bold tracking-widest uppercase text-neutral-950 dark:text-white">
                 SISTEMA INTELIGENTE DE ROTAS &bull; SÃO PAULO
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 scroll-reveal-badge reveal-delay-1">
               <button
                 type="button"
                 onClick={() => setIsOnboardingOpen(true)}
-                className="px-3.5 py-1.5 rounded-xl bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-xs font-bold border border-neutral-200 dark:border-neutral-800 flex items-center gap-1.5 transition-all active:scale-97"
+                className="px-3.5 py-1.5 rounded-xl bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-xs font-bold border border-neutral-200 dark:border-neutral-800 flex items-center gap-1.5 transition-all active:scale-97 hover-glass-glow"
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
                 <span>Como Funciona (3 passos)</span>
@@ -318,13 +331,13 @@ export function App() {
             {/* Left Column (7 cols): Monumental Headline, Slogan & Actions */}
             <div className="lg:col-span-7 space-y-6">
               <div>
-                <h1 className="font-display text-[2.1rem] sm:text-[3rem] lg:text-[3.5rem] font-black tracking-[-0.04em] text-neutral-950 dark:text-white leading-[1.04] animate-in fade-in slide-in-from-bottom-3 duration-500">
+                <h1 className="font-display text-[2.2rem] sm:text-[3.2rem] lg:text-[3.8rem] font-black tracking-[-0.04em] text-neutral-950 dark:text-white leading-[1.03] scroll-reveal-title reveal-delay-1">
                   Com o SafeRoute, você sabe dos riscos antes mesmo de chegar até eles.
                 </h1>
               </div>
 
               {/* Slogan de Impacto (Assinatura Escultural UX/UI) */}
-              <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-neutral-950 text-white border border-white/20 shadow-xl flex items-center justify-between gap-4 transition-all hover:border-white/40 group hover-glass-glow">
+              <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-neutral-950 text-white border border-white/20 shadow-xl flex items-center justify-between gap-4 transition-all hover:border-white/40 group hover-glass-glow scroll-reveal-scale reveal-delay-2">
                 <div className="flex items-center gap-3.5">
                   <div className="w-11 h-11 rounded-2xl bg-white text-black flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform">
                     <Shield className="w-5 h-5 fill-current" />
@@ -343,7 +356,7 @@ export function App() {
               </div>
 
               {/* CTAs */}
-              <div className="flex flex-wrap items-center gap-3 pt-1">
+              <div className="flex flex-wrap items-center gap-3 pt-1 scroll-reveal-text reveal-delay-3">
                 <button
                   type="button"
                   onClick={() => {
@@ -378,12 +391,51 @@ export function App() {
             </div>
 
             {/* Right Column (5 cols): Real Three.js WebGL 3D Flagship Phone */}
-            <div className="lg:col-span-5 flex justify-center items-center">
+            <div className="lg:col-span-5 flex justify-center items-center scroll-reveal-scale reveal-delay-2">
               <Phone3DCanvas
                 onExploreWorkspace={() => {
                   document.getElementById('interactive-experience')?.scrollIntoView({ behavior: 'smooth' });
                 }}
               />
+            </div>
+          </div>
+
+          {/* Architectural System Pillars Grid (UX/UI Sênior) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 border-t border-neutral-200/80 dark:border-neutral-800/80">
+            <div className="p-5 rounded-2xl bg-neutral-50/80 dark:bg-neutral-900/60 border border-neutral-200/80 dark:border-neutral-800/80 hover-glass-glow scroll-reveal-scale reveal-delay-1 space-y-2.5">
+              <div className="w-9 h-9 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0 shadow-xs">
+                <Route className="w-4 h-4" />
+              </div>
+              <h3 className="font-hero-alt text-sm font-bold text-neutral-950 dark:text-white">
+                Comparação Dinâmica de Rotas
+              </h3>
+              <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                Calcula em tempo real a rota mais rápida versus um desvio 100% monitorado, avisando no celular antes que você entre em áreas de risco.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-neutral-50/80 dark:bg-neutral-900/60 border border-neutral-200/80 dark:border-neutral-800/80 hover-glass-glow scroll-reveal-scale reveal-delay-2 space-y-2.5">
+              <div className="w-9 h-9 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0 shadow-xs">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <h3 className="font-hero-alt text-sm font-bold text-neutral-950 dark:text-white">
+                Defesa Civil &amp; Radar SP 24h
+              </h3>
+              <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                Integração contínua com bases públicas de dados em São Paulo, geofencing perimétrico e orientações de segurança em áudio e texto.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-neutral-50/80 dark:bg-neutral-900/60 border border-neutral-200/80 dark:border-neutral-800/80 hover-glass-glow scroll-reveal-scale reveal-delay-3 space-y-2.5">
+              <div className="w-9 h-9 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0 shadow-xs">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <h3 className="font-hero-alt text-sm font-bold text-neutral-950 dark:text-white">
+                Copiloto SafeRoute IA
+              </h3>
+              <p className="text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                Assistente objetivo treinado no Google Gemini Flash, pronto para traçar destinos direto no mapa ou acolher em situações de emergência.
+              </p>
             </div>
           </div>
         </section>
@@ -397,22 +449,22 @@ export function App() {
           {/* Header com a fonte diferenciada (font-hero-alt / Unbounded) */}
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6 pb-2 border-b border-neutral-200/80 dark:border-neutral-800/80">
             <div className="space-y-2 max-w-3xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300 scroll-reveal-badge">
                 <span>Navegação Preventiva em Tempo Real</span>
               </div>
-              <h2 className="font-hero-alt text-2xl sm:text-3xl lg:text-[2.6rem] font-black tracking-tight text-neutral-950 dark:text-white leading-[1.12]">
+              <h2 className="font-hero-alt text-2xl sm:text-3xl lg:text-[2.6rem] font-black tracking-tight text-neutral-950 dark:text-white leading-[1.12] scroll-reveal-title reveal-delay-1">
                 Rotas que avisam antes do risco.
               </h2>
-              <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed max-w-2xl">
+              <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed max-w-2xl scroll-reveal-text reveal-delay-2">
                 O SafeRoute compara o caminho mais rápido com um desvio seguro e manda uma mensagem no celular quando você chega perto de uma área de risco em São Paulo.
               </p>
             </div>
 
             {/* Interactive Quick Actions & Universal Map/Phone Switcher */}
-            <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-2.5 sm:gap-3 shrink-0 tabular-nums select-none">
+            <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-2.5 sm:gap-3 shrink-0 tabular-nums select-none scroll-reveal-scale reveal-delay-2">
               {/* Desktop Telemetry Pills */}
               <div className="hidden lg:flex flex-wrap items-center gap-2">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-neutral-100/90 dark:bg-neutral-900/90 border border-neutral-200 dark:border-neutral-800 text-xs">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-neutral-100/90 dark:bg-neutral-900/90 border border-neutral-200 dark:border-neutral-800 text-xs hover-glass-glow">
                   <Route className="w-3.5 h-3.5 text-neutral-950 dark:text-white" />
                   <span className="font-mono font-bold text-neutral-950 dark:text-white">
                     {selectedRoute.distanceKm} km
@@ -423,7 +475,7 @@ export function App() {
                   </span>
                 </div>
 
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-100/90 dark:bg-neutral-900/90 border border-neutral-200 dark:border-neutral-800 text-xs">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-100/90 dark:bg-neutral-900/90 border border-neutral-200 dark:border-neutral-800 text-xs hover-glass-glow">
                   <ShieldCheck className="w-3.5 h-3.5 text-neutral-800 dark:text-neutral-200" />
                   <span className="text-neutral-500 dark:text-neutral-400">Segurança:</span>
                   <span className="font-mono font-bold text-neutral-950 dark:text-white">
@@ -438,7 +490,7 @@ export function App() {
                 <div
                   role="tablist"
                   aria-label="Modo de visualização"
-                  className="hidden lg:inline-flex items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
+                  className="hidden lg:inline-flex items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xs"
                 >
                   <button
                     type="button"
