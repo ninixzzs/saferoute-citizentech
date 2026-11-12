@@ -79,10 +79,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               type="button"
               onClick={onOpenIntroScreen}
               className="px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 shadow-xs hover:opacity-90"
-              title="Abrir tela inicial com animação 3D de luzes"
+              title="Abrir tela inicial"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Tela Inicial 3D</span>
+              <span className="sm:hidden text-[11px]">Início</span>
             </button>
           )}
 

@@ -10,6 +10,7 @@ import { MobileMapExperience } from './components/MobileMapExperience';
 import { ExpandedMapWorkspace } from './components/ExpandedMapWorkspace';
 import { SafetyAssistantChat } from './components/SafetyAssistantChat';
 import { LuminousIntroScreen } from './components/LuminousIntroScreen';
+import { SplashScreen } from './components/SplashScreen';
 import { OnboardingModal, TravelMode } from './components/OnboardingModal';
 import { Interactive3DPhone } from './components/Interactive3DPhone';
 import { PhoneMiniAppSimulation } from './components/PhoneMiniAppSimulation';
@@ -121,8 +122,21 @@ export function App() {
   const [focusPoint, setFocusPoint] = useState<{ coords: [number, number]; ts: number } | null>(null);
   const [simulatedAlertZone, setSimulatedAlertZone] = useState<DangerZone | null>(null);
 
-  // Modals, Onboarding, Tela Inicial 3D & Pre-Trip Safety Briefing
+  // Modals, Onboarding, Tela Inicial 3D / Mobile Splash & Pre-Trip Safety Briefing
   const [showIntroScreen, setShowIntroScreen] = useState(true);
+  const [isMobileScreen, setIsMobileScreen] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const checkDevice = () => {
+      setIsMobileScreen(window.innerWidth < 768);
+    };
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+    return () => window.removeEventListener('resize', checkDevice);
+  }, []);
   const [isPhoneLocked, setIsPhoneLocked] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [travelMode, setTravelMode] = useState<TravelMode>('carro');
@@ -372,17 +386,24 @@ export function App() {
         onResetAccessibility={resetAccessibility}
       />
 
-      {/* Tela Inicial Interativa 3D (Fundo preto com acendimento de luzes brancas ao passar o mouse) */}
+      {/* Tela Inicial: Celular (Radar Branco + Logo Original) vs. Computador (Matriz 3D de Luzes Reativas ao Mouse) */}
       {showIntroScreen && (
-        <LuminousIntroScreen
-          onEnterApp={() => setShowIntroScreen(false)}
-          onOpenAiChat={() => {
-            setShowIntroScreen(false);
-            setSidebarTab('messages');
-            setMobileView('ai');
-            setAssistantFocusTrigger((prev) => prev + 1);
-          }}
-        />
+        isMobileScreen ? (
+          <SplashScreen
+            onFinish={() => setShowIntroScreen(false)}
+            onComplete={() => setShowIntroScreen(false)}
+          />
+        ) : (
+          <LuminousIntroScreen
+            onEnterApp={() => setShowIntroScreen(false)}
+            onOpenAiChat={() => {
+              setShowIntroScreen(false);
+              setSidebarTab('messages');
+              setMobileView('ai');
+              setAssistantFocusTrigger((prev) => prev + 1);
+            }}
+          />
+        )
       )}
 
       {/* Main Content */}
