@@ -1,9 +1,10 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { speakNaturalPortuguese, stopPortugueseSpeech } from '../services/voiceEngine';
 
 export function useVoiceGuidance() {
   const [enabled, setEnabled] = useState<boolean>(true);
   const [speaking, setSpeaking] = useState<boolean>(false);
+  const pendingTimerRef = useRef<number | null>(null);
 
   // Soft notification chime using Web Audio API
   const playSoftChime = useCallback(() => {
@@ -33,35 +34,42 @@ export function useVoiceGuidance() {
     }
   }, []);
 
+  const stop = useCallback(() => {
+    if (pendingTimerRef.current !== null) {
+      clearTimeout(pendingTimerRef.current);
+      pendingTimerRef.current = null;
+    }
+    stopPortugueseSpeech();
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setSpeaking(false);
+  }, []);
+
   // Speak text warmly using natural female pt-BR voice
   const speakAlert = useCallback(
     (text: string) => {
       if (!enabled || !('speechSynthesis' in window)) return;
 
-      stopPortugueseSpeech();
+      stop();
       playSoftChime();
 
-      setTimeout(() => {
+      pendingTimerRef.current = window.setTimeout(() => {
         speakNaturalPortuguese(text, {
           onStart: () => setSpeaking(true),
           onEnd: () => setSpeaking(false),
           onError: () => setSpeaking(false),
         });
-      }, 320);
+      }, 300);
     },
-    [enabled, playSoftChime]
+    [enabled, playSoftChime, stop]
   );
-
-  const stop = useCallback(() => {
-    stopPortugueseSpeech();
-    setSpeaking(false);
-  }, []);
 
   useEffect(() => {
     return () => {
-      stopPortugueseSpeech();
+      stop();
     };
-  }, []);
+  }, [stop]);
 
   return {
     voiceEnabled: enabled,

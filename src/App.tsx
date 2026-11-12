@@ -12,7 +12,7 @@ import { SafetyAssistantChat } from './components/SafetyAssistantChat';
 import { SplashScreen } from './components/SplashScreen';
 import { OnboardingModal, TravelMode } from './components/OnboardingModal';
 import { Interactive3DPhone } from './components/Interactive3DPhone';
-import { Phone3DCanvas } from './components/Phone3DCanvas';
+import { PhoneMiniAppSimulation } from './components/PhoneMiniAppSimulation';
 import { Footer } from './components/Footer';
 
 import { useSafetyAlerts } from './hooks/useSafetyAlerts';
@@ -104,9 +104,10 @@ export function App() {
     pauseNavigation,
     resumeNavigation,
     resetNavigation,
+    setRoutes,
   } = useRouteNavigation();
 
-  const { voiceEnabled, setVoiceEnabled, speakAlert } = useVoiceGuidance();
+  const { voiceEnabled, setVoiceEnabled, speakAlert, stop: stopVoice } = useVoiceGuidance();
 
   // Workspace states
   const [viewMode, setViewMode] = useState<'map' | 'phone'>('map');
@@ -125,6 +126,26 @@ export function App() {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isTipsDrawerOpen, setIsTipsDrawerOpen] = useState(false);
   const [pendingTripBriefing, setPendingTripBriefing] = useState<PreTripBriefing | null>(null);
+
+  // Dynamic travel mode switcher with live recalculation of transit durations
+  const handleSelectTravelMode = useCallback(
+    (mode: TravelMode) => {
+      setTravelMode(mode);
+      setRoutes((prevRoutes: import('./types').NavigationRoute[]) =>
+        prevRoutes.map((r: import('./types').NavigationRoute) => {
+          let factor = 1.0;
+          if (mode === 'moto') factor = 0.65;
+          if (mode === 'a_pe') factor = 2.4;
+          const newDuration = Math.max(5, Math.round(r.durationMin * factor));
+          return {
+            ...r,
+            durationMin: newDuration,
+          };
+        })
+      );
+    },
+    [setRoutes]
+  );
 
   // Scroll reveal observer for silky smooth on-scroll animations & text choreographies
   React.useEffect(() => {
@@ -176,18 +197,22 @@ export function App() {
 
   const effectiveAlertZone = activeAlertZone || simulatedAlertZone;
 
+  // Immediately cancel any active or queued speech when the user dismisses an alert
   const handleDismissEffectiveAlert = (id: string) => {
+    stopVoice();
     dismissAlert(id);
     setSimulatedAlertZone(null);
   };
 
   const handleAcceptReroute = () => {
+    stopVoice();
     switchImmediatelyToSafeRoute();
     setSimulatedAlertZone(null);
     speakAlert('Desvio seguro ativado. Rota monitorada em andamento.');
   };
 
   const handleResetAll = () => {
+    stopVoice();
     resetNavigation();
     resetDismissed();
     setSimulatedAlertZone(null);
@@ -332,7 +357,11 @@ export function App() {
             <div className="lg:col-span-7 space-y-6">
               <div>
                 <h1 className="font-display text-[2.2rem] sm:text-[3.2rem] lg:text-[3.8rem] font-black tracking-[-0.04em] text-neutral-950 dark:text-white leading-[1.03] scroll-reveal-title reveal-delay-1">
-                  Com o SafeRoute, você sabe dos riscos antes mesmo de chegar até eles.
+                  Com o{' '}
+                  <span className="relative inline-block px-3.5 py-1 mx-1.5 rounded-2xl bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-[0_10px_35px_rgba(0,0,0,0.4)] dark:shadow-[0_10px_40px_rgba(255,255,255,0.45)] border border-neutral-700/80 dark:border-neutral-200 tracking-tight transition-transform duration-300 hover:scale-105">
+                    SafeRoute
+                  </span>
+                  , você sabe dos riscos antes mesmo de chegar até eles.
                 </h1>
               </div>
 
@@ -390,13 +419,11 @@ export function App() {
               </div>
             </div>
 
-            {/* Right Column (5 cols): Real Three.js WebGL 3D Flagship Phone */}
-            <div className="lg:col-span-5 flex justify-center items-center scroll-reveal-scale reveal-delay-2">
-              <Phone3DCanvas
-                onExploreWorkspace={() => {
-                  document.getElementById('interactive-experience')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-              />
+            {/* Right Column: Authentic Flagship Smartphone with 3D Tilt & Mini App Video (Desktop Only - Hidden on Mobile) */}
+            <div className="hidden lg:flex lg:col-span-5 justify-center items-center scroll-reveal-scale reveal-delay-2">
+              <Interactive3DPhone className="w-full">
+                <PhoneMiniAppSimulation />
+              </Interactive3DPhone>
             </div>
           </div>
 
@@ -711,6 +738,8 @@ export function App() {
                 focusPoint={focusPoint}
                 simSpeed={simSpeed}
                 onToggleSimSpeed={setSimSpeed}
+                travelMode={travelMode}
+                onSelectTravelMode={handleSelectTravelMode}
               />
             ) : (
               <MobilePhoneSimulator
@@ -939,6 +968,8 @@ export function App() {
                     focusPoint={focusPoint}
                     simSpeed={simSpeed}
                     onToggleSimSpeed={setSimSpeed}
+                    travelMode={travelMode}
+                    onSelectTravelMode={handleSelectTravelMode}
                   />
                 ) : (
                   <MobilePhoneSimulator
@@ -1134,7 +1165,10 @@ export function App() {
               </div>
               <button
                 type="button"
-                onClick={() => setPendingTripBriefing(null)}
+                onClick={() => {
+                  stopVoice();
+                  setPendingTripBriefing(null);
+                }}
                 className="p-1.5 rounded-full bg-neutral-100 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white"
                 aria-label="Fechar aviso"
               >
@@ -1149,7 +1183,10 @@ export function App() {
             <div className="flex flex-col sm:flex-row gap-2 pt-1">
               <button
                 type="button"
-                onClick={handleConfirmStartTrip}
+                onClick={() => {
+                  stopVoice();
+                  handleConfirmStartTrip();
+                }}
                 className="flex-1 py-2.5 px-4 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 text-xs font-extrabold flex items-center justify-center gap-1.5 hover:opacity-90 active:scale-98 transition-all shadow-sm"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
@@ -1160,6 +1197,7 @@ export function App() {
                 <button
                   type="button"
                   onClick={() => {
+                    stopVoice();
                     setPendingTripBriefing(null);
                     handleAcceptReroute();
                   }}
@@ -1174,6 +1212,7 @@ export function App() {
             <button
               type="button"
               onClick={() => {
+                stopVoice();
                 setPendingTripBriefing(null);
                 handleOpenAssistant();
               }}

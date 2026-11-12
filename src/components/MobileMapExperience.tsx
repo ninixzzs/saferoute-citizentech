@@ -21,8 +21,11 @@ import {
   Volume2,
   VolumeX,
   Map as MapIcon,
+  Car,
+  Bike,
+  Footprints,
 } from 'lucide-react';
-import { DangerZone, IncidentReport, NavigationRoute } from '../types';
+import { DangerZone, IncidentReport, NavigationRoute, TravelMode } from '../types';
 import {
   LocationSuggestion,
   POPULAR_LOCATIONS,
@@ -62,6 +65,8 @@ interface MobileMapExperienceProps {
   focusPoint?: { coords: [number, number]; ts: number } | null;
   simSpeed: '1x' | '2x';
   onToggleSimSpeed: (speed: '1x' | '2x') => void;
+  travelMode?: TravelMode;
+  onSelectTravelMode?: (mode: TravelMode) => void;
 }
 
 export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
@@ -95,6 +100,8 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
   focusPoint = null,
   simSpeed,
   onToggleSimSpeed,
+  travelMode = 'carro',
+  onSelectTravelMode,
 }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [autoReroute, setAutoReroute] = useState(true);
@@ -344,7 +351,50 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
             onTouchStart={(e) => e.stopPropagation()}
             className="absolute top-[82px] left-3 z-[400] flex flex-col items-start gap-2 pointer-events-auto"
           >
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {/* Travel Mode Pills on Mobile Map */}
+              <div className="flex items-center p-0.5 rounded-xl bg-white/95 dark:bg-neutral-950/90 border border-neutral-200 dark:border-white/15 shadow-lg backdrop-blur-md">
+                <button
+                  type="button"
+                  onClick={() => onSelectTravelMode?.('carro')}
+                  className={`h-7 px-2 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
+                    travelMode === 'carro'
+                      ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-xs'
+                      : 'text-neutral-600 dark:text-neutral-400'
+                  }`}
+                  title="Carro"
+                >
+                  <Car className="w-3 h-3" />
+                  <span>Carro</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onSelectTravelMode?.('moto')}
+                  className={`h-7 px-2 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
+                    travelMode === 'moto'
+                      ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-xs'
+                      : 'text-neutral-600 dark:text-neutral-400'
+                  }`}
+                  title="Moto"
+                >
+                  <Bike className="w-3 h-3" />
+                  <span>Moto</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onSelectTravelMode?.('a_pe')}
+                  className={`h-7 px-2 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
+                    travelMode === 'a_pe'
+                      ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-xs'
+                      : 'text-neutral-600 dark:text-neutral-400'
+                  }`}
+                  title="A pé"
+                >
+                  <Footprints className="w-3 h-3" />
+                  <span>A pé</span>
+                </button>
+              </div>
+
               <button
                 type="button"
                 onClick={onOpenReportModal}

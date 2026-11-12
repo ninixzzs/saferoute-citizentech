@@ -218,6 +218,7 @@ export function useRouteNavigation() {
 
   return {
     routes,
+    setRoutes,
     selectedRoute,
     selectRoute,
     switchImmediatelyToSafeRoute,

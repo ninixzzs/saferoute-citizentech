@@ -10,8 +10,11 @@ import {
   CornerUpRight,
   CornerUpLeft,
   ArrowUp,
+  Car,
+  Bike,
+  Footprints,
 } from 'lucide-react';
-import { DangerZone, IncidentReport, NavigationRoute } from '../types';
+import { DangerZone, IncidentReport, NavigationRoute, TravelMode } from '../types';
 import { LocationSuggestion } from '../services/routingService';
 import { NavigationMap } from './NavigationMap';
 
@@ -39,6 +42,8 @@ interface ExpandedMapWorkspaceProps {
   focusPoint?: { coords: [number, number]; ts: number } | null;
   simSpeed: '1x' | '2x';
   onToggleSimSpeed: (speed: '1x' | '2x') => void;
+  travelMode?: TravelMode;
+  onSelectTravelMode?: (mode: TravelMode) => void;
 }
 
 export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
@@ -65,6 +70,8 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
   focusPoint = null,
   simSpeed,
   onToggleSimSpeed,
+  travelMode = 'carro',
+  onSelectTravelMode,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -131,6 +138,55 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
         onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
         className="w-full h-full"
       />
+
+      {/* Floating Travel Mode Selector directly on Top of Map */}
+      <div
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        className="absolute top-4 left-1/2 -translate-x-1/2 z-[420] flex items-center p-1 rounded-2xl bg-white/95 dark:bg-neutral-950/92 backdrop-blur-xl border border-neutral-300 dark:border-neutral-800 shadow-xl select-none"
+      >
+        <button
+          type="button"
+          onClick={() => onSelectTravelMode?.('carro')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+            travelMode === 'carro'
+              ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md scale-102'
+              : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
+          }`}
+          title="Modo Carro (Navegação Padrão SP)"
+        >
+          <Car className="w-3.5 h-3.5" />
+          <span>Carro</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onSelectTravelMode?.('moto')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+            travelMode === 'moto'
+              ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md scale-102'
+              : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
+          }`}
+          title="Modo Moto (Corredores Ágeis)"
+        >
+          <Bike className="w-3.5 h-3.5" />
+          <span>Moto</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onSelectTravelMode?.('a_pe')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+            travelMode === 'a_pe'
+              ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md scale-102'
+              : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
+          }`}
+          title="Modo A pé (Vias Iluminadas e Calçadas Monitoradas)"
+        >
+          <Footprints className="w-3.5 h-3.5" />
+          <span>A pé</span>
+        </button>
+      </div>
 
       {/* Top-Left Navigation Turn Card (shown only during active navigation) */}
       {isNavigating && (
