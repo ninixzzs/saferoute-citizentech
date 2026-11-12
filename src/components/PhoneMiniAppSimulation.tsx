@@ -78,8 +78,8 @@ export const PhoneMiniAppSimulation: React.FC<PhoneMiniAppSimulationProps> = ({
   let speedKmH = isWalk ? 5 : isMoto ? 52 : 42;
   let turnText = 'Siga na Av. Rebouças';
 
-  // 4-second clean subtle alert notification (exactly 4.0 seconds in 16s loop: 4000ms / 16000ms = 0.25)
-  const showAlert = progress >= 0.45 && progress <= 0.70;
+  // 3-second clean subtle alert notification (exactly 3.0 seconds in 16s loop: 3000ms / 16000ms = 0.1875)
+  const showAlert = progress >= 0.48 && progress <= 0.6675;
 
   if (progress < 0.22) {
     phaseText = 'Iniciando Desvio';
@@ -299,7 +299,7 @@ export const PhoneMiniAppSimulation: React.FC<PhoneMiniAppSimulationProps> = ({
         </div>
       </div>
 
-      {/* 4. Sliding SafeRoute Warning Alert - 4 seconds duration toast */}
+      {/* 4. Sliding SafeRoute Warning Alert - 3 seconds duration toast */}
       {showAlert && (
         <div className="relative z-10 px-3.5 pt-1 animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="p-2.5 rounded-xl bg-neutral-900/95 border border-white/30 backdrop-blur-xl flex items-center gap-2.5 shadow-2xl ring-1 ring-white/10">

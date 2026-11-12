@@ -124,23 +124,6 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
     setDestInput(destinationLocation.name);
   }, [destinationLocation]);
 
-  // Smart mobile automation: auto-reroute onto the safe route when approaching risk
-  useEffect(() => {
-    if (
-      activeAlertZone &&
-      isNavigating &&
-      autoReroute &&
-      selectedRoute.type !== 'segura'
-    ) {
-      onAcceptReroute();
-      setAutoRerouteNotice(`Desvio seguro ativado (${activeAlertZone.neighborhood})`);
-      if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
-      noticeTimerRef.current = window.setTimeout(() => {
-        setAutoRerouteNotice(null);
-      }, 4500);
-    }
-  }, [activeAlertZone, isNavigating, autoReroute, selectedRoute.type, onAcceptReroute]);
-
   useEffect(() => {
     return () => {
       if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);

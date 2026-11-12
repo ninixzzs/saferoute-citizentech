@@ -262,17 +262,11 @@ export function App() {
   };
 
   const handleRequestStartTrip = useCallback(() => {
-    const briefing = evaluatePreTripBriefing({
-      route: selectedRoute,
-      destination: destinationLocation,
-      dangerZones,
-      incidents,
-    });
-    setPendingTripBriefing(briefing);
+    startNavigation();
     if (voiceEnabled) {
-      speakAlert(briefing.message);
+      speakAlert(`Iniciando navegação: ${selectedRoute.name}.`);
     }
-  }, [selectedRoute, destinationLocation, dangerZones, incidents, voiceEnabled, speakAlert]);
+  }, [startNavigation, selectedRoute.name, voiceEnabled, speakAlert]);
 
   const handleConfirmStartTrip = () => {
     setPendingTripBriefing(null);
