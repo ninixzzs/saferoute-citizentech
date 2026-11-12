@@ -78,8 +78,8 @@ export const PhoneMiniAppSimulation: React.FC<PhoneMiniAppSimulationProps> = ({
   let speedKmH = isWalk ? 5 : isMoto ? 52 : 42;
   let turnText = 'Siga na Av. Rebouças';
 
-  // 1-second clean subtle alert notification (exactly 1.0 second in 16s loop: 1000ms / 16000ms = 0.0625)
-  const showAlert = progress >= 0.50 && progress <= 0.5625;
+  // 4-second clean subtle alert notification (exactly 4.0 seconds in 16s loop: 4000ms / 16000ms = 0.25)
+  const showAlert = progress >= 0.45 && progress <= 0.70;
 
   if (progress < 0.22) {
     phaseText = 'Iniciando Desvio';
@@ -299,9 +299,9 @@ export const PhoneMiniAppSimulation: React.FC<PhoneMiniAppSimulationProps> = ({
         </div>
       </div>
 
-      {/* 4. Sliding SafeRoute Warning Alert - exactly 1 second unobtrusive toast */}
+      {/* 4. Sliding SafeRoute Warning Alert - 4 seconds duration toast */}
       {showAlert && (
-        <div className="relative z-10 px-3.5 pt-1 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="relative z-10 px-3.5 pt-1 animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="p-2.5 rounded-xl bg-neutral-900/95 border border-white/30 backdrop-blur-xl flex items-center gap-2.5 shadow-2xl ring-1 ring-white/10">
             <div className="w-6 h-6 rounded-lg bg-white text-black flex items-center justify-center shrink-0 shadow-sm">
               <AlertTriangle className="w-3.5 h-3.5 fill-current" />
@@ -309,7 +309,7 @@ export const PhoneMiniAppSimulation: React.FC<PhoneMiniAppSimulationProps> = ({
             <div className="min-w-0 flex-1 text-[11px] leading-tight">
               <div className="font-bold text-white flex items-center justify-between">
                 <span>Alerta SafeRoute</span>
-                <span className="text-[9px] font-mono text-neutral-400">1s</span>
+                <span className="text-[9px] font-mono text-neutral-400">agora</span>
               </div>
               <div className="text-[10px] text-neutral-300 truncate mt-0.5">
                 Área de risco à frente evitada pelo SafeRoute.
