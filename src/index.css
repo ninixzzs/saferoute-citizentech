@@ -37,79 +37,101 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Scroll-Driven Reveal Animations & Text Choreography */
+/* Scroll-Driven Reveal Animations & Text Choreography (Bidirectional) */
 .scroll-reveal {
   opacity: 0;
-  transform: translateY(28px);
-  transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translate3d(0, 26px, 0);
+  transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
 }
 
 .scroll-reveal.revealed {
   opacity: 1;
-  transform: translateY(0);
+  transform: translate3d(0, 0, 0);
 }
 
 /* Editorial Headline Text Reveal */
 .scroll-reveal-title {
   opacity: 0;
-  transform: translateY(32px);
-  filter: blur(6px);
-  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-              filter 0.9s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: opacity, transform, filter;
-}
-
-.scroll-reveal-title.revealed {
-  opacity: 1;
-  transform: translateY(0);
-  filter: blur(0);
-}
-
-/* Subtitle & Paragraph Text Reveal */
-.scroll-reveal-text {
-  opacity: 0;
-  transform: translateY(20px);
-  filter: blur(4px);
+  transform: translate3d(0, 28px, 0);
+  filter: blur(5px);
   transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
               transform 0.8s cubic-bezier(0.16, 1, 0.3, 1),
               filter 0.8s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform, filter;
 }
 
+.scroll-reveal-title.revealed {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  filter: blur(0);
+}
+
+/* Subtitle & Paragraph Text Reveal */
+.scroll-reveal-text {
+  opacity: 0;
+  transform: translate3d(0, 18px, 0);
+  filter: blur(3px);
+  transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform, filter;
+}
+
 .scroll-reveal-text.revealed {
   opacity: 1;
-  transform: translateY(0);
+  transform: translate3d(0, 0, 0);
   filter: blur(0);
 }
 
 /* Badge / Pill Pop-in */
 .scroll-reveal-badge {
   opacity: 0;
-  transform: scale(0.92) translateY(12px);
-  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: scale(0.92) translate3d(0, 12px, 0);
+  transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
 }
 
 .scroll-reveal-badge.revealed {
   opacity: 1;
-  transform: scale(1) translateY(0);
+  transform: scale(1) translate3d(0, 0, 0);
 }
 
 /* 3D Scale Reveal for Mockups and Highlights */
 .scroll-reveal-scale {
   opacity: 0;
-  transform: scale(0.93) translateY(24px);
-  transition: opacity 0.95s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.95s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: scale(0.94) translate3d(0, 22px, 0);
+  transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
 }
 
 .scroll-reveal-scale.revealed {
   opacity: 1;
-  transform: scale(1) translateY(0);
+  transform: scale(1) translate3d(0, 0, 0);
+}
+
+/* Mobile-Specific Fluid Reductions for Ultra-Responsive Smartphone Scrolling */
+@media (max-width: 768px) {
+  .scroll-reveal {
+    transform: translate3d(0, 16px, 0);
+    transition-duration: 0.6s;
+  }
+  .scroll-reveal-title {
+    transform: translate3d(0, 18px, 0);
+    filter: blur(3px);
+    transition-duration: 0.65s;
+  }
+  .scroll-reveal-text {
+    transform: translate3d(0, 12px, 0);
+    filter: blur(2px);
+    transition-duration: 0.6s;
+  }
+  .scroll-reveal-scale {
+    transform: scale(0.96) translate3d(0, 14px, 0);
+    transition-duration: 0.65s;
+  }
 }
 
 /* Staggered Delay Utilities */

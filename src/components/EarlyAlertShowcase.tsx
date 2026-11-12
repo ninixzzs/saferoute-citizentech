@@ -131,8 +131,8 @@ export const EarlyAlertShowcase: React.FC<EarlyAlertShowcaseProps> = ({
                   <button
                     type="button"
                     onClick={() => setActiveTab('preventivo')}
-                    className={`px-3 py-1 rounded-full transition-all ${
-                      activeTab === 'preventivo' ? 'bg-white text-black font-bold' : 'text-neutral-400'
+                    className={`px-3 py-1 rounded-full transition-all active:scale-95 touch-manipulation ${
+                      activeTab === 'preventivo' ? 'bg-white text-black font-bold shadow-xs' : 'text-neutral-400 hover:text-white'
                     }`}
                   >
                     Alerta Ativo
@@ -140,8 +140,8 @@ export const EarlyAlertShowcase: React.FC<EarlyAlertShowcaseProps> = ({
                   <button
                     type="button"
                     onClick={() => setActiveTab('desvio')}
-                    className={`px-3 py-1 rounded-full transition-all ${
-                      activeTab === 'desvio' ? 'bg-white text-black font-bold' : 'text-neutral-400'
+                    className={`px-3 py-1 rounded-full transition-all active:scale-95 touch-manipulation ${
+                      activeTab === 'desvio' ? 'bg-white text-black font-bold shadow-xs' : 'text-neutral-400 hover:text-white'
                     }`}
                   >
                     Desvio Seguro

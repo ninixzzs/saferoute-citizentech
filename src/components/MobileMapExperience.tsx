@@ -104,8 +104,6 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
   onSelectTravelMode,
 }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [autoReroute, setAutoReroute] = useState(true);
-  const [autoRerouteNotice, setAutoRerouteNotice] = useState<string | null>(null);
 
   const [originInput, setOriginInput] = useState(originLocation.name);
   const [destInput, setDestInput] = useState(destinationLocation.name);
@@ -114,7 +112,6 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
   const [isLocatingGps, setIsLocatingGps] = useState(false);
 
   const debounceRef = useRef<number | null>(null);
-  const noticeTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     setOriginInput(originLocation.name);
@@ -123,12 +120,6 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
   useEffect(() => {
     setDestInput(destinationLocation.name);
   }, [destinationLocation]);
-
-  useEffect(() => {
-    return () => {
-      if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
-    };
-  }, []);
 
   const triggerSuggestions = (query: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -389,16 +380,17 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
 
               <button
                 type="button"
-                onClick={() => setAutoReroute(!autoReroute)}
-                aria-pressed={autoReroute}
-                className={`h-8 px-2.5 rounded-xl border shadow-lg flex items-center gap-1 text-[11px] font-bold active:scale-95 transition-all backdrop-blur-md ${
-                  autoReroute
-                    ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border-neutral-950 dark:border-white'
+                onClick={onToggleVoice}
+                aria-pressed={voiceEnabled}
+                className={`h-8 px-2.5 rounded-xl border shadow-lg flex items-center gap-1.5 text-[11px] font-bold active:scale-95 transition-all backdrop-blur-md ${
+                  voiceEnabled
+                    ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border-neutral-950 dark:border-white shadow-xs'
                     : 'bg-white/95 dark:bg-neutral-950/90 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-white/15'
                 }`}
+                title={voiceEnabled ? 'Voz ativada' : 'Voz desativada'}
               >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>{autoReroute ? 'Auto ON' : 'Auto OFF'}</span>
+                {voiceEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5 text-neutral-400" />}
+                <span>Voz</span>
               </button>
             </div>
 
@@ -410,32 +402,14 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
             )}
           </div>
 
-          {/* Floating Notification / Risk Alert (Anchored cleanly above bottom bar) */}
-          {(autoRerouteNotice || activeAlertZone) && (
+          {/* Floating Risk Alert (Anchored cleanly above bottom bar) */}
+          {activeAlertZone && (
             <div
               onMouseDown={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
               className="absolute bottom-[132px] left-3 right-3 z-[425] space-y-2 pointer-events-auto"
             >
-              {autoRerouteNotice && (
-                <div className="rounded-2xl bg-neutral-950 text-white border border-white/15 shadow-2xl px-3.5 py-2.5 flex items-center justify-between gap-2 animate-in slide-in-from-bottom-2 duration-200">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <ShieldCheck className="w-4 h-4 text-white shrink-0" />
-                    <span className="text-xs font-bold truncate">{autoRerouteNotice}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setAutoRerouteNotice(null)}
-                    className="text-neutral-400 hover:text-white p-0.5 shrink-0"
-                    aria-label="Fechar aviso"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-
-              {activeAlertZone && (
-                <div className="rounded-2xl bg-neutral-950 text-white border border-neutral-800 shadow-2xl p-3.5 space-y-2 animate-in slide-in-from-bottom-3 duration-200">
+              <div className="rounded-2xl bg-neutral-950 text-white border border-neutral-800 shadow-2xl p-3.5 space-y-2 animate-in slide-in-from-bottom-3 duration-200">
                   <div className="flex items-center justify-between border-b border-neutral-800 pb-1.5">
                     <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
                       <AlertTriangle className="w-4 h-4 text-white" />
@@ -475,8 +449,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
                       </button>
                     </div>
                   )}
-                </div>
-              )}
+              </div>
             </div>
           )}
 

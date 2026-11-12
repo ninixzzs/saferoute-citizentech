@@ -173,17 +173,24 @@ export function App() {
     [setRoutes, setSelectedRoute]
   );
 
-  // Scroll reveal observer for silky smooth on-scroll animations & text choreographies
+  // Bidirectional scroll reveal observer for silky smooth on-scroll animations & text choreographies (scroll up & down)
   React.useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add('revealed');
+          } else {
+            // When leaving viewport, reset so rolling back up or down re-triggers smoothly
+            const rect = entry.boundingClientRect;
+            const isOutOfView = rect.top > window.innerHeight || rect.bottom < 0;
+            if (isOutOfView) {
+              entry.target.classList.remove('revealed');
+            }
           }
         });
       },
-      { threshold: 0.06, rootMargin: '0px 0px -25px 0px' }
+      { threshold: 0.08, rootMargin: '0px 0px -30px 0px' }
     );
 
     const observeAll = () => {
@@ -195,8 +202,8 @@ export function App() {
 
     observeAll();
 
-    const t1 = setTimeout(observeAll, 600);
-    const t2 = setTimeout(observeAll, 1800);
+    const t1 = setTimeout(observeAll, 400);
+    const t2 = setTimeout(observeAll, 1200);
 
     return () => {
       clearTimeout(t1);
@@ -582,49 +589,52 @@ export function App() {
                 <div
                   role="tablist"
                   aria-label="Abas principais no celular"
-                  className="grid grid-cols-3 lg:hidden w-full sm:w-auto items-center gap-1 p-1 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
+                  className="grid grid-cols-3 lg:hidden w-full sm:w-auto items-center gap-1.5 p-1 rounded-2xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-inner"
                 >
                   <button
                     type="button"
                     role="tab"
                     aria-selected={mobileView === 'map'}
                     onClick={() => setMobileView('map')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
+                    className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 touch-manipulation ${
                       mobileView === 'map'
-                        ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-xs'
+                        ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-md font-extrabold scale-102'
                         : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
                     }`}
                   >
                     <Map className="w-3.5 h-3.5" />
                     <span>Mapa</span>
+                    {mobileView === 'map' && <span className="w-1.5 h-1.5 rounded-full bg-white dark:bg-neutral-950 animate-pulse ml-0.5" />}
                   </button>
                   <button
                     type="button"
                     role="tab"
                     aria-selected={mobileView === 'phone'}
                     onClick={() => setMobileView('phone')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
+                    className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 touch-manipulation ${
                       mobileView === 'phone'
-                        ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-xs'
+                        ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-md font-extrabold scale-102'
                         : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
                     }`}
                   >
                     <Smartphone className="w-3.5 h-3.5" />
                     <span>Celular</span>
+                    {mobileView === 'phone' && <span className="w-1.5 h-1.5 rounded-full bg-white dark:bg-neutral-950 animate-pulse ml-0.5" />}
                   </button>
                   <button
                     type="button"
                     role="tab"
                     aria-selected={mobileView === 'ai'}
                     onClick={() => setMobileView('ai')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 ${
+                    className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 touch-manipulation ${
                       mobileView === 'ai'
-                        ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-xs'
+                        ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-md font-extrabold scale-102'
                         : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
                     }`}
                   >
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>IA</span>
+                    {mobileView === 'ai' && <span className="w-1.5 h-1.5 rounded-full bg-white dark:bg-neutral-950 animate-pulse ml-0.5" />}
                   </button>
                 </div>
               </div>
@@ -949,7 +959,7 @@ export function App() {
         {/* MOBILE APP EXPERIENCE (< lg): Dedicated AI tab OR Interactive Stage + 3-Tab Hub */}
         <div className="scroll-reveal reveal-delay-2 lg:hidden space-y-5">
           {mobileView === 'ai' ? (
-            <section id="mobile-ai-tab" aria-label="Assistente IA SafeRoute">
+            <section id="mobile-ai-tab" aria-label="Assistente IA SafeRoute" className="animate-in fade-in slide-in-from-bottom-3 duration-300">
               <SafetyAssistantChat
                 originLocation={originLocation}
                 destinationLocation={destinationLocation}
@@ -965,7 +975,7 @@ export function App() {
             </section>
           ) : (
             <>
-              <div id="mobile-stage">
+              <div id="mobile-stage" className="transition-all duration-300 animate-in fade-in zoom-in-[0.99]">
                 {mobileView === 'map' ? (
                   <MobileMapExperience
                     currentPosition={currentPosition}
@@ -1047,22 +1057,22 @@ export function App() {
               <section
                 id="info-hub-mobile"
                 aria-label="Detalhes da rota, passo a passo e alertas"
-                className="rounded-[28px] bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-[0_14px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_18px_48px_rgba(0,0,0,0.5)] overflow-hidden"
+                className="rounded-[28px] bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-[0_14px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_18px_48px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-300"
               >
                 <div
                   role="tablist"
                   aria-label="Detalhes, passo a passo e alertas"
-                  className="grid grid-cols-3 p-1.5 gap-1 bg-neutral-100 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 select-none"
+                  className="grid grid-cols-3 p-1.5 gap-1.5 bg-neutral-100 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 select-none"
                 >
                   <button
                     type="button"
                     role="tab"
                     aria-selected={mobileInfoTab === 'routes'}
                     onClick={() => setSidebarTab('routes')}
-                    className={`py-2.5 px-1.5 rounded-2xl text-xs font-bold flex flex-wrap items-center justify-center gap-1 text-center leading-tight transition-all ${
+                    className={`py-2.5 px-1.5 rounded-xl text-xs font-bold flex flex-wrap items-center justify-center gap-1.5 text-center leading-tight transition-all active:scale-95 touch-manipulation ${
                       mobileInfoTab === 'routes'
-                        ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
-                        : 'text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200/70 dark:hover:bg-neutral-800'
+                        ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-md font-extrabold scale-102'
+                        : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200/70 dark:hover:bg-neutral-800'
                     }`}
                   >
                     <Navigation className="w-3.5 h-3.5 shrink-0" />
@@ -1074,10 +1084,10 @@ export function App() {
                     role="tab"
                     aria-selected={mobileInfoTab === 'itinerary'}
                     onClick={() => setSidebarTab('itinerary')}
-                    className={`py-2.5 px-1.5 rounded-2xl text-xs font-bold flex flex-wrap items-center justify-center gap-1 text-center leading-tight transition-all ${
+                    className={`py-2.5 px-1.5 rounded-xl text-xs font-bold flex flex-wrap items-center justify-center gap-1.5 text-center leading-tight transition-all active:scale-95 touch-manipulation ${
                       mobileInfoTab === 'itinerary'
-                        ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
-                        : 'text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200/70 dark:hover:bg-neutral-800'
+                        ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-md font-extrabold scale-102'
+                        : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200/70 dark:hover:bg-neutral-800'
                     }`}
                   >
                     <ListChecks className="w-3.5 h-3.5 shrink-0" />
@@ -1089,10 +1099,10 @@ export function App() {
                     role="tab"
                     aria-selected={mobileInfoTab === 'alerts'}
                     onClick={() => setSidebarTab('alerts')}
-                    className={`py-2.5 px-1.5 rounded-2xl text-xs font-bold flex flex-wrap items-center justify-center gap-1 text-center leading-tight transition-all ${
+                    className={`py-2.5 px-1.5 rounded-xl text-xs font-bold flex flex-wrap items-center justify-center gap-1.5 text-center leading-tight transition-all active:scale-95 touch-manipulation ${
                       mobileInfoTab === 'alerts'
-                        ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm'
-                        : 'text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200/70 dark:hover:bg-neutral-800'
+                        ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-md font-extrabold scale-102'
+                        : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200/70 dark:hover:bg-neutral-800'
                     }`}
                   >
                     <AlertCircle className="w-3.5 h-3.5 shrink-0" />
