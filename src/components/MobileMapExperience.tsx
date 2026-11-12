@@ -62,7 +62,8 @@ interface MobileMapExperienceProps {
   onReset: () => void;
   onAcceptReroute: () => void;
   onDismissAlert: (id: string) => void;
-  focusPoint?: { coords: [number, number]; ts: number } | null;
+  onFocusZone?: (zone: DangerZone) => void;
+  focusPoint?: { coords: [number, number]; ts: number; title?: string; neighborhood?: string } | null;
   simSpeed: '1x' | '2x';
   onToggleSimSpeed: (speed: '1x' | '2x') => void;
   travelMode?: TravelMode;
@@ -97,6 +98,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
   onReset,
   onAcceptReroute,
   onDismissAlert,
+  onFocusZone,
   focusPoint = null,
   simSpeed,
   onToggleSimSpeed,
@@ -430,8 +432,19 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
                       {activeAlertZone.defenseCivilTip}
                     </p>
                   </div>
-                  {selectedRoute.type !== 'segura' && (
-                    <div className="flex items-center gap-2 pt-0.5">
+                  <div className="flex items-center gap-2 pt-0.5 flex-wrap">
+                    {onFocusZone && (
+                      <button
+                        type="button"
+                        onClick={() => onFocusZone(activeAlertZone)}
+                        className="py-2 px-3 rounded-xl bg-neutral-900 text-white border border-neutral-800 text-xs font-semibold flex items-center gap-1 active:scale-95 transition-transform"
+                        title="Ver localização desta área no mapa"
+                      >
+                        <MapPin className="w-3.5 h-3.5" />
+                        <span>Ver no Mapa</span>
+                      </button>
+                    )}
+                    {selectedRoute.type !== 'segura' && (
                       <button
                         type="button"
                         onClick={onAcceptReroute}
@@ -440,15 +453,15 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
                         <ShieldCheck className="w-3.5 h-3.5" />
                         <span>Desviar para Rota Segura</span>
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => onDismissAlert(activeAlertZone.id)}
-                        className="py-2 px-3 rounded-xl bg-neutral-900 text-neutral-300 border border-neutral-800 text-xs font-semibold"
-                      >
-                        Dispensar
-                      </button>
-                    </div>
-                  )}
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => onDismissAlert(activeAlertZone.id)}
+                      className="py-2 px-3 rounded-xl bg-neutral-900 text-neutral-300 border border-neutral-800 text-xs font-semibold"
+                    >
+                      Dispensar
+                    </button>
+                  </div>
               </div>
             </div>
           )}

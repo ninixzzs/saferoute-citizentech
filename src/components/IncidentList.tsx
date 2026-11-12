@@ -15,7 +15,7 @@ interface IncidentListProps {
   onUpdateStatus: (id: string, status: 'ativo' | 'em_verificacao' | 'resolvido') => void;
   onDelete: (id: string) => void;
   onResetData: () => void;
-  onFocusIncident?: (coords: [number, number]) => void;
+  onFocusIncident?: (coords: [number, number], incident?: IncidentReport) => void;
 }
 
 export const IncidentList: React.FC<IncidentListProps> = ({
@@ -151,11 +151,11 @@ export const IncidentList: React.FC<IncidentListProps> = ({
                   {onFocusIncident && (
                     <button
                       type="button"
-                      onClick={() => onFocusIncident(inc.coordinates)}
-                      className="flex items-center gap-1 px-2 py-0.5 rounded bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white border border-neutral-200 dark:border-neutral-800 transition-colors"
-                      title="Centralizar ocorrência no mapa"
+                      onClick={() => onFocusIncident(inc.coordinates, inc)}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 hover:opacity-90 font-bold text-[11px] transition-all shadow-xs active:scale-95"
+                      title="Centralizar ocorrência e ver no mapa"
                     >
-                      <Crosshair className="w-3 h-3" />
+                      <Crosshair className="w-3.5 h-3.5" />
                       <span>Ver no mapa</span>
                     </button>
                   )}

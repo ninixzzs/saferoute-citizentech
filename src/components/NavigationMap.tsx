@@ -14,7 +14,7 @@ interface NavigationMapProps {
   isNavigating: boolean;
   speedKmH?: number;
   onZoneClick?: (zone: DangerZone) => void;
-  focusPoint?: { coords: [number, number]; ts: number } | null;
+  focusPoint?: { coords: [number, number]; ts: number; title?: string; neighborhood?: string } | null;
   topControlOffsetClass?: string;
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
@@ -162,6 +162,8 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
   const zonesLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const incidentsLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const simStreetsLayerRef = useRef<L.LayerGroup | null>(null);
+  const incidentMarkersRef = useRef<Map<string, L.Marker>>(new Map());
+  const zoneCirclesRef = useRef<Map<string, L.Circle>>(new Map());
 
   const baseTileLayerRef = useRef<L.TileLayer | null>(null);
   const labelsTileLayerRef = useRef<L.TileLayer | null>(null);
@@ -433,11 +435,79 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     }
   }, [selectedRoute, allRoutes, isNavigating, mapType]);
 
-  // Focus specific coordinate when user clicks an incident
+  // Focus specific coordinate and open popup when user clicks an incident or alert
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map || !focusPoint) return;
-    map.flyTo(focusPoint.coords, 16, { duration: 0.9 });
+
+    // Invalidate size immediately to guarantee tiles render and prevent black screen
+    map.invalidateSize();
+
+    map.flyTo(focusPoint.coords, 17, { duration: 0.8 });
+
+    const openTimer = setTimeout(() => {
+      map.invalidateSize();
+
+      // Check incident markers
+      let targetMarker: L.Marker | null = null;
+      let minDist = Infinity;
+
+      incidentMarkersRef.current.forEach((marker, key) => {
+        const [lat, lng] = key.split(',').map(Number);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          const d = Math.hypot(lat - focusPoint.coords[0], lng - focusPoint.coords[1]);
+          if (d < minDist) {
+            minDist = d;
+            targetMarker = marker;
+          }
+        }
+      });
+
+      const matchedMarker = targetMarker as L.Marker | null;
+      if (matchedMarker && minDist < 0.005) {
+        matchedMarker.openPopup();
+        return;
+      }
+
+      // Check danger zones
+      let targetCircle: L.Circle | null = null;
+      let minZoneDist = Infinity;
+      zoneCirclesRef.current.forEach((circle, key) => {
+        const [lat, lng] = key.split(',').map(Number);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          const d = Math.hypot(lat - focusPoint.coords[0], lng - focusPoint.coords[1]);
+          if (d < minZoneDist) {
+            minZoneDist = d;
+            targetCircle = circle;
+          }
+        }
+      });
+
+      const matchedCircle = targetCircle as L.Circle | null;
+      if (matchedCircle && minZoneDist < 0.008) {
+        matchedCircle.openPopup();
+        return;
+      }
+
+      // Fallback: create a temporary highlight popup right on focusPoint
+      if (focusPoint.title || focusPoint.neighborhood) {
+        L.popup()
+          .setLatLng(focusPoint.coords)
+          .setContent(`
+            <div style="font-family:system-ui,-apple-system,sans-serif;font-size:12px;color:#171717;min-width:180px;">
+              <div style="font-weight:700;color:#171717;margin-bottom:2px;">
+                ${focusPoint.neighborhood || 'Local em Destaque'}
+              </div>
+              <div style="font-size:11px;color:#404040;">
+                ${focusPoint.title || 'Ocorrência selecionada'}
+              </div>
+            </div>
+          `)
+          .openOn(map);
+      }
+    }, 450);
+
+    return () => clearTimeout(openTimer);
   }, [focusPoint]);
 
   // Update Danger Zones
@@ -446,6 +516,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     if (!layerGroup) return;
 
     layerGroup.clearLayers();
+    zoneCirclesRef.current.clear();
 
     dangerZones.forEach((zone) => {
       const circle = L.circle(zone.coordinates, {
@@ -477,6 +548,8 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
         if (onZoneClick) onZoneClick(zone);
       });
 
+      zoneCirclesRef.current.set(zone.id, circle);
+      zoneCirclesRef.current.set(`${zone.coordinates[0].toFixed(5)},${zone.coordinates[1].toFixed(5)}`, circle);
       circle.addTo(layerGroup);
     });
   }, [dangerZones, onZoneClick, mapType]);
@@ -487,6 +560,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     if (!layerGroup) return;
 
     layerGroup.clearLayers();
+    incidentMarkersRef.current.clear();
 
     incidents.forEach((inc) => {
       const customIcon = L.divIcon({
@@ -515,6 +589,8 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
         </div>
       `);
 
+      incidentMarkersRef.current.set(inc.id, marker);
+      incidentMarkersRef.current.set(`${inc.coordinates[0].toFixed(5)},${inc.coordinates[1].toFixed(5)}`, marker);
       marker.addTo(layerGroup);
     });
   }, [incidents]);

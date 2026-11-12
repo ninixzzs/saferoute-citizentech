@@ -59,6 +59,7 @@ interface MobilePhoneSimulatorProps {
   onReset: () => void;
   onAcceptReroute: () => void;
   onDismissAlert: (id: string) => void;
+  onFocusZone?: (zone: DangerZone) => void;
   onOpenReportModal: () => void;
   originLocation: LocationSuggestion;
   destinationLocation: LocationSuggestion;
@@ -68,7 +69,7 @@ interface MobilePhoneSimulatorProps {
   onResetPresetRoutes?: () => void;
   simSpeed: '1x' | '2x';
   onToggleSimSpeed: (speed: '1x' | '2x') => void;
-  focusPoint?: { coords: [number, number]; ts: number } | null;
+  focusPoint?: { coords: [number, number]; ts: number; title?: string; neighborhood?: string } | null;
   onOpenAssistant?: () => void;
   isStandbyLocked?: boolean;
   onToggleLock?: (locked: boolean) => void;
@@ -98,6 +99,7 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
   onReset,
   onAcceptReroute,
   onDismissAlert,
+  onFocusZone,
   onOpenReportModal,
   originLocation,
   destinationLocation,
@@ -750,8 +752,18 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
                   </p>
                 </div>
 
-                {selectedRoute.type !== 'segura' ? (
-                  <div className="pt-1 flex items-center gap-2">
+                <div className="pt-1 flex items-center gap-2 flex-wrap">
+                  {onFocusZone && (
+                    <button
+                      onClick={() => onFocusZone(visibleAlert)}
+                      className="py-1.5 px-3 rounded-xl bg-neutral-900 text-white border border-neutral-800 text-xs font-semibold hover:bg-neutral-800 transition-colors flex items-center gap-1 active:scale-95"
+                      title="Ver localização desta área no mapa"
+                    >
+                      <MapPin className="w-3.5 h-3.5" />
+                      <span>Ver no Mapa</span>
+                    </button>
+                  )}
+                  {selectedRoute.type !== 'segura' ? (
                     <button
                       onClick={handleAcceptRerouteAndClose}
                       className="flex-1 py-1.5 px-3 rounded-xl bg-white text-neutral-950 font-bold text-xs hover:bg-neutral-200 transition-colors flex items-center justify-center gap-1.5 shadow-sm"
@@ -759,18 +771,21 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
                       <ShieldCheck className="w-3.5 h-3.5 text-neutral-900" />
                       <span>Desviar Rota</span>
                     </button>
+                  ) : (
                     <button
                       onClick={handleDismiss}
-                      className="py-1.5 px-3 rounded-xl bg-neutral-900 text-neutral-300 hover:bg-neutral-800 text-xs font-semibold transition-colors border border-neutral-800"
+                      className="flex-1 py-1.5 px-3 rounded-xl bg-neutral-900 text-neutral-300 hover:bg-neutral-800 text-xs font-semibold transition-colors border border-neutral-800"
                     >
-                      Dispensar
+                      Fechar
                     </button>
-                  </div>
-                ) : (
-                  <div className="text-[11px] text-neutral-200 font-semibold bg-neutral-900 border border-neutral-800 p-2 rounded-xl text-center">
-                    Desvio Seguro Ativo: trajeto monitorado sem zonas críticas.
-                  </div>
-                )}
+                  )}
+                  <button
+                    onClick={handleDismiss}
+                    className="py-1.5 px-2.5 rounded-xl bg-neutral-900 text-neutral-400 hover:text-white text-xs font-semibold transition-colors border border-neutral-800"
+                  >
+                    Dispensar
+                  </button>
+                </div>
               </div>
             )}
           </div>

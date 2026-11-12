@@ -13,6 +13,7 @@ import {
   Car,
   Bike,
   Footprints,
+  MapPin,
 } from 'lucide-react';
 import { DangerZone, IncidentReport, NavigationRoute, TravelMode } from '../types';
 import { LocationSuggestion } from '../services/routingService';
@@ -39,7 +40,8 @@ interface ExpandedMapWorkspaceProps {
   onReset: () => void;
   onAcceptReroute: () => void;
   onDismissAlert: (id: string) => void;
-  focusPoint?: { coords: [number, number]; ts: number } | null;
+  onFocusZone?: (zone: DangerZone) => void;
+  focusPoint?: { coords: [number, number]; ts: number; title?: string; neighborhood?: string } | null;
   simSpeed: '1x' | '2x';
   onToggleSimSpeed: (speed: '1x' | '2x') => void;
   travelMode?: TravelMode;
@@ -67,6 +69,7 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
   onReset,
   onAcceptReroute,
   onDismissAlert,
+  onFocusZone,
   focusPoint = null,
   simSpeed,
   onToggleSimSpeed,
@@ -243,8 +246,19 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
               {activeAlertZone.defenseCivilTip}
             </p>
           </div>
-          {selectedRoute.type !== 'segura' && (
-            <div className="flex items-center gap-2 pt-1">
+          <div className="flex items-center gap-2 pt-1 flex-wrap">
+            {onFocusZone && (
+              <button
+                type="button"
+                onClick={() => onFocusZone(activeAlertZone)}
+                className="py-1.5 px-3 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white text-xs font-semibold flex items-center gap-1 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                title="Ver localização desta área no mapa"
+              >
+                <MapPin className="w-3.5 h-3.5" />
+                <span>Ver no Mapa</span>
+              </button>
+            )}
+            {selectedRoute.type !== 'segura' && (
               <button
                 type="button"
                 onClick={onAcceptReroute}
@@ -253,15 +267,15 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
                 <ShieldCheck className="w-3.5 h-3.5" />
                 <span>Desviar para Rota Segura</span>
               </button>
-              <button
-                type="button"
-                onClick={() => onDismissAlert(activeAlertZone.id)}
-                className="py-1.5 px-3 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs font-semibold"
-              >
-                Dispensar
-              </button>
-            </div>
-          )}
+            )}
+            <button
+              type="button"
+              onClick={() => onDismissAlert(activeAlertZone.id)}
+              className="py-1.5 px-3 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs font-semibold"
+            >
+              Dispensar
+            </button>
+          </div>
         </div>
       )}
 

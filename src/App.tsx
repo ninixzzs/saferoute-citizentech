@@ -119,7 +119,12 @@ export function App() {
   const [sidebarTab, setSidebarTab] = useState<'routes' | 'itinerary' | 'alerts' | 'messages'>('routes');
   const [assistantFocusTrigger, setAssistantFocusTrigger] = useState(0);
   const mobileInfoTab = sidebarTab === 'messages' ? 'routes' : sidebarTab;
-  const [focusPoint, setFocusPoint] = useState<{ coords: [number, number]; ts: number } | null>(null);
+  const [focusPoint, setFocusPoint] = useState<{
+    coords: [number, number];
+    ts: number;
+    title?: string;
+    neighborhood?: string;
+  } | null>(null);
   const [simulatedAlertZone, setSimulatedAlertZone] = useState<DangerZone | null>(null);
 
   // Modals, Onboarding, Tela Inicial 3D / Mobile Splash & Pre-Trip Safety Briefing
@@ -289,10 +294,55 @@ export function App() {
     setSimulatedAlertZone(null);
   };
 
-  const handleFocusIncident = (coords: [number, number]) => {
-    setFocusPoint({ coords, ts: Date.now() });
-    if (window.innerWidth < 1024) {
-      document.getElementById('mobile-stage')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const handleFocusIncident = (coords: [number, number], incident?: import('./types').IncidentReport) => {
+    // 1. Desativar qualquer bloqueio ou standby do simulador para nunca ficar tela preta:
+    setIsPhoneLocked(false);
+
+    // 2. Garantir que tanto na visualização mobile quanto no desktop o modo seja 'map':
+    setViewMode('map');
+    setMobileView('map');
+
+    // 3. Definir o ponto de foco com título e bairro para abrir popup destacado no mapa:
+    setFocusPoint({
+      coords,
+      ts: Date.now(),
+      title: incident?.title,
+      neighborhood: incident?.neighborhood,
+    });
+
+    // 4. Rolar suavemente até o mapa:
+    setTimeout(() => {
+      if (window.innerWidth < 1024) {
+        document.getElementById('mobile-stage')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        document.getElementById('desktop-workspace')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 60);
+
+    if (voiceEnabled && incident) {
+      speakAlert(`Exibindo no mapa: ${incident.title} em ${incident.neighborhood}.`);
+    }
+  };
+
+  const handleFocusZone = (zone: DangerZone) => {
+    setIsPhoneLocked(false);
+    setViewMode('map');
+    setMobileView('map');
+    setFocusPoint({
+      coords: zone.coordinates,
+      ts: Date.now(),
+      title: zone.title,
+      neighborhood: zone.neighborhood,
+    });
+    setTimeout(() => {
+      if (window.innerWidth < 1024) {
+        document.getElementById('mobile-stage')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        document.getElementById('desktop-workspace')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 60);
+    if (voiceEnabled) {
+      speakAlert(`Área de atenção em ${zone.neighborhood}: ${zone.name}.`);
     }
   };
 
@@ -332,6 +382,8 @@ export function App() {
   const handlePlotRouteAndGoToMap = useCallback(
     (destName: string) => {
       // 1. Calculate journey to chosen destination
+      // 1. Desbloquear simulador e calcular rota com segurança
+      setIsPhoneLocked(false);
       calculateJourney(originLocation.name, destName, dangerZones);
 
       // 2. Direct user straight to map in their chosen version (phone or map):
@@ -830,6 +882,7 @@ export function App() {
                 onReset={handleResetAll}
                 onAcceptReroute={handleAcceptReroute}
                 onDismissAlert={handleDismissEffectiveAlert}
+                onFocusZone={handleFocusZone}
                 focusPoint={focusPoint}
                 simSpeed={simSpeed}
                 onToggleSimSpeed={setSimSpeed}
@@ -858,6 +911,7 @@ export function App() {
                 onReset={handleResetAll}
                 onAcceptReroute={handleAcceptReroute}
                 onDismissAlert={handleDismissEffectiveAlert}
+                onFocusZone={handleFocusZone}
                 onOpenReportModal={() => setIsReportModalOpen(true)}
                 originLocation={originLocation}
                 destinationLocation={destinationLocation}
@@ -1061,6 +1115,7 @@ export function App() {
                     onReset={handleResetAll}
                     onAcceptReroute={handleAcceptReroute}
                     onDismissAlert={handleDismissEffectiveAlert}
+                    onFocusZone={handleFocusZone}
                     focusPoint={focusPoint}
                     simSpeed={simSpeed}
                     onToggleSimSpeed={setSimSpeed}
@@ -1089,6 +1144,7 @@ export function App() {
                     onReset={handleResetAll}
                     onAcceptReroute={handleAcceptReroute}
                     onDismissAlert={handleDismissEffectiveAlert}
+                    onFocusZone={handleFocusZone}
                     onOpenReportModal={() => setIsReportModalOpen(true)}
                     originLocation={originLocation}
                     destinationLocation={destinationLocation}
