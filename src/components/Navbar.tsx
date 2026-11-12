@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Volume2, VolumeX, Plus, BookOpen } from 'lucide-react';
+import { Shield, Volume2, VolumeX, Plus, BookOpen, Sparkles } from 'lucide-react';
 import { AccessibilityMenu } from './AccessibilityMenu';
 import { ThemeMode, FontSizeScale } from '../hooks/useAccessibility';
 
@@ -8,6 +8,7 @@ interface NavbarProps {
   onToggleVoice: () => void;
   onOpenReportModal: () => void;
   onOpenTipsDrawer: () => void;
+  onOpenIntroScreen?: () => void;
   activeIncidentsCount: number;
   themeMode: ThemeMode;
   onChangeTheme: (mode: ThemeMode) => void;
@@ -25,6 +26,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleVoice,
   onOpenReportModal,
   onOpenTipsDrawer,
+  onOpenIntroScreen,
   themeMode,
   onChangeTheme,
   fontSize,
@@ -39,8 +41,13 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header className="sticky top-0 z-40 w-full border-b border-neutral-200 dark:border-neutral-800 bg-white/85 dark:bg-neutral-950/85 backdrop-blur-xl transition-colors">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 min-h-14 py-1.5 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
         {/* Brand */}
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-xs">
+        <button
+          type="button"
+          onClick={onOpenIntroScreen}
+          className="flex items-center gap-2 shrink-0 group text-left cursor-pointer transition-transform active:scale-97"
+          title="Abrir tela inicial com animação 3D de luzes"
+        >
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-xs group-hover:scale-105 transition-transform">
             <Shield className="w-4 h-4" />
           </div>
           <div className="flex items-center gap-2">
@@ -51,7 +58,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               São Paulo
             </span>
           </div>
-        </div>
+        </button>
 
         {/* Center Slogan & Status */}
         <div className="hidden lg:flex items-center gap-3 text-xs font-mono">
@@ -67,6 +74,18 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right Controls + Accessibility */}
         <div className="flex items-center gap-1.5 sm:gap-2">
+          {onOpenIntroScreen && (
+            <button
+              type="button"
+              onClick={onOpenIntroScreen}
+              className="px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 shadow-xs hover:opacity-90"
+              title="Abrir tela inicial com animação 3D de luzes"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Tela Inicial 3D</span>
+            </button>
+          )}
+
           <AccessibilityMenu
             themeMode={themeMode}
             onChangeTheme={onChangeTheme}

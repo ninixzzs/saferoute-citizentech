@@ -9,7 +9,7 @@ import { MobilePhoneSimulator } from './components/MobilePhoneSimulator';
 import { MobileMapExperience } from './components/MobileMapExperience';
 import { ExpandedMapWorkspace } from './components/ExpandedMapWorkspace';
 import { SafetyAssistantChat } from './components/SafetyAssistantChat';
-import { SplashScreen } from './components/SplashScreen';
+import { LuminousIntroScreen } from './components/LuminousIntroScreen';
 import { OnboardingModal, TravelMode } from './components/OnboardingModal';
 import { Interactive3DPhone } from './components/Interactive3DPhone';
 import { PhoneMiniAppSimulation } from './components/PhoneMiniAppSimulation';
@@ -121,8 +121,8 @@ export function App() {
   const [focusPoint, setFocusPoint] = useState<{ coords: [number, number]; ts: number } | null>(null);
   const [simulatedAlertZone, setSimulatedAlertZone] = useState<DangerZone | null>(null);
 
-  // Modals, Onboarding, Splash & Pre-Trip Safety Briefing
-  const [showSplash, setShowSplash] = useState(true);
+  // Modals, Onboarding, Tela Inicial 3D & Pre-Trip Safety Briefing
+  const [showIntroScreen, setShowIntroScreen] = useState(true);
   const [isPhoneLocked, setIsPhoneLocked] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [travelMode, setTravelMode] = useState<TravelMode>('carro');
@@ -234,7 +234,7 @@ export function App() {
       clearTimeout(t2);
       observer.disconnect();
     };
-  }, [showSplash]);
+  }, [showIntroScreen]);
 
   const handleEnterCriticalZone = useCallback(
     (zone: DangerZone) => {
@@ -359,6 +359,7 @@ export function App() {
         onToggleVoice={() => setVoiceEnabled(!voiceEnabled)}
         onOpenReportModal={() => setIsReportModalOpen(true)}
         onOpenTipsDrawer={() => setIsTipsDrawerOpen(true)}
+        onOpenIntroScreen={() => setShowIntroScreen(true)}
         activeIncidentsCount={allIncidents.length}
         themeMode={themeMode}
         onChangeTheme={setThemeMode}
@@ -371,8 +372,18 @@ export function App() {
         onResetAccessibility={resetAccessibility}
       />
 
-      {/* Opening Pre-loader / Splash Screen (100% black #050505, minimalist radar pulse, smooth dissolve) */}
-      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+      {/* Tela Inicial Interativa 3D (Fundo preto com acendimento de luzes brancas ao passar o mouse) */}
+      {showIntroScreen && (
+        <LuminousIntroScreen
+          onEnterApp={() => setShowIntroScreen(false)}
+          onOpenAiChat={() => {
+            setShowIntroScreen(false);
+            setSidebarTab('messages');
+            setMobileView('ai');
+            setAssistantFocusTrigger((prev) => prev + 1);
+          }}
+        />
+      )}
 
       {/* Main Content */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-6 sm:space-y-8">
