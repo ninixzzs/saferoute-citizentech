@@ -13,6 +13,7 @@ import { SplashScreen } from './components/SplashScreen';
 import { OnboardingModal, TravelMode } from './components/OnboardingModal';
 import { Interactive3DPhone } from './components/Interactive3DPhone';
 import { PhoneMiniAppSimulation } from './components/PhoneMiniAppSimulation';
+import { EarlyAlertShowcase } from './components/EarlyAlertShowcase';
 import { Footer } from './components/Footer';
 
 import { useSafetyAlerts } from './hooks/useSafetyAlerts';
@@ -466,6 +467,12 @@ export function App() {
             </div>
           </div>
         </section>
+
+        {/* Seção Explicativa: Como Funciona Nossa Notificação (Design Futurista com Smartphone Central) */}
+        <EarlyAlertShowcase
+          onTriggerDemoAlert={handleTriggerDemoAlert}
+          voiceEnabled={voiceEnabled}
+        />
 
         {/* Dobra 2 — Cabeçalho Escultural & Plataforma Interativa */}
         <section
