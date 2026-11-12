@@ -1,8 +1,13 @@
 const PREFERRED_FEMALE_PATTERNS = [
   'francisca',
+  'leticia',
+  'letícia',
   'thalita',
+  'google português do brasil',
   'google português',
   'google portugues',
+  'neural',
+  'natural',
   'luciana',
   'vitoria',
   'vitória',
@@ -12,6 +17,10 @@ const PREFERRED_FEMALE_PATTERNS = [
   'raquel',
   'maria',
   'joana',
+  'manuela',
+  'isabela',
+  'brazil female',
+  'pt-br-standard',
 ];
 
 const EXCLUDED_MALE_PATTERNS = [
@@ -87,7 +96,8 @@ export interface SpeakCallbacks {
 }
 
 /**
- * Speaks Portuguese text at a calm, soothing pace using a warm female voice when available.
+ * Speaks Portuguese text at a calm, soothing pace using a warm female neural voice when available.
+ * Implements low-latency chunking so audio starts immediately on the first phrase.
  */
 export function speakNaturalPortuguese(
   rawText: string,
@@ -108,22 +118,53 @@ export function speakNaturalPortuguese(
       .replace(/\s{2,}/g, ' ')
       .trim();
 
-    const utterance = new SpeechSynthesisUtterance(cleanSpeech);
-    utterance.lang = 'pt-BR';
-    utterance.rate = 0.94;
-    utterance.pitch = 1.03;
-    utterance.volume = 0.92;
-
-    const femaleVoice = pickWarmFemalePortugueseVoice();
-    if (femaleVoice) {
-      utterance.voice = femaleVoice;
+    if (!cleanSpeech) {
+      callbacks?.onEnd?.();
+      return;
     }
 
-    utterance.onstart = () => callbacks?.onStart?.();
-    utterance.onend = () => callbacks?.onEnd?.();
-    utterance.onerror = () => callbacks?.onError?.();
+    // Split sentences for immediate streaming start without browser preparation delay
+    const sentences = cleanSpeech
+      .split(/(?<=[.?!])\s+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
 
-    window.speechSynthesis.speak(utterance);
+    const femaleVoice = pickWarmFemalePortugueseVoice();
+    let started = false;
+
+    sentences.forEach((sentence, idx) => {
+      const utterance = new SpeechSynthesisUtterance(sentence);
+      utterance.lang = 'pt-BR';
+      utterance.rate = 0.96;
+      utterance.pitch = 1.02;
+      utterance.volume = 0.95;
+
+      if (femaleVoice) {
+        utterance.voice = femaleVoice;
+      }
+
+      if (idx === 0) {
+        utterance.onstart = () => {
+          started = true;
+          callbacks?.onStart?.();
+        };
+      }
+
+      if (idx === sentences.length - 1) {
+        utterance.onend = () => callbacks?.onEnd?.();
+      }
+
+      utterance.onerror = () => {
+        if (!started) callbacks?.onError?.();
+      };
+
+      window.speechSynthesis.speak(utterance);
+    });
+
+    // Guard against Chrome speech pause bug
+    if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
   } catch {
     callbacks?.onError?.();
   }

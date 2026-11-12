@@ -1,5 +1,7 @@
 export type RiskLevel = 'baixo' | 'moderado' | 'alto' | 'critico';
 
+export type TravelMode = 'carro' | 'moto' | 'a_pe';
+
 export type IncidentCategory =
   | 'furto_celular'
   | 'assalto'

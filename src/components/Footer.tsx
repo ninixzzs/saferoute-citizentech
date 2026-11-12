@@ -5,8 +5,13 @@ export const Footer: React.FC = () => {
     <footer className="border-t border-neutral-200 dark:border-neutral-800 bg-white/85 dark:bg-neutral-950/85 backdrop-blur-xl py-8 text-xs text-neutral-500 dark:text-neutral-400 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
         <div className="space-y-1.5 max-w-2xl">
-          <div className="font-bold text-neutral-950 dark:text-white tracking-tight">
-            SafeRoute &middot; CitizenTech São Paulo
+          <div className="flex flex-wrap items-baseline gap-2">
+            <span className="font-bold text-neutral-950 dark:text-white tracking-tight">
+              SafeRoute &middot; CitizenTech São Paulo
+            </span>
+            <span className="font-mono text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+              &ldquo;Vá com segurança. Vá de SafeRoute.&rdquo;
+            </span>
           </div>
           <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed">
             Protótipo que leva a lógica dos alertas de emergência para a navegação urbana. Os dados

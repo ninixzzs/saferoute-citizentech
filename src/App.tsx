@@ -9,6 +9,8 @@ import { MobilePhoneSimulator } from './components/MobilePhoneSimulator';
 import { MobileMapExperience } from './components/MobileMapExperience';
 import { ExpandedMapWorkspace } from './components/ExpandedMapWorkspace';
 import { SafetyAssistantChat } from './components/SafetyAssistantChat';
+import { SplashScreen } from './components/SplashScreen';
+import { OnboardingModal, TravelMode } from './components/OnboardingModal';
 import { Footer } from './components/Footer';
 
 import { useSafetyAlerts } from './hooks/useSafetyAlerts';
@@ -22,6 +24,7 @@ import {
   Map,
   Smartphone,
   ShieldCheck,
+  Shield,
   AlertCircle,
   Route,
   ListChecks,
@@ -33,6 +36,9 @@ import {
   Play,
   X,
   MessageCircle,
+  Layers,
+  Activity,
+  ChevronDown,
 } from 'lucide-react';
 
 export function App() {
@@ -105,7 +111,11 @@ export function App() {
   const [focusPoint, setFocusPoint] = useState<{ coords: [number, number]; ts: number } | null>(null);
   const [simulatedAlertZone, setSimulatedAlertZone] = useState<DangerZone | null>(null);
 
-  // Modals & Pre-Trip Safety Briefing
+  // Modals, Onboarding, Splash & Pre-Trip Safety Briefing
+  const [showSplash, setShowSplash] = useState(true);
+  const [isPhoneLocked, setIsPhoneLocked] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [travelMode, setTravelMode] = useState<TravelMode>('carro');
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isTipsDrawerOpen, setIsTipsDrawerOpen] = useState(false);
   const [pendingTripBriefing, setPendingTripBriefing] = useState<PreTripBriefing | null>(null);
@@ -217,24 +227,86 @@ export function App() {
         onResetAccessibility={resetAccessibility}
       />
 
+      {/* Opening Pre-loader / Splash Screen (100% black #050505, minimalist radar pulse, smooth dissolve) */}
+      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+
       {/* Main Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-5">
-        {/* Hero Header Section with Editorial Display Typography */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
+        {/* Dobra 1 — Hero Section (Curiosidade & Impacto) */}
         <section
           aria-label="Apresentação do SafeRoute"
-          className="rounded-[24px] sm:rounded-[28px] bg-white/95 dark:bg-neutral-950/88 border border-neutral-200/90 dark:border-neutral-800/90 backdrop-blur-xl p-3.5 sm:p-6 shadow-[0_8px_32px_rgba(0,0,0,0.05)] dark:shadow-[0_14px_44px_rgba(0,0,0,0.55)]"
+          className="rounded-[24px] sm:rounded-[32px] bg-white/95 dark:bg-neutral-950/90 border border-neutral-200/90 dark:border-neutral-800/90 backdrop-blur-2xl p-4 sm:p-7 shadow-[0_12px_40px_rgba(0,0,0,0.06)] dark:shadow-[0_16px_50px_rgba(0,0,0,0.6)] space-y-5"
         >
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 sm:gap-6">
+          {/* Top Slogan Badge */}
+          <div className="flex flex-wrap items-center justify-between gap-2.5">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-neutral-950 dark:bg-white animate-pulse" />
+              <span className="text-[11px] font-mono font-bold tracking-wider uppercase text-neutral-950 dark:text-white">
+                &ldquo;Vá com segurança. Vá de SafeRoute.&rdquo;
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsOnboardingOpen(true)}
+                className="px-3 py-1.5 rounded-xl bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-900 dark:text-neutral-100 text-xs font-bold border border-neutral-200 dark:border-neutral-800 flex items-center gap-1.5 transition-all active:scale-97"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Como Funciona (3 passos)</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6">
             {/* Hero Title & Description */}
-            <div className="space-y-1 sm:space-y-2 max-w-2xl">
-              <h1 className="font-display text-[1.4rem] sm:text-[2.15rem] lg:text-[2.4rem] font-extrabold tracking-[-0.03em] text-neutral-950 dark:text-white leading-[1.08]">
-                Rotas que avisam antes do risco.
+            <div className="space-y-2 max-w-2xl">
+              <h1 className="font-display text-[1.5rem] sm:text-[2.2rem] lg:text-[2.5rem] font-extrabold tracking-[-0.03em] text-neutral-950 dark:text-white leading-[1.08]">
+                Com o SafeRoute, você sabe dos riscos antes mesmo de chegar até eles.
               </h1>
 
               <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed max-w-xl">
-                O SafeRoute compara o caminho mais rápido com um desvio seguro e manda uma mensagem
-                no celular quando você chega perto de uma área de risco em São Paulo.
+                O SafeRoute compara o caminho mais rápido com um desvio seguro e envia um alerta no seu celular quando você se aproxima de uma área de risco em São Paulo.
               </p>
+
+              {/* Quick CTAs */}
+              <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewMode('map');
+                    setIsPhoneLocked(false);
+                    document.getElementById('interactive-experience')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-neutral-950 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-neutral-950 text-xs font-bold shadow-sm flex items-center gap-2 transition-all active:scale-97"
+                >
+                  <Map className="w-3.5 h-3.5" />
+                  <span>Explorar Mapa em Tempo Real</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewMode('phone');
+                    document.getElementById('interactive-experience')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="px-3.5 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-950 dark:text-white text-xs font-bold border border-neutral-300 dark:border-neutral-700 flex items-center gap-1.5 transition-all active:scale-97"
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>Simulador de Celular</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleTriggerDemoAlert}
+                  className="px-3.5 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 hover:bg-neutral-100 dark:hover:bg-neutral-900 text-neutral-950 dark:text-white text-xs font-semibold shadow-2xs flex items-center justify-center gap-1.5 transition-all active:scale-97"
+                  title="Simular recebimento de alerta da Defesa Civil no aparelho"
+                >
+                  <MessageSquareWarning className="w-3.5 h-3.5" />
+                  <span>Testar Alerta</span>
+                </button>
+              </div>
             </div>
 
             {/* Interactive Quick Actions & Universal Map/Phone Switcher (Mobile + Desktop) */}
@@ -348,22 +420,57 @@ export function App() {
                     <span>IA</span>
                   </button>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={handleTriggerDemoAlert}
-                  className="px-3.5 py-2 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 hover:bg-neutral-100 dark:hover:bg-neutral-900 text-neutral-950 dark:text-white text-xs font-semibold shadow-2xs flex items-center justify-center gap-1.5 transition-all active:scale-97"
-                  title="Simular recebimento de alerta da Defesa Civil no aparelho"
-                >
-                  <MessageSquareWarning className="w-3.5 h-3.5" />
-                  <span>Testar Alerta</span>
-                </button>
               </div>
             </div>
           </div>
 
+          {/* Dobra 2 — Pilares do Sistema SafeRoute (Exibição Lateral & Cartões de Destaque) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3 border-t border-neutral-200/80 dark:border-neutral-800/80">
+            <div className="p-3.5 rounded-2xl bg-neutral-50/80 dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800/80 space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0">
+                  <Route className="w-3.5 h-3.5" />
+                </div>
+                <h4 className="text-xs font-extrabold text-neutral-950 dark:text-white">
+                  Comparação Dinâmica de Rotas
+                </h4>
+              </div>
+              <p className="text-[11px] text-neutral-600 dark:text-neutral-400 leading-snug">
+                Rota Mais Rápida (18 min — área de atenção) vs. Desvio SafeRoute (21 min — 100% monitorado).
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-neutral-50/80 dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800/80 space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                </div>
+                <h4 className="text-xs font-extrabold text-neutral-950 dark:text-white">
+                  Polígonos &amp; Zonas de Risco
+                </h4>
+              </div>
+              <p className="text-[11px] text-neutral-600 dark:text-neutral-400 leading-snug">
+                Geofencing preventivo em São Paulo: alertas visuais e por voz antes de ingressar no perímetro.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-neutral-50/80 dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800/80 space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-3.5 h-3.5" />
+                </div>
+                <h4 className="text-xs font-extrabold text-neutral-950 dark:text-white">
+                  Simulador &amp; Voz Neural
+                </h4>
+              </div>
+              <p className="text-[11px] text-neutral-600 dark:text-neutral-400 leading-snug">
+                Voz feminina calma sem atraso, respostas objetivas e navegação em tempo real no navegador.
+              </p>
+            </div>
+          </div>
+
           {/* Prominent Featured AI Assistant & All-São-Paulo Coverage Strip (Desktop >= lg; mobile uses dedicated IA tab above) */}
-          <div className="hidden lg:flex mt-3.5 pt-3.5 border-t border-neutral-200/80 dark:border-neutral-800/80 flex-row items-center justify-between gap-3">
+          <div className="hidden lg:flex pt-1 border-t border-neutral-200/80 dark:border-neutral-800/80 flex-row items-center justify-between gap-3">
             <div className="flex items-start sm:items-center gap-2.5 min-w-0">
               <div className="w-8 h-8 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0 shadow-xs">
                 <Sparkles className="w-4 h-4" />
@@ -372,7 +479,7 @@ export function App() {
                 <div className="text-xs font-bold text-neutral-950 dark:text-white flex flex-wrap items-center gap-1.5">
                   <span>Assistente de IA Pré-Viagem &amp; SMS</span>
                   <span className="px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-[10px] font-mono text-neutral-700 dark:text-neutral-300">
-                    Resposta na hora
+                    Resposta na hora &bull; Sem atraso
                   </span>
                 </div>
                 <p className="text-[11px] text-neutral-600 dark:text-neutral-400 leading-snug mt-0.5">
@@ -422,7 +529,7 @@ export function App() {
         </div>
 
         {/* DESKTOP LAYOUT (>= lg): Map Prototype on LEFT (7 cols), Information on RIGHT (5 cols) */}
-        <div className="hidden lg:grid lg:grid-cols-12 gap-6 items-start">
+        <div id="interactive-experience" className="hidden lg:grid lg:grid-cols-12 gap-6 items-start">
           {/* LEFT: Interactive Map Stage / Mobile Prototype (7 cols) */}
           <section
             aria-label="Protótipo do mapa interativo"
@@ -487,6 +594,10 @@ export function App() {
                 onToggleSimSpeed={setSimSpeed}
                 focusPoint={focusPoint}
                 onOpenAssistant={handleOpenAssistant}
+                isStandbyLocked={isPhoneLocked}
+                onToggleLock={setIsPhoneLocked}
+                onOpenOnboarding={() => setIsOnboardingOpen(true)}
+                travelMode={travelMode}
               />
             )}
           </section>
@@ -715,6 +826,10 @@ export function App() {
                     onToggleSimSpeed={setSimSpeed}
                     focusPoint={focusPoint}
                     onOpenAssistant={handleOpenAssistant}
+                    isStandbyLocked={isPhoneLocked}
+                    onToggleLock={setIsPhoneLocked}
+                    onOpenOnboarding={() => setIsOnboardingOpen(true)}
+                    travelMode={travelMode}
                   />
                 )}
               </div>
@@ -837,6 +952,14 @@ export function App() {
       <SafetyTipsDrawer
         isOpen={isTipsDrawerOpen}
         onClose={() => setIsTipsDrawerOpen(false)}
+      />
+
+      {/* 3-Step Onboarding Modal */}
+      <OnboardingModal
+        isOpen={isOnboardingOpen}
+        onClose={() => setIsOnboardingOpen(false)}
+        selectedMode={travelMode}
+        onSelectMode={setTravelMode}
       />
 
       {/* Pre-Trip Calm Passenger Safety Notification Modal */}

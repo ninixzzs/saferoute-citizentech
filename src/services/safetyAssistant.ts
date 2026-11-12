@@ -661,6 +661,78 @@ export function generateSafetyAssistantReply(
     };
   }
 
+  // FAQ: Algorithm & Safety Score
+  if (
+    containsWholePhrase(qNorm, 'algoritmo') ||
+    containsWholePhrase(qNorm, 'score') ||
+    containsWholePhrase(qNorm, 'pontuacao') ||
+    containsWholePhrase(qNorm, 'como calcula') ||
+    containsWholePhrase(qNorm, 'indice')
+  ) {
+    return {
+      id: `reply-${Date.now()}`,
+      toneLabel: 'Tranquilo',
+      text: `${namePrefix}o Score de Segurança (0 a 100) cruza ocorrências ativas, cruzamentos críticos catalogados e histórico da Defesa Civil para traçar o desvio mais seguro.`,
+      tips: [],
+      nearbyPlaces: [],
+      smsPreview: preSms.smsText,
+      nextStage: stage,
+    };
+  }
+
+  // FAQ: Privacy & Encryption
+  if (
+    containsWholePhrase(qNorm, 'privacidade') ||
+    containsWholePhrase(qNorm, 'criptografia') ||
+    containsWholePhrase(qNorm, 'seguranca dos dados') ||
+    containsWholePhrase(qNorm, 'meus dados')
+  ) {
+    return {
+      id: `reply-${Date.now()}`,
+      toneLabel: 'Tranquilo',
+      text: `${namePrefix}seus dados e chaves de IA são protegidos com criptografia AES-GCM-256 no próprio dispositivo, sem rastreamento comercial nem envio para terceiros.`,
+      tips: [],
+      nearbyPlaces: [],
+      smsPreview: preSms.smsText,
+      nextStage: stage,
+    };
+  }
+
+  // FAQ: Sources & Official Monitoring
+  if (
+    containsWholePhrase(qNorm, 'fontes') ||
+    containsWholePhrase(qNorm, 'de onde vem') ||
+    containsWholePhrase(qNorm, 'monitoramento') ||
+    containsWholePhrase(qNorm, 'dados abertos')
+  ) {
+    return {
+      id: `reply-${Date.now()}`,
+      toneLabel: 'Tranquilo',
+      text: `${namePrefix}utilizamos diretrizes da Defesa Civil SP (40199), rede comunitária CitizenTech e o catálogo georreferenciado de DPs e Batalhões da PM em São Paulo.`,
+      tips: [],
+      nearbyPlaces: [],
+      smsPreview: preSms.smsText,
+      nextStage: stage,
+    };
+  }
+
+  // FAQ: Slogan
+  if (
+    containsWholePhrase(qNorm, 'slogan') ||
+    containsWholePhrase(qNorm, 'lema') ||
+    containsWholePhrase(qNorm, 'assinatura')
+  ) {
+    return {
+      id: `reply-${Date.now()}`,
+      toneLabel: 'Tranquilo',
+      text: `${namePrefix}nosso slogan oficial é: "Vá com segurança. Vá de SafeRoute."`,
+      tips: [],
+      nearbyPlaces: [],
+      smsPreview: preSms.smsText,
+      nextStage: stage,
+    };
+  }
+
   // Gratitude / Warm Closing
   if (
     containsWholePhrase(qNorm, 'obrigado') ||
@@ -1130,9 +1202,9 @@ export function evaluatePreTripBriefing(params: {
   if (hasCriticalOrHigh) {
     return {
       status: 'caution',
-      toneLabel: 'Atenção Preventiva (Sem Pânico)',
-      headline: `Aviso tranquilo antes de ir para ${destination.name}`,
-      message: `Identificamos pontos que merecem atenção leve no trajeto (${uniqueAreas.join(', ') || destination.name}). Não há motivo para pânico — mantenha os vidros fechados nos semáforos, deixe o celular abaixo do painel e use a orientação por áudio.`,
+      toneLabel: 'Atenção Preventiva',
+      headline: `Aviso preventivo antes de ir para ${destination.name}`,
+      message: `Identificamos pontos que merecem atenção no trajeto (${uniqueAreas.join(', ') || destination.name}). Mantenha os vidros fechados nos semáforos, celular fora de vista e use a orientação por áudio.`,
       affectedAreas: uniqueAreas,
       recommendSafeRoute: route.type !== 'segura',
     };
@@ -1143,7 +1215,7 @@ export function evaluatePreTripBriefing(params: {
       status: 'attention',
       toneLabel: 'Cuidado Leve',
       headline: `Trajeto para ${destination.name} com fluxo normal`,
-      message: `Alguns cruzamentos próximos a ${uniqueAreas.join(', ') || destination.name} costumam ter movimento lento. Siga com tranquilidade e vidros fechados nos sinais.`,
+      message: `Alguns cruzamentos próximos a ${uniqueAreas.join(', ') || destination.name} costumam ter lentidão. Siga com atenção preventiva e vidros fechados nos sinais.`,
       affectedAreas: uniqueAreas,
       recommendSafeRoute: route.type !== 'segura',
     };
@@ -1152,8 +1224,8 @@ export function evaluatePreTripBriefing(params: {
   return {
     status: 'calm',
     toneLabel: 'Trajeto Tranquilo',
-    headline: `Saída tranquila para ${destination.name}`,
-    message: `O destino ${destination.name} e o caminho selecionado (${route.durationMin} min) não concentram alertas críticos no momento. Faça uma ótima viagem!`,
+    headline: `Saída favorável para ${destination.name}`,
+    message: 'Boa viagem! Seu trajeto está sem indícios negativos, mas vale tomar atenção e cuidado.',
     affectedAreas: [],
     recommendSafeRoute: false,
   };

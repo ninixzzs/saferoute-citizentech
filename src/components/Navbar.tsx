@@ -53,10 +53,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Center Status */}
-        <div className="hidden md:flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400 font-mono">
-          <span className="w-1.5 h-1.5 rounded-full bg-neutral-900 dark:bg-white"></span>
-          <span>Defesa Civil SP &bull; Monitoramento Ativo</span>
+        {/* Center Slogan & Status */}
+        <div className="hidden lg:flex items-center gap-3 text-xs font-mono">
+          <span className="font-semibold text-neutral-900 dark:text-neutral-100 tracking-tight">
+            &ldquo;Vá com segurança. Vá de SafeRoute.&rdquo;
+          </span>
+          <span className="text-neutral-300 dark:text-neutral-700">&bull;</span>
+          <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-neutral-900 dark:bg-white animate-pulse"></span>
+            <span>Defesa Civil SP &bull; Monitoramento Ativo</span>
+          </div>
         </div>
 
         {/* Right Controls + Accessibility */}

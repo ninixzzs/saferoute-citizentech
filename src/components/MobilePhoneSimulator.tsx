@@ -21,6 +21,10 @@ import {
   Gauge,
   LocateFixed,
   Sparkles,
+  Shield,
+  Lock,
+  Unlock,
+  HelpCircle,
 } from 'lucide-react';
 import { DangerZone, NavigationRoute, IncidentReport } from '../types';
 import {
@@ -63,6 +67,10 @@ interface MobilePhoneSimulatorProps {
   onToggleSimSpeed: (speed: '1x' | '2x') => void;
   focusPoint?: { coords: [number, number]; ts: number } | null;
   onOpenAssistant?: () => void;
+  isStandbyLocked?: boolean;
+  onToggleLock?: (locked: boolean) => void;
+  onOpenOnboarding?: () => void;
+  travelMode?: 'carro' | 'moto' | 'a_pe';
 }
 
 export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
@@ -96,6 +104,10 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
   onToggleSimSpeed,
   focusPoint = null,
   onOpenAssistant,
+  isStandbyLocked = false,
+  onToggleLock,
+  onOpenOnboarding,
+  travelMode = 'carro',
 }) => {
   const [originInput, setOriginInput] = useState<string>(originLocation.name);
   const [destInput, setDestInput] = useState<string>(destinationLocation.name);
@@ -249,10 +261,36 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
           <div className="w-8 h-1 rounded-full bg-neutral-900"></div>
         </div>
 
-        {/* Status Bar */}
-        <div className="relative z-40 w-full px-7 pt-3 pb-1 flex items-center justify-between text-[11px] font-semibold text-neutral-800 bg-white/95 backdrop-blur-md border-b border-neutral-200">
-          <span className="font-mono">{phoneClock}</span>
+        {/* Status Bar with Standby Lock & Onboarding Controls */}
+        <div className="relative z-40 w-full px-5 pt-3 pb-1 flex items-center justify-between text-[11px] font-semibold text-neutral-800 bg-white/95 backdrop-blur-md border-b border-neutral-200">
+          <div className="flex items-center gap-2">
+            <span className="font-mono">{phoneClock}</span>
+            <span className="text-[10px] uppercase font-mono px-1 py-0.2 rounded bg-neutral-200 text-neutral-700">
+              {travelMode === 'carro' ? 'Carro' : travelMode === 'moto' ? 'Moto' : 'A pé'}
+            </span>
+          </div>
+
           <div className="flex items-center gap-1.5 font-mono text-[10px]">
+            {onOpenOnboarding && (
+              <button
+                type="button"
+                onClick={onOpenOnboarding}
+                className="p-1 rounded hover:bg-neutral-200 text-neutral-700 transition-colors"
+                title="Abrir introdução (3 passos)"
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+              </button>
+            )}
+            {onToggleLock && (
+              <button
+                type="button"
+                onClick={() => onToggleLock(!isStandbyLocked)}
+                className="p-1 rounded hover:bg-neutral-200 text-neutral-700 transition-colors"
+                title={isStandbyLocked ? 'Destravar tela' : 'Bloquear tela (Standby)'}
+              >
+                {isStandbyLocked ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+              </button>
+            )}
             <span>5G</span>
             <div className="w-4 h-2 rounded-xs border border-neutral-800 p-0.5 flex items-center">
               <div className="w-full h-full bg-neutral-800"></div>
@@ -262,7 +300,89 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
 
         {/* Viewport Screen */}
         <div className="relative flex-1 w-full h-full overflow-hidden bg-neutral-950">
+          {isStandbyLocked ? (
+            /* =========================================================================
+               STANDBY / LOCK SCREEN (Apresentação Curiosa & Slogan de Impacto)
+               ========================================================================= */
+            <div
+              onClick={() => onToggleLock && onToggleLock(false)}
+              className="absolute inset-0 z-40 bg-[#050505] text-white flex flex-col justify-between p-6 select-none cursor-pointer transition-opacity duration-500 animate-in fade-in"
+            >
+              {/* Background Ambient Radial Glow */}
+              <div className="absolute inset-0 bg-radial from-neutral-900/60 via-black to-black pointer-events-none" />
 
+              {/* Top Lock Header */}
+              <div className="relative z-10 flex items-center justify-between pt-3">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[10px] font-mono text-neutral-300">
+                  <Shield className="w-3 h-3 text-white" />
+                  <span>Radar SafeRoute Ativo</span>
+                </div>
+                <div className="p-1 rounded-full bg-white/10 text-neutral-400">
+                  <Lock className="w-3.5 h-3.5" />
+                </div>
+              </div>
+
+              {/* Center Clock & Slogan */}
+              <div className="relative z-10 text-center space-y-4 my-auto">
+                <div className="space-y-1">
+                  <div className="text-5xl font-mono font-extrabold tracking-tight text-white drop-shadow-md">
+                    {phoneClock}
+                  </div>
+                  <p className="text-xs font-medium text-neutral-400">
+                    São Paulo &bull; Monitoramento Ativo
+                  </p>
+                </div>
+
+                {/* Minimalist Watermark Logo Shield */}
+                <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center mx-auto shadow-[0_0_35px_rgba(255,255,255,0.15)] animate-pulse">
+                  <Shield className="w-8 h-8 fill-white/80 text-white" />
+                </div>
+
+                {/* Slogan de Impacto */}
+                <div className="space-y-1 max-w-[260px] mx-auto">
+                  <h3 className="font-display text-base font-extrabold tracking-tight text-white leading-snug">
+                    SafeRoute
+                  </h3>
+                  <p className="text-xs font-mono text-neutral-300 font-semibold tracking-wider uppercase">
+                    &ldquo;Vá com segurança. Vá de SafeRoute.&rdquo;
+                  </p>
+                </div>
+
+                {/* Simulated Notification on Lock Screen */}
+                <div className="p-3 rounded-2xl bg-neutral-900/90 border border-neutral-800 backdrop-blur-md text-left space-y-1 shadow-lg max-w-[280px] mx-auto">
+                  <div className="flex items-center justify-between text-[10px] font-mono text-neutral-400">
+                    <span className="flex items-center gap-1 font-bold text-white">
+                      <Shield className="w-3 h-3" />
+                      SafeRoute Alerta
+                    </span>
+                    <span>agora</span>
+                  </div>
+                  <p className="text-[11px] text-neutral-300 leading-tight">
+                    Zonas de atenção monitoradas. Toque para destravar e ver o mapa em tempo real.
+                  </p>
+                </div>
+              </div>
+
+              {/* Bottom Unlock Prompt / Home Swipe Bar */}
+              <div className="relative z-10 text-center space-y-2 pb-2">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onToggleLock) onToggleLock(false);
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-white text-black font-bold text-xs shadow-lg hover:bg-neutral-200 active:scale-98 transition-all flex items-center justify-center gap-2"
+                >
+                  <Unlock className="w-3.5 h-3.5" />
+                  <span>Deslize ou toque para destravar</span>
+                </button>
+                <p className="text-[10px] font-mono text-neutral-500">
+                  Modo Standby &bull; Toque para mapa ao vivo
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
           {/* 1. Real Satellite & Vector Map */}
           <div className="absolute inset-0 w-full h-full z-0">
             <NavigationMap
@@ -727,6 +847,8 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
               </button>
             </div>
           </div>
+          </>
+          )}
 
           {/* Home Indicator */}
           <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-28 h-1 bg-neutral-400 rounded-full z-40"></div>
