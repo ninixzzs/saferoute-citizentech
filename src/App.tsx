@@ -346,6 +346,29 @@ export function App() {
     }
   };
 
+  const handleFocusCoordinates = (coords: [number, number], title?: string, neighborhood?: string) => {
+    setIsPhoneLocked(false);
+    setViewMode('map');
+    setMobileView('map');
+    setFocusPoint({
+      coords,
+      ts: Date.now(),
+      title,
+      neighborhood,
+    });
+    setTimeout(() => {
+      if (window.innerWidth < 1024) {
+        document.getElementById('mobile-stage')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        document.getElementById('desktop-workspace')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 60);
+
+    if (voiceEnabled && title) {
+      speakAlert(`Exibindo no mapa: ${title}.`);
+    }
+  };
+
   const handleTriggerDemoAlert = () => {
     const targetZone = dangerZones[0];
     if (targetZone) {
@@ -1060,6 +1083,8 @@ export function App() {
                   onSwitchToSafeRoute={handleAcceptReroute}
                   onSelectCustomDestination={handlePlotRouteAndGoToMap}
                   focusInputTrigger={assistantFocusTrigger}
+                  onPauseNavigation={pauseNavigation}
+                  onFocusCoordinates={handleFocusCoordinates}
                 />
               )}
             </div>
@@ -1081,6 +1106,8 @@ export function App() {
                 onSwitchToSafeRoute={handleAcceptReroute}
                 onSelectCustomDestination={handlePlotRouteAndGoToMap}
                 focusInputTrigger={assistantFocusTrigger}
+                onPauseNavigation={pauseNavigation}
+                onFocusCoordinates={handleFocusCoordinates}
               />
             </section>
           ) : (

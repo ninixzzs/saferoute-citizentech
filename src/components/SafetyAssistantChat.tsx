@@ -23,9 +23,11 @@ import {
   Loader2,
   ShieldAlert,
   ArrowRight,
+  HelpCircle,
+  LifeBuoy,
 } from 'lucide-react';
 import { DangerZone, IncidentReport, NavigationRoute } from '../types';
-import { PolicePostResult } from '../data/policePosts';
+import { PolicePostResult, findNearestPolicePosts } from '../data/policePosts';
 import { LocationSuggestion, reverseGeocode } from '../services/routingService';
 import {
   buildPreTripSmsMessage,
@@ -57,6 +59,8 @@ interface SafetyAssistantChatProps {
   onSwitchToSafeRoute: () => void;
   onSelectCustomDestination?: (destinationName: string) => void;
   focusInputTrigger?: number;
+  onPauseNavigation?: () => void;
+  onFocusCoordinates?: (coords: [number, number], title?: string, neighborhood?: string) => void;
 }
 
 interface ChatMessage {
@@ -74,6 +78,9 @@ interface ChatMessage {
   emergencyPolicePosts?: PolicePostResult[];
   showEmergencyGpsButton?: boolean;
   poweredByGemini?: boolean;
+  detectedLocationName?: string;
+  detectedCoordinates?: [number, number];
+  isHelpSymbolTriggered?: boolean;
 }
 
 const INITIAL_GREETING_TEXT = 'Oi, tudo bem? Qual é o seu nome?';
@@ -194,6 +201,8 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
   onSwitchToSafeRoute,
   onSelectCustomDestination,
   focusInputTrigger = 0,
+  onPauseNavigation,
+  onFocusCoordinates,
 }) => {
   const [phoneInput, setPhoneInput] = useState('');
   const [smsSentNotice, setSmsSentNotice] = useState(false);
@@ -453,6 +462,123 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
     }
   };
 
+  const handleEmergencyHelpClick = async () => {
+    // 1. PARAR TUDO:
+    // Para voz/TTS imediatamente
+    stopPortugueseSpeech();
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setIsSpeaking(false);
+
+    // Para ditado
+    try {
+      dictationRef.current?.stop();
+    } catch {}
+    setIsDictating(false);
+
+    // Para orbe de voz e escuta
+    try {
+      recognitionRef.current?.stop();
+    } catch {}
+    setIsListening(false);
+    setIsVoiceOrbOpen(false);
+
+    // Para processamento/pensamento do assistente
+    setIsThinking(false);
+
+    // Pausa a navegação no mapa para que o usuário não seja distraído
+    if (onPauseNavigation) {
+      onPauseNavigation();
+    }
+
+    // Limpa composer de texto
+    setInputText('');
+
+    // Garante que o painel exiba a conversa IA
+    setPanelTab('chat');
+
+    // 2. Voz acolhedora e imediata perguntando se está bem
+    const spokenGreeting = userName
+      ? `Você está bem, ${userName}? Respire com calma, parei tudo para focar em você. Estou localizando sua posição e postos policiais mais próximos agora.`
+      : 'Você está bem? Respire com calma, parei tudo para focar em você. Estou localizando sua posição e postos policiais mais próximos agora.';
+    speakCalmReply(spokenGreeting);
+
+    // 3. Obter a localização atual com prioridade máxima
+    setIsLocatingEmergencyGps(true);
+    let resolvedCoords: [number, number] = currentPosition || originLocation.coordinates || [-23.5505, -46.6333];
+    let resolvedLocationName = originLocation.name || 'São Paulo - SP';
+
+    // Tentar obter GPS em tempo real de alta precisão do navegador com timeout de 3.5 segundos
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      try {
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 3500,
+            maximumAge: 15000,
+          });
+        });
+        resolvedCoords = [pos.coords.latitude, pos.coords.longitude];
+        try {
+          const geo = await reverseGeocode(resolvedCoords[0], resolvedCoords[1]);
+          if (geo?.address) {
+            resolvedLocationName = geo.address;
+          }
+        } catch {}
+      } catch {
+        // Fallback para coordenadas atuais do mapa ou rota
+        if (currentPosition) {
+          resolvedCoords = currentPosition;
+          try {
+            const geo = await reverseGeocode(resolvedCoords[0], resolvedCoords[1]);
+            if (geo?.address) resolvedLocationName = geo.address;
+          } catch {}
+        }
+      } finally {
+        setIsLocatingEmergencyGps(false);
+      }
+    } else {
+      setIsLocatingEmergencyGps(false);
+    }
+
+    // 4. Buscar os postos policiais mais próximos
+    const nearestPosts = findNearestPolicePosts(resolvedCoords, 3);
+
+    // 5. Inserir mensagem do usuário e mensagem acolhedora da IA
+    const userMsg: ChatMessage = {
+      id: `user-sos-${Date.now()}`,
+      sender: 'user',
+      text: 'Preciso de ajuda urgente!',
+    };
+
+    const botMsg: ChatMessage = {
+      id: `emergency-help-${Date.now()}`,
+      sender: 'assistant',
+      toneLabel: 'Emergência Calma',
+      text: `Você está bem? ${userName ? `${userName}, ` : ''}respire com calma, você não está só e parei tudo para focar em você com prioridade total.\n\n📍 Localização atual detectada:\n${resolvedLocationName}\n\nLocalizei os postos policiais mais próximos de você para proteção e acolhimento imediato:`,
+      tips: [
+        'Se estiver sendo seguido(a) ou em risco, dirija-se a um local movimentado ou ao posto policial mais próximo.',
+        'Se puder falar em segurança, ligue imediatamente para a Polícia Militar no 190.',
+        'Mantenha a calma e priorize sempre sua segurança e integridade física.',
+      ],
+      isEmergency: true,
+      emergencyPolicePosts: nearestPosts,
+      showEmergencyGpsButton: true,
+      detectedLocationName: resolvedLocationName,
+      detectedCoordinates: resolvedCoords,
+      isHelpSymbolTriggered: true,
+    };
+
+    setMessages((prev) => [...prev, userMsg, botMsg]);
+
+    setTimeout(() => {
+      if (chatScrollRef.current) {
+        chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+      }
+    }, 60);
+  };
+
   const handleSendEmergencyGps = () => {
     if (!navigator.geolocation || isLocatingEmergencyGps) return;
     setIsLocatingEmergencyGps(true);
@@ -461,10 +587,20 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
         try {
           const coords: [number, number] = [pos.coords.latitude, pos.coords.longitude];
           const geo = await reverseGeocode(coords[0], coords[1]);
-          await askAssistant(`Estou na ${geo.address}`, {
-            coordsOverride: coords,
-            speakResponse: true,
-          });
+          const nearest = findNearestPolicePosts(coords, 3);
+          const updateMsg: ChatMessage = {
+            id: `gps-update-${Date.now()}`,
+            sender: 'assistant',
+            toneLabel: 'Emergência Calma',
+            text: `GPS atualizado com sucesso!\n\n📍 Nova localização precisa:\n${geo.address}\n\nPostos policiais recalculados para sua nova posição:`,
+            isEmergency: true,
+            emergencyPolicePosts: nearest,
+            showEmergencyGpsButton: true,
+            detectedLocationName: geo.address,
+            detectedCoordinates: coords,
+          };
+          setMessages((prev) => [...prev, updateMsg]);
+          speakCalmReply(`Localização atualizada: ${geo.address}. Recalculei os postos policiais mais próximos.`);
         } catch {
           await askAssistant('Estou na região da minha rota atual', {
             coordsOverride: currentPosition || destinationLocation.coordinates,
@@ -748,6 +884,16 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
               >
                 <RotateCcw className="w-3.5 h-3.5" />
               </button>
+
+              <button
+                type="button"
+                onClick={handleEmergencyHelpClick}
+                className="p-1.5 rounded-full bg-white/15 dark:bg-neutral-950/10 border border-white/25 dark:border-neutral-950/20 transition-colors hover:bg-white/25 text-white dark:text-neutral-950"
+                title="Ajuda / SOS (Parar tudo e localizar postos policiais)"
+                aria-label="Pedir ajuda emergencial"
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
 
@@ -790,12 +936,13 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
 
             <button
               type="button"
-              onClick={() => askAssistant('Estou em uma emergência, preciso de ajuda')}
-              className="px-2.5 py-2 rounded-xl bg-white/15 dark:bg-neutral-950/15 border border-white/30 dark:border-neutral-950/30 text-[11px] font-bold flex items-center gap-1 shrink-0 hover:bg-white/25 transition-colors"
-              title="Acionar protocolo calmo de emergência / assalto"
+              onClick={handleEmergencyHelpClick}
+              className="px-2.5 py-2 rounded-xl bg-white/15 dark:bg-neutral-950/15 border border-white/30 dark:border-neutral-950/30 text-[11px] font-bold flex items-center gap-1.5 shrink-0 hover:bg-white/25 transition-colors"
+              title="Ajuda e Emergência: Parar tudo e localizar postos policiais mais próximos"
+              aria-label="Símbolo de ajuda da IA"
             >
-              <ShieldAlert className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">SOS IA</span>
+              <LifeBuoy className="w-3.5 h-3.5" />
+              <span>Ajuda / SOS</span>
             </button>
           </div>
         </div>
@@ -916,11 +1063,27 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
 
                 {/* Emergency Robbery Quick Actions: 190 Call + Instant GPS Dispatch */}
                 {msg.isEmergency && (
-                  <div className="pt-2 border-t border-neutral-200 dark:border-neutral-800 space-y-2">
+                  <div className="pt-2 border-t border-neutral-200 dark:border-neutral-800 space-y-2.5">
+                    {/* Location Badge */}
+                    {msg.detectedLocationName && (
+                      <div className="p-3 rounded-2xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-800 text-neutral-900 dark:text-neutral-100 space-y-1">
+                        <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-neutral-600 dark:text-neutral-400">
+                          <MapPin className="w-3.5 h-3.5 text-neutral-950 dark:text-white shrink-0" />
+                          <span>Sua localização atual aproximada</span>
+                        </div>
+                        <p className="text-xs font-bold leading-snug">{msg.detectedLocationName}</p>
+                        {msg.detectedCoordinates && (
+                          <div className="text-[10px] font-mono text-neutral-500">
+                            GPS: {msg.detectedCoordinates[0].toFixed(5)}, {msg.detectedCoordinates[1].toFixed(5)}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <div className="flex flex-wrap items-center gap-2">
                       <a
                         href="tel:190"
-                        className="flex-1 min-w-[130px] py-2 px-3 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-sm hover:opacity-90 transition-opacity"
+                        className="flex-1 min-w-[130px] py-2.5 px-3 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-sm hover:opacity-90 active:scale-95 transition-all"
                       >
                         <PhoneCall className="w-3.5 h-3.5" />
                         <span>Ligar 190 (PM)</span>
@@ -931,28 +1094,28 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
                           type="button"
                           onClick={handleSendEmergencyGps}
                           disabled={isLocatingEmergencyGps}
-                          className="flex-1 min-w-[140px] py-2 px-3 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-900 dark:border-neutral-500 text-neutral-950 dark:text-white text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors"
+                          className="flex-1 min-w-[140px] py-2.5 px-3 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 text-neutral-950 dark:text-white text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                         >
                           {isLocatingEmergencyGps ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           ) : (
                             <LocateFixed className="w-3.5 h-3.5" />
                           )}
-                          <span>Enviar meu GPS agora</span>
+                          <span>Atualizar meu GPS</span>
                         </button>
                       )}
                     </div>
 
                     {msg.emergencyPolicePosts && msg.emergencyPolicePosts.length > 0 && (
-                      <div className="space-y-1.5 pt-1">
+                      <div className="space-y-2 pt-1">
                         <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-400 flex items-center gap-1">
-                          <ShieldAlert className="w-3 h-3" />
-                          <span>Postos policiais mais próximos:</span>
+                          <ShieldAlert className="w-3.5 h-3.5" />
+                          <span>Postos policiais mais próximos de você:</span>
                         </div>
                         {msg.emergencyPolicePosts.map((post) => (
                           <div
                             key={post.id}
-                            className="p-2.5 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 space-y-0.5 shadow-xs"
+                            className="p-3 rounded-2xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 space-y-2 shadow-sm"
                           >
                             <div className="flex items-center justify-between gap-2">
                               <span className="text-xs font-extrabold leading-tight">
@@ -962,9 +1125,33 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
                                 {post.distanceLabel}
                               </span>
                             </div>
-                            <p className="text-[11px] opacity-85">{post.address}</p>
+                            <p className="text-[11px] opacity-85 leading-snug">{post.address}</p>
                             <div className="text-[10px] font-mono opacity-75">
                               Atendimento 24h &bull; Emergência {post.phone}
+                            </div>
+                            <div className="flex items-center gap-2 pt-0.5 flex-wrap">
+                              {onFocusCoordinates && (
+                                <button
+                                  type="button"
+                                  onClick={() => onFocusCoordinates(post.coordinates, post.name, post.neighborhood)}
+                                  className="py-1 px-2.5 rounded-lg bg-white/15 dark:bg-neutral-950/15 hover:bg-white/25 dark:hover:bg-neutral-950/25 text-[11px] font-bold flex items-center gap-1 transition-all"
+                                  title="Ver no mapa"
+                                >
+                                  <MapPin className="w-3 h-3" />
+                                  <span>Ver no Mapa</span>
+                                </button>
+                              )}
+                              {onSelectCustomDestination && (
+                                <button
+                                  type="button"
+                                  onClick={() => onSelectCustomDestination(post.address || post.name)}
+                                  className="flex-1 py-1 px-2.5 rounded-lg bg-white dark:bg-neutral-950 text-neutral-950 dark:text-white text-[11px] font-bold flex items-center justify-center gap-1 hover:opacity-90 transition-opacity"
+                                  title="Traçar rota segura até o posto policial"
+                                >
+                                  <Navigation className="w-3 h-3" />
+                                  <span>Traçar Rota Segura</span>
+                                </button>
+                              )}
                             </div>
                           </div>
                         ))}

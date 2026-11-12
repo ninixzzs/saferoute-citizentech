@@ -552,21 +552,33 @@ export function buildPreTripSmsMessage(context: {
 export function detectEmergencyRobbery(rawText: string): boolean {
   const qNorm = normalizeText(rawText);
   const emergencyTriggers = [
+    'ajuda',
+    'preciso de ajuda',
+    'me ajuda',
+    'me ajude',
+    'pedir ajuda',
+    'socorro',
+    'estou em perigo',
+    'voce esta bem',
     'assalto',
     'assaltado',
     'assaltada',
     'assaltando',
+    'fui assaltado',
+    'fui assaltada',
     'roubo',
     'roubando',
     'roubaram',
-    'socorro',
-    'me ajude',
-    'me ajuda',
-    'estou em perigo',
     'ladrao',
     'armado',
     'sequestro',
-    'emergencia urgente',
+    'posto policial',
+    'postos policiais',
+    'delegacia',
+    'policia',
+    '190',
+    'emergencia',
+    'sos',
   ];
   return emergencyTriggers.some((term) => containsWholePhrase(qNorm, term) || qNorm.includes(term));
 }
@@ -589,6 +601,7 @@ export function generateSafetyAssistantReply(
   const question = sanitizeUserInput(rawQuestion, 240);
   const qNorm = normalizeText(question);
   const {
+    origin,
     destination,
     selectedRoute,
     allRoutes,
@@ -617,41 +630,29 @@ export function generateSafetyAssistantReply(
 
   // PRIORITY 0: EMERGENCY ASSAULT / ROBBERY PROTOCOL (Overrides any stage immediately)
   const isEmergencyInput = detectEmergencyRobbery(question);
-  const userGaveAddressNow = hasStreetOrPlaceInText(qNorm, mentionedSp);
 
-  if (isEmergencyInput && !userGaveAddressNow && !awaitingEmergencyAddress) {
-    const prefix = userName ? `${userName}, ` : '';
-    return {
-      id: `reply-${Date.now()}`,
-      toneLabel: 'Emergência Calma',
-      text: `${prefix}respire calma e mantenha a tranquilidade, estou aqui com você. Fale ou digite o seu endereço atual (rua, bairro ou referência) que vou procurar os postos policiais mais próximos rápido. Se estiver seguro, ligue 190.`,
-      tips: ['Você também pode tocar em "Enviar meu GPS agora" abaixo para acharmos a delegacia mais próxima imediatamente.'],
-      nearbyPlaces: [],
-      smsPreview: preSms.smsText,
-      nextStage: stage === 'ask_name' ? 'ask_destination' : stage,
-      isEmergency: true,
-      awaitingEmergencyAddress: true,
-      showEmergencyGpsButton: true,
-      emergencyPolicePosts: [],
-    };
-  }
-
-  if (awaitingEmergencyAddress || (isEmergencyInput && userGaveAddressNow)) {
+  if (isEmergencyInput || awaitingEmergencyAddress) {
     const coords: [number, number] =
-      mentionedSp?.coordinates || currentPosition || destination.coordinates;
+      mentionedSp?.coordinates || currentPosition || destination.coordinates || origin.coordinates;
     const nearestPosts = findNearestPolicePosts(coords, 3);
-    const areaName = mentionedSp?.name || question;
+    const areaName = mentionedSp?.name || (currentPosition ? 'sua localização atual' : destination.name || 'São Paulo');
+    const prefix = userName ? `${userName}, ` : '';
+
     return {
       id: `reply-${Date.now()}`,
       toneLabel: 'Emergência Calma',
-      text: `Respire calma${userName ? `, ${userName}` : ''}. Localizei os ${nearestPosts.length} postos policiais mais próximos da região (${areaName}). Se puder falar em segurança, ligue 190 ou siga para a unidade abaixo:`,
-      tips: ['Mantenha a calma e priorize sua integridade física; bens materiais podem ser recuperados.'],
+      text: `Você está bem? ${prefix}respire com calma, você não está só e parei tudo para focar em você com prioridade total.\n\nIdentifiquei ${nearestPosts.length} postos policiais mais próximos de ${areaName} para sua proteção imediata. Se puder falar em segurança, ligue 190 agora ou siga para uma das unidades abaixo:`,
+      tips: [
+        'Se estiver sendo seguido(a) ou em risco iminente, dirija-se a um local movimentado ou à base policial mais próxima.',
+        'Se puder falar em segurança, ligue imediatamente para a Polícia Militar no 190.',
+        'Mantenha a calma e priorize sempre sua vida e integridade física.',
+      ],
       nearbyPlaces: [],
       smsPreview: preSms.smsText,
       nextStage: stage === 'ask_name' ? 'ask_destination' : stage,
       isEmergency: true,
       awaitingEmergencyAddress: false,
-      showEmergencyGpsButton: false,
+      showEmergencyGpsButton: true,
       emergencyPolicePosts: nearestPosts,
     };
   }
