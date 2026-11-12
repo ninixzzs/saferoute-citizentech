@@ -2,13 +2,16 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import {
   RotateCcw,
-  Compass,
+  Play,
+  Pause,
   Move,
-  Maximize2,
-  Layers,
-  Shield,
-  Smartphone,
+  FastForward,
+  Navigation,
+  ShieldCheck,
   Sparkles,
+  MapPin,
+  Clock,
+  Gauge,
 } from 'lucide-react';
 
 interface Phone3DCanvasProps {
@@ -28,35 +31,113 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const phoneGroupRef = useRef<THREE.Group | null>(null);
   const shadowMeshRef = useRef<THREE.Mesh | null>(null);
+  const screenTextureRef = useRef<THREE.CanvasTexture | null>(null);
 
   // Rotation & Physics State
-  const rotationTarget = useRef<{ x: number; y: number }>({ x: 0.15, y: -0.35 });
-  const rotationCurrent = useRef<{ x: number; y: number }>({ x: 0.15, y: -0.35 });
+  const rotationTarget = useRef<{ x: number; y: number }>({ x: 0.14, y: -0.32 });
+  const rotationCurrent = useRef<{ x: number; y: number }>({ x: 0.14, y: -0.32 });
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef<{ x: number; y: number; rotX: number; rotY: number }>({
     x: 0,
     y: 0,
-    rotX: 0.15,
-    rotY: -0.35,
+    rotX: 0.14,
+    rotY: -0.32,
   });
   const autoSwayRef = useRef(true);
   const [activePreset, setActivePreset] = useState<'3d' | 'front' | 'back'>('3d');
 
-  // Draw High-Resolution Live UI Canvas for the Phone Screen Texture
-  const createScreenCanvas = useCallback(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1024;
-    canvas.height = 2048;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return canvas;
+  // Simulation / Video State inside the 3D phone screen
+  const [isPlaying, setIsPlaying] = useState(true);
+  const isPlayingRef = useRef(true);
+  const [simSpeed, setSimSpeed] = useState<1 | 2>(1);
+  const simSpeedRef = useRef<1 | 2>(1);
+  const simTimeRef = useRef(0); // 0 to 18 seconds loop
+  const [simProgressPercent, setSimProgressPercent] = useState(0);
+  const [simPhaseLabel, setSimPhaseLabel] = useState('Monitoramento Ativo');
 
-    // Dark sleek background
+  // Sync refs with state
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+
+  useEffect(() => {
+    simSpeedRef.current = simSpeed;
+  }, [simSpeed]);
+
+  // Waypoints for the vehicle trajectory in SP (Pinheiros -> Rebouças -> Paulista)
+  const trajectoryPoints = [
+    { x: 220, y: 1620 },
+    { x: 290, y: 1450 },
+    { x: 330, y: 1280 },
+    { x: 330, y: 1050 },
+    { x: 420, y: 820 },
+    { x: 580, y: 640 },
+    { x: 740, y: 530 },
+    { x: 820, y: 480 },
+  ];
+
+  // Helper to interpolate point along trajectory
+  const getInterpolatedPosition = (progress: number) => {
+    const totalSegments = trajectoryPoints.length - 1;
+    const scaledP = progress * totalSegments;
+    const index = Math.min(totalSegments - 1, Math.floor(scaledP));
+    const subP = scaledP - index;
+
+    const p0 = trajectoryPoints[index];
+    const p1 = trajectoryPoints[index + 1] || p0;
+
+    return {
+      x: p0.x + (p1.x - p0.x) * subP,
+      y: p0.y + (p1.y - p0.y) * subP,
+      angle: Math.atan2(p1.y - p0.y, p1.x - p0.x),
+    };
+  };
+
+  // Draw 60fps Dynamic Living Mini-App Video Screen on Canvas
+  const drawScreenFrame = useCallback((ctx: CanvasRenderingContext2D, time: number) => {
+    const totalDuration = 18; // 18 seconds loop
+    const progress = (time % totalDuration) / totalDuration;
+    const vehicle = getInterpolatedPosition(progress);
+
+    // Dynamic phase info
+    let phase = 'Traçado Seguro';
+    let speed = 42;
+    let turnText = 'Siga na Av. Rebouças';
+    let turnDistance = 'Em 400 metros';
+    let showAlertBanner = false;
+    let alertMessage = 'Zona de atenção monitorada no Brás';
+
+    if (progress < 0.22) {
+      phase = 'Planejando Desvio';
+      speed = Math.round(20 + progress * 80);
+      turnText = 'Inicie pela Av. Brigadeiro Faria Lima';
+      turnDistance = 'Partida';
+    } else if (progress < 0.55) {
+      phase = 'Trajeto em Andamento';
+      speed = Math.round(44 + Math.sin(time * 3) * 6);
+      turnText = 'Acesse Av. Rebouças (Desvio Seguro)';
+      turnDistance = 'Em 350 metros';
+    } else if (progress < 0.85) {
+      phase = 'Alerta Evitado';
+      speed = Math.round(38 + Math.sin(time * 2) * 5);
+      turnText = 'Vire à direita na Av. Paulista';
+      turnDistance = 'Em 180 metros';
+      showAlertBanner = true;
+      alertMessage = 'Desvio SafeRoute ativo: área de risco evitada';
+    } else {
+      phase = 'Chegada Segura';
+      speed = Math.max(0, Math.round((1 - progress) * 120));
+      turnText = 'Você chegou ao seu destino!';
+      turnDistance = 'Chegada';
+    }
+
+    // 1. Dark Vector Map Background
     ctx.fillStyle = '#050505';
     ctx.fillRect(0, 0, 1024, 2048);
 
-    // Subtle dark map grid
+    // Subtle Grid
     ctx.strokeStyle = '#18181b';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2.5;
     for (let x = 0; x < 1024; x += 80) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
@@ -70,214 +151,297 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
       ctx.stroke();
     }
 
-    // Secondary streets (subtle white lines)
+    // Secondary City Streets
     ctx.strokeStyle = '#27272a';
     ctx.lineWidth = 6;
     ctx.beginPath();
-    ctx.moveTo(120, 200);
-    ctx.lineTo(900, 700);
-    ctx.lineTo(400, 1400);
-    ctx.lineTo(850, 1900);
+    ctx.moveTo(100, 1800);
+    ctx.lineTo(920, 1200);
     ctx.stroke();
-
     ctx.beginPath();
-    ctx.moveTo(80, 1200);
-    ctx.lineTo(950, 1100);
+    ctx.moveTo(80, 800);
+    ctx.lineTo(960, 950);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(500, 100);
+    ctx.lineTo(450, 1950);
     ctx.stroke();
 
-    // Risk Zone Geofencing Circle (São Paulo Centro/Brás)
+    // 2. Monitored Danger Zone Polygon (Brás / Centro SP) with Animated Radar Ring
+    const zoneCenterX = 680;
+    const zoneCenterY = 880;
+    const radarPulseRadius = 160 + (Math.sin(time * 4) * 20 + 20);
+
+    // Concentric Radar Scan
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(zoneCenterX, zoneCenterY, radarPulseRadius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Danger Zone Area Fill & Dashed Border
     ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
     ctx.lineWidth = 4;
-    ctx.setLineDash([16, 12]);
+    ctx.setLineDash([14, 12]);
     ctx.beginPath();
-    ctx.arc(680, 880, 190, 0, Math.PI * 2);
+    ctx.arc(zoneCenterX, zoneCenterY, 180, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Risk zone warning badge inside circle
-    ctx.fillStyle = 'rgba(24, 24, 27, 0.9)';
-    ctx.fillRect(560, 850, 240, 60);
-    ctx.strokeStyle = '#52525b';
-    ctx.strokeRect(560, 850, 240, 60);
-    ctx.fillStyle = '#e4e4e7';
-    ctx.font = 'bold 24px monospace';
-    ctx.fillText('ÁREA MONITORADA', 575, 890);
-
-    // Alternative Route (Rapid, enters warning zone - dashed gray)
-    ctx.strokeStyle = '#52525b';
-    ctx.lineWidth = 10;
-    ctx.setLineDash([20, 16]);
+    // Warning Tag inside Risk Zone
+    ctx.fillStyle = 'rgba(15, 15, 18, 0.95)';
     ctx.beginPath();
-    ctx.moveTo(220, 1600);
-    ctx.lineTo(420, 1200);
-    ctx.lineTo(650, 920);
+    ctx.roundRect(550, 850, 260, 60, 16);
+    ctx.fill();
+    ctx.strokeStyle = '#52525b';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 22px monospace';
+    ctx.fillText('ZONA DE ATENÇÃO SP', 568, 888);
+
+    // 3. Alternative Route (Fast, passes straight through warning zone - dashed gray)
+    ctx.strokeStyle = '#52525b';
+    ctx.lineWidth = 9;
+    ctx.setLineDash([20, 14]);
+    ctx.beginPath();
+    ctx.moveTo(220, 1620);
+    ctx.lineTo(400, 1200);
+    ctx.lineTo(680, 880); // Through danger zone!
     ctx.lineTo(820, 480);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // SafeRoute Detour (100% monitored bypass - glowing solid white line)
-    ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
-    ctx.shadowBlur = 24;
+    // Label for Fast Route
+    ctx.fillStyle = '#71717a';
+    ctx.font = 'bold 22px monospace';
+    ctx.fillText('Rota Rápida (Passa por risco)', 430, 1140);
+
+    // 4. SafeRoute Detour (100% Monitored Safe Bypass - Glowing Solid White)
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.9)';
+    ctx.shadowBlur = 26;
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 14;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.beginPath();
-    ctx.moveTo(220, 1600);
-    ctx.lineTo(340, 1350);
-    ctx.lineTo(320, 1050);
-    ctx.lineTo(480, 680);
-    ctx.lineTo(820, 480);
+    trajectoryPoints.forEach((pt, i) => {
+      if (i === 0) ctx.moveTo(pt.x, pt.y);
+      else ctx.lineTo(pt.x, pt.y);
+    });
     ctx.stroke();
     ctx.shadowBlur = 0;
 
-    // Origin Marker (Pinheiros / Faria Lima)
+    // Origin Pin (Faria Lima)
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(220, 1600, 24, 0, Math.PI * 2);
+    ctx.arc(220, 1620, 22, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#050505';
     ctx.beginPath();
-    ctx.arc(220, 1600, 10, 0, Math.PI * 2);
+    ctx.arc(220, 1620, 9, 0, Math.PI * 2);
     ctx.fill();
 
-    // Destination Marker (Avenida Paulista / Jardins)
+    // Destination Pin (Av. Paulista)
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(820, 480, 28, 0, Math.PI * 2);
+    ctx.arc(820, 480, 26, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = '#050505';
     ctx.lineWidth = 6;
     ctx.stroke();
 
-    // Top Status Bar (Clean minimalist status)
+    // 5. Animated Moving Vehicle with Pulse Ring
+    const vehiclePulse = 28 + Math.sin(time * 8) * 8;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(vehicle.x, vehicle.y, vehiclePulse, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Vehicle Core Dot
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = '#ffffff';
+    ctx.shadowBlur = 18;
+    ctx.beginPath();
+    ctx.arc(vehicle.x, vehicle.y, 16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Vehicle Direction Arrow Tip
+    ctx.save();
+    ctx.translate(vehicle.x, vehicle.y);
+    ctx.rotate(vehicle.angle + Math.PI / 2);
+    ctx.fillStyle = '#050505';
+    ctx.beginPath();
+    ctx.moveTo(0, -9);
+    ctx.lineTo(6, 6);
+    ctx.lineTo(0, 3);
+    ctx.lineTo(-6, 6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // 6. Top iOS Status Bar & Dynamic Island
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 36px sans-serif';
-    ctx.fillText('9:41', 110, 120);
+    ctx.fillText('9:41', 110, 115);
 
-    ctx.font = 'bold 30px monospace';
-    ctx.fillText('5G  100%', 810, 120);
+    ctx.font = 'bold 28px monospace';
+    ctx.fillText('5G  100%', 810, 115);
 
     // Dynamic Island
     ctx.fillStyle = '#000000';
     ctx.beginPath();
-    ctx.roundRect(360, 68, 304, 76, 38);
+    ctx.roundRect(360, 64, 304, 76, 38);
     ctx.fill();
     ctx.strokeStyle = '#27272a';
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Live Turn-by-Turn HUD Card (Floating Glassmorphism Header)
+    // 7. Live Turn-by-Turn Guidance Header Card
     ctx.fillStyle = 'rgba(15, 15, 18, 0.94)';
     ctx.beginPath();
-    ctx.roundRect(64, 210, 896, 230, 44);
+    ctx.roundRect(64, 190, 896, 210, 40);
     ctx.fill();
-    ctx.strokeStyle = '#3f3f46';
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+    ctx.lineWidth = 2.5;
     ctx.stroke();
 
-    // Turn arrow icon background
+    // Arrow Box
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.roundRect(96, 246, 120, 120, 30);
+    ctx.roundRect(94, 225, 110, 110, 26);
     ctx.fill();
-    // Turn arrow shape
+
     ctx.fillStyle = '#050505';
     ctx.beginPath();
-    ctx.moveTo(156, 276);
-    ctx.lineTo(190, 310);
-    ctx.lineTo(168, 310);
-    ctx.lineTo(168, 336);
-    ctx.lineTo(144, 336);
-    ctx.lineTo(144, 310);
-    ctx.lineTo(122, 310);
+    ctx.moveTo(149, 250);
+    ctx.lineTo(180, 280);
+    ctx.lineTo(160, 280);
+    ctx.lineTo(160, 305);
+    ctx.lineTo(138, 305);
+    ctx.lineTo(138, 280);
+    ctx.lineTo(118, 280);
     ctx.closePath();
     ctx.fill();
 
-    // Turn instructions
+    // Turn Instructions Text
     ctx.fillStyle = '#a1a1aa';
-    ctx.font = 'bold 28px monospace';
-    ctx.fillText('EM 350 METROS', 246, 280);
+    ctx.font = 'bold 26px monospace';
+    ctx.fillText(turnDistance.toUpperCase(), 234, 258);
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 44px sans-serif';
-    ctx.fillText('Acesse Av. Paulista (Desvio)', 246, 336);
+    ctx.font = 'bold 40px sans-serif';
+    ctx.fillText(turnText, 234, 310);
 
     ctx.fillStyle = '#e4e4e7';
-    ctx.font = '30px sans-serif';
-    ctx.fillText('100% monitorada pela Defesa Civil SP', 246, 385);
+    ctx.font = '26px sans-serif';
+    ctx.fillText('Desvio 100% monitorado pela Defesa Civil SP', 234, 360);
 
-    // Pre-Trip Calm Notification Floating Banner
-    ctx.fillStyle = 'rgba(24, 24, 27, 0.92)';
+    // 8. Animated Slide-Down Defesa Civil Alert Notification
+    if (showAlertBanner) {
+      ctx.fillStyle = 'rgba(24, 24, 27, 0.96)';
+      ctx.beginPath();
+      ctx.roundRect(64, 430, 896, 110, 30);
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 28px sans-serif';
+      ctx.fillText('Alerta Defesa Civil SP', 104, 474);
+
+      ctx.fillStyle = '#d4d4d8';
+      ctx.font = '24px sans-serif';
+      ctx.fillText(alertMessage, 104, 512);
+    }
+
+    // 9. Floating Speedometer Widget
+    ctx.fillStyle = 'rgba(15, 15, 18, 0.92)';
     ctx.beginPath();
-    ctx.roundRect(64, 480, 896, 130, 36);
+    ctx.arc(130, 1420, 60, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+    ctx.lineWidth = 3;
     ctx.stroke();
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 30px sans-serif';
-    ctx.fillText('SafeRoute Alerta Preventivo', 104, 532);
+    ctx.font = '900 44px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${speed}`, 130, 1425);
+    ctx.font = 'bold 18px monospace';
+    ctx.fillStyle = '#a1a1aa';
+    ctx.fillText('KM/H', 130, 1455);
+    ctx.textAlign = 'left';
 
-    ctx.fillStyle = '#d4d4d8';
-    ctx.font = '26px sans-serif';
-    ctx.fillText('Boa viagem! Seu trajeto está sem indícios negativos.', 104, 574);
-
-    // Bottom Navigation Summary Card
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
+    // 10. Bottom Navigation Sheet
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.98)';
     ctx.beginPath();
-    ctx.roundRect(64, 1540, 896, 420, 52);
+    ctx.roundRect(64, 1530, 896, 430, 50);
     ctx.fill();
 
-    // Route Metrics
+    // Sheet Handle
+    ctx.fillStyle = '#d4d4d8';
+    ctx.beginPath();
+    ctx.roundRect(472, 1550, 80, 8, 4);
+    ctx.fill();
+
+    // Telemetry: Remaining Minutes & Distance
+    const remainingMin = Math.max(1, Math.round(21 * (1 - progress)));
+    const remainingKm = Math.max(0.2, +(7.4 * (1 - progress)).toFixed(1)).toFixed(1);
+
     ctx.fillStyle = '#050505';
     ctx.font = '900 76px monospace';
-    ctx.fillText('21 min', 110, 1650);
+    ctx.fillText(`${remainingMin} min`, 104, 1640);
 
     ctx.fillStyle = '#71717a';
     ctx.font = 'bold 36px monospace';
-    ctx.fillText('(7.4 km)', 420, 1640);
+    ctx.fillText(`(${remainingKm} km)`, 410, 1630);
 
-    ctx.fillStyle = '#18181b';
-    ctx.beginPath();
-    ctx.roundRect(660, 1590, 260, 68, 24);
-    ctx.fill();
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 28px monospace';
-    ctx.fillText('SEGURANÇA 94/100', 680, 1634);
-
-    ctx.fillStyle = '#52525b';
-    ctx.font = 'bold 32px sans-serif';
-    ctx.fillText('Rota Segura: Av. Brigadeiro Faria Lima → Paulista', 110, 1720);
-
-    // Big Action Button inside phone screen
+    // Safety Pill
     ctx.fillStyle = '#050505';
     ctx.beginPath();
-    ctx.roundRect(100, 1770, 824, 110, 36);
+    ctx.roundRect(660, 1580, 264, 68, 22);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 26px monospace';
+    ctx.fillText('SEGURANÇA 94/100', 680, 1624);
+
+    ctx.fillStyle = '#52525b';
+    ctx.font = 'bold 30px sans-serif';
+    ctx.fillText('Destino: Av. Paulista (Monitorado)', 104, 1705);
+
+    // Bottom Action / Status Button
+    ctx.fillStyle = '#050505';
+    ctx.beginPath();
+    ctx.roundRect(96, 1750, 832, 106, 32);
     ctx.fill();
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = '900 36px sans-serif';
-    ctx.fillText('Iniciar Trajeto Monitorado', 310, 1838);
+    ctx.font = '900 34px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(progress > 0.85 ? 'Destino Alcançado com Segurança' : 'Navegação SafeRoute em Andamento', 512, 1815);
+    ctx.textAlign = 'left';
 
-    // Impact Signature inside Screen
+    // Impact Slogan inside Screen
     ctx.fillStyle = '#71717a';
     ctx.font = 'bold 24px monospace';
-    ctx.fillText('“Vá com segurança. Vá de SafeRoute.”', 270, 1925);
+    ctx.textAlign = 'center';
+    ctx.fillText('“Vá com segurança. Vá de SafeRoute.”', 512, 1905);
+    ctx.textAlign = 'left';
 
-    // iOS Home Indicator Line
+    // iOS Home Indicator
     ctx.fillStyle = '#71717a';
     ctx.beginPath();
     ctx.roundRect(372, 1990, 280, 12, 6);
     ctx.fill();
+  }, [trajectoryPoints]);
 
-    return canvas;
-  }, []);
-
-  // Initialize Three.js Scene, Realistic Phone Geometry & Physics
+  // Three.js Setup, Scene & Texture Render Loop
   useEffect(() => {
     const container = mountRef.current;
     if (!container) return;
@@ -307,17 +471,14 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.4);
     scene.add(ambientLight);
 
-    // Directional Key Light (Top-Right specular highlight)
     const keyLight = new THREE.DirectionalLight(0xffffff, 3.2);
     keyLight.position.set(5, 7, 6);
     scene.add(keyLight);
 
-    // Rim Light (Left rim gleam on titanium edges)
     const rimLight = new THREE.DirectionalLight(0xd4d4d8, 2.4);
     rimLight.position.set(-6, -2, -4);
     scene.add(rimLight);
 
-    // Subtle Bottom Fill Light
     const fillLight = new THREE.DirectionalLight(0xa1a1aa, 1.2);
     fillLight.position.set(0, -5, 4);
     scene.add(fillLight);
@@ -327,30 +488,32 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
     scene.add(phoneGroup);
     phoneGroupRef.current = phoneGroup;
 
-    // Dimensions of Flagship Smartphone in 3D Units
     const phoneW = 3.0;
     const phoneH = 6.2;
     const phoneD = 0.28;
 
-    // Chassis Material (Dark Brushed Natural Titanium)
     const titaniumMaterial = new THREE.MeshStandardMaterial({
       color: 0x1f1f22,
       metalness: 0.85,
       roughness: 0.25,
     });
 
-    // Back Glass Material (Frosted Matte Obsidian)
     const backGlassMaterial = new THREE.MeshStandardMaterial({
       color: 0x0c0c0e,
       metalness: 0.2,
       roughness: 0.45,
     });
 
-    // Screen Texture Material (High-Res Procedural UI Canvas)
-    const screenCanvas = createScreenCanvas();
+    // Create Offscreen Screen Canvas & Texture for 60fps Living Mini-App Video
+    const screenCanvas = document.createElement('canvas');
+    screenCanvas.width = 1024;
+    screenCanvas.height = 2048;
+    const screenCtx = screenCanvas.getContext('2d');
+
     const screenTexture = new THREE.CanvasTexture(screenCanvas);
     screenTexture.generateMipmaps = true;
     screenTexture.minFilter = THREE.LinearMipmapLinearFilter;
+    screenTextureRef.current = screenTexture;
 
     const screenMaterial = new THREE.MeshStandardMaterial({
       map: screenTexture,
@@ -358,56 +521,44 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
       metalness: 0.05,
     });
 
-    // A. Main Phone Body (Center Core)
+    // Main Phone Body
     const bodyGeo = new THREE.BoxGeometry(phoneW, phoneH, phoneD);
     const bodyMaterials = [
-      titaniumMaterial, // Right edge
-      titaniumMaterial, // Left edge
-      titaniumMaterial, // Top edge
-      titaniumMaterial, // Bottom edge
-      screenMaterial,   // Front face (Screen)
-      backGlassMaterial // Back face (Matte Glass)
+      titaniumMaterial,
+      titaniumMaterial,
+      titaniumMaterial,
+      titaniumMaterial,
+      screenMaterial,
+      backGlassMaterial,
     ];
     const phoneBody = new THREE.Mesh(bodyGeo, bodyMaterials);
     phoneGroup.add(phoneBody);
 
-    // B. Beveled Titanium Perimeter Rim
+    // Perimeter Rim
     const rimGeo = new THREE.BoxGeometry(phoneW + 0.04, phoneH + 0.04, phoneD - 0.04);
     const rimMesh = new THREE.Mesh(rimGeo, titaniumMaterial);
     phoneGroup.add(rimMesh);
 
-    // C. Physical Hardware Buttons (Volume & Power / Action Button)
+    // Side Buttons
     const buttonMat = new THREE.MeshStandardMaterial({ color: 0x27272a, metalness: 0.9, roughness: 0.2 });
-    
-    // Left Buttons (Volume Up & Down)
-    const volUpGeo = new THREE.BoxGeometry(0.04, 0.45, 0.08);
-    const volUp = new THREE.Mesh(volUpGeo, buttonMat);
+    const volUp = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.45, 0.08), buttonMat);
     volUp.position.set(-phoneW / 2 - 0.02, 1.1, 0);
     phoneGroup.add(volUp);
 
-    const volDownGeo = new THREE.BoxGeometry(0.04, 0.45, 0.08);
-    const volDown = new THREE.Mesh(volDownGeo, buttonMat);
+    const volDown = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.45, 0.08), buttonMat);
     volDown.position.set(-phoneW / 2 - 0.02, 0.5, 0);
     phoneGroup.add(volDown);
 
-    // Right Button (Power Lock)
-    const powerGeo = new THREE.BoxGeometry(0.04, 0.7, 0.08);
-    const powerBtn = new THREE.Mesh(powerGeo, buttonMat);
+    const powerBtn = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.7, 0.08), buttonMat);
     powerBtn.position.set(phoneW / 2 + 0.02, 0.8, 0);
     phoneGroup.add(powerBtn);
 
-    // D. Pro Camera Island on the Back Face
-    const cameraIslandGeo = new THREE.BoxGeometry(1.2, 1.25, 0.12);
-    const cameraIslandMat = new THREE.MeshStandardMaterial({
-      color: 0x141416,
-      metalness: 0.4,
-      roughness: 0.3,
-    });
-    const cameraIsland = new THREE.Mesh(cameraIslandGeo, cameraIslandMat);
+    // Camera Plateau & 3 Sapphire Lenses
+    const cameraIslandMat = new THREE.MeshStandardMaterial({ color: 0x141416, metalness: 0.4, roughness: 0.3 });
+    const cameraIsland = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.25, 0.12), cameraIslandMat);
     cameraIsland.position.set(-phoneW / 2 + 0.8, phoneH / 2 - 0.85, -phoneD / 2 - 0.06);
     phoneGroup.add(cameraIsland);
 
-    // 3 Sapphire Camera Lenses with Metallic Chamfers
     const lensRingGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.1, 32);
     lensRingGeo.rotateX(Math.PI / 2);
     const lensRingMat = new THREE.MeshStandardMaterial({ color: 0x3f3f46, metalness: 0.95, roughness: 0.15 });
@@ -424,11 +575,7 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
 
     lensPositions.forEach((pos) => {
       const ring = new THREE.Mesh(lensRingGeo, lensRingMat);
-      ring.position.set(
-        cameraIsland.position.x + pos.x,
-        cameraIsland.position.y + pos.y,
-        cameraIsland.position.z - 0.04
-      );
+      ring.position.set(cameraIsland.position.x + pos.x, cameraIsland.position.y + pos.y, cameraIsland.position.z - 0.04);
       phoneGroup.add(ring);
 
       const glass = new THREE.Mesh(lensGlassGeo, lensGlassMat);
@@ -436,15 +583,7 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
       phoneGroup.add(glass);
     });
 
-    // Dual-Tone Flash & LiDAR Sensor on Camera Island
-    const flashGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.04, 16);
-    flashGeo.rotateX(Math.PI / 2);
-    const flashMat = new THREE.MeshStandardMaterial({ color: 0xf4f4f5, roughness: 0.2 });
-    const flash = new THREE.Mesh(flashGeo, flashMat);
-    flash.position.set(cameraIsland.position.x + 0.32, cameraIsland.position.y + 0.34, cameraIsland.position.z - 0.04);
-    phoneGroup.add(flash);
-
-    // E. Back Logo (Laser-Etched SafeRoute Minimalist Shield)
+    // Back Laser Logo
     const logoCanvas = document.createElement('canvas');
     logoCanvas.width = 256;
     logoCanvas.height = 256;
@@ -470,7 +609,7 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
     logoMesh.position.set(0, 0, -phoneD / 2 - 0.005);
     phoneGroup.add(logoMesh);
 
-    // 5. Dynamic Floor Shadow underneath the floating phone
+    // Floor Shadow
     const shadowCanvas = document.createElement('canvas');
     shadowCanvas.width = 256;
     shadowCanvas.height = 256;
@@ -492,30 +631,54 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
     scene.add(shadowMesh);
     shadowMeshRef.current = shadowMesh;
 
-    // 6. Smooth Animation Loop with Inertia Dampening
+    // 5. 60fps Animation Loop: Physics + Living Mini-App Video Screen Update
     let animationFrameId: number;
     let t = 0;
+    let lastTime = performance.now();
+    let frameThrottle = 0;
 
-    const animate = () => {
+    const animate = (now: number) => {
       animationFrameId = requestAnimationFrame(animate);
 
-      // Auto floating sway when idle
+      const delta = (now - lastTime) / 1000;
+      lastTime = now;
+
+      // Update Mini-App Video Simulation Timeline
+      if (isPlayingRef.current) {
+        simTimeRef.current += delta * simSpeedRef.current;
+        const totalDuration = 18;
+        const currProgress = (simTimeRef.current % totalDuration) / totalDuration;
+        setSimProgressPercent(Math.round(currProgress * 100));
+
+        if (currProgress < 0.25) setSimPhaseLabel('Planejando Desvio Seguro');
+        else if (currProgress < 0.55) setSimPhaseLabel('Deslocamento em Tempo Real');
+        else if (currProgress < 0.85) setSimPhaseLabel('Alerta Evitado com Sucesso');
+        else setSimPhaseLabel('Chegada Segura');
+      }
+
+      // Update Screen Texture Canvas at ~30-40fps for high performance
+      frameThrottle += delta;
+      if (frameThrottle >= 0.028 && screenCtx) {
+        frameThrottle = 0;
+        drawScreenFrame(screenCtx, simTimeRef.current);
+        screenTexture.needsUpdate = true;
+      }
+
+      // Physics: Floating Sway when Idle
       if (autoSwayRef.current && !isDraggingRef.current) {
         t += 0.016;
-        rotationTarget.current.x = 0.15 + Math.sin(t) * 0.05;
-        rotationTarget.current.y = -0.35 + Math.cos(t * 0.8) * 0.08;
+        rotationTarget.current.x = 0.14 + Math.sin(t) * 0.05;
+        rotationTarget.current.y = -0.32 + Math.cos(t * 0.8) * 0.08;
         phoneGroup.position.y = Math.sin(t * 1.2) * 0.08;
       }
 
-      // Smooth Lerp Dampening towards rotation target
-      const lerpSpeed = 0.1;
-      rotationCurrent.current.x += (rotationTarget.current.x - rotationCurrent.current.x) * lerpSpeed;
-      rotationCurrent.current.y += (rotationTarget.current.y - rotationCurrent.current.y) * lerpSpeed;
+      // Lerp Rotation Dampening
+      rotationCurrent.current.x += (rotationTarget.current.x - rotationCurrent.current.x) * 0.1;
+      rotationCurrent.current.y += (rotationTarget.current.y - rotationCurrent.current.y) * 0.1;
 
       phoneGroup.rotation.x = rotationCurrent.current.x;
       phoneGroup.rotation.y = rotationCurrent.current.y;
 
-      // Deform floor shadow dynamically with 3D tilt
       if (shadowMeshRef.current) {
         shadowMeshRef.current.position.x = phoneGroup.position.x + rotationCurrent.current.y * 0.6;
         shadowMeshRef.current.scale.set(
@@ -528,9 +691,8 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
       renderer.render(scene, camera);
     };
 
-    animate();
+    animationFrameId = requestAnimationFrame(animate);
 
-    // Resize handler
     const handleResize = () => {
       if (!container) return;
       const w = container.clientWidth || 440;
@@ -550,7 +712,7 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
         container.removeChild(renderer.domElement);
       }
     };
-  }, [createScreenCanvas]);
+  }, [drawScreenFrame]);
 
   // Pointer Interaction Handlers for 3D Drag Rotation
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -618,6 +780,11 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
     requestAnimationFrame(spinStep);
   };
 
+  const handleResetSim = () => {
+    simTimeRef.current = 0;
+    setSimProgressPercent(0);
+  };
+
   return (
     <div className={`relative flex flex-col items-center justify-center w-full select-none ${className}`}>
       {/* Real WebGL Three.js Viewport (ZERO TEXT ABOVE) */}
@@ -626,54 +793,100 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        className="w-full h-[540px] sm:h-[620px] max-w-[440px] flex items-center justify-center cursor-grab active:cursor-grabbing touch-none select-none relative"
+        className="w-full h-[520px] sm:h-[600px] max-w-[430px] flex items-center justify-center cursor-grab active:cursor-grabbing touch-none select-none relative"
       />
 
-      {/* Luxury Minimal Floating Glass Capsule at BOTTOM */}
-      <div className="w-full max-w-[390px] px-3.5 py-2 rounded-2xl bg-neutral-900/90 dark:bg-neutral-950/90 border border-neutral-800 backdrop-blur-2xl shadow-2xl flex items-center justify-between gap-2 z-20 -mt-4">
-        {/* Drag Hint */}
-        <div className="flex items-center gap-1.5 text-neutral-300 font-mono text-[11px]">
-          <Move className="w-3.5 h-3.5 text-white animate-pulse" />
-          <span>Girar 3D Livre</span>
+      {/* Mini App Video Simulation Control Capsule (Tactile & Luxurious Glassmorphism) */}
+      <div className="w-full max-w-[400px] px-4 py-2.5 rounded-2xl bg-neutral-900/90 dark:bg-neutral-950/90 border border-neutral-800 backdrop-blur-2xl shadow-2xl flex flex-col gap-2 z-20 -mt-2">
+        {/* Top Control Bar: Video Play/Pause, Scrubber & Status */}
+        <div className="flex items-center justify-between gap-2 text-[11px] font-mono">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsPlaying(!isPlaying)}
+              className="w-7 h-7 rounded-lg bg-white text-black hover:bg-neutral-200 flex items-center justify-center transition-transform active:scale-90"
+              title={isPlaying ? 'Pausar vídeo demo' : 'Reproduzir vídeo demo'}
+            >
+              {isPlaying ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleResetSim}
+              className="p-1.5 rounded-lg bg-neutral-800 text-neutral-300 hover:bg-neutral-700 transition-colors"
+              title="Reiniciar trajeto simulado"
+            >
+              <RotateCcw className="w-3 h-3" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSimSpeed(simSpeed === 1 ? 2 : 1)}
+              className="px-2 py-0.5 rounded-lg bg-neutral-800 text-neutral-300 hover:bg-neutral-700 font-bold text-[10px]"
+              title="Velocidade da simulação"
+            >
+              {simSpeed}x
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1.5 text-neutral-300 truncate max-w-[170px]">
+            <span className="w-2 h-2 rounded-full bg-white animate-pulse shrink-0" />
+            <span className="truncate text-[10px] font-bold">{simPhaseLabel}</span>
+          </div>
         </div>
 
-        {/* Preset Angle Pills */}
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setViewAngle('front')}
-            className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all ${
-              activePreset === 'front' ? 'bg-white text-black shadow-sm' : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
-            }`}
-          >
-            Tela
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewAngle('3d')}
-            className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all ${
-              activePreset === '3d' ? 'bg-white text-black shadow-sm' : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
-            }`}
-          >
-            3D Tilt
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewAngle('back')}
-            className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all ${
-              activePreset === 'back' ? 'bg-white text-black shadow-sm' : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
-            }`}
-          >
-            Traseira
-          </button>
-          <button
-            type="button"
-            onClick={handleSpin360}
-            className="p-1.5 rounded-lg bg-neutral-800 text-neutral-300 hover:bg-neutral-700 transition-all"
-            title="Giro 360°"
-          >
-            <RotateCcw className="w-3 h-3" />
-          </button>
+        {/* Video Timeline Progress Bar */}
+        <div className="w-full bg-neutral-800 h-1.5 rounded-full overflow-hidden">
+          <div
+            style={{ width: `${simProgressPercent}%` }}
+            className="bg-white h-full transition-all duration-100 ease-linear rounded-full shadow-[0_0_8px_white]"
+          />
+        </div>
+
+        {/* Bottom Control Bar: 3D Angle Presets */}
+        <div className="flex items-center justify-between gap-1 pt-1 border-t border-neutral-800/80">
+          <div className="flex items-center gap-1 text-[10px] font-mono text-neutral-400">
+            <Move className="w-3 h-3 text-neutral-300" />
+            <span>Giro 3D Livre</span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setViewAngle('front')}
+              className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all ${
+                activePreset === 'front' ? 'bg-white text-black' : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
+              }`}
+            >
+              Tela
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewAngle('3d')}
+              className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all ${
+                activePreset === '3d' ? 'bg-white text-black' : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
+              }`}
+            >
+              3D Tilt
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewAngle('back')}
+              className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold transition-all ${
+                activePreset === 'back' ? 'bg-white text-black' : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
+              }`}
+            >
+              Câmeras
+            </button>
+            <button
+              type="button"
+              onClick={handleSpin360}
+              className="p-1 rounded-md bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+              title="Giro 360°"
+            >
+              <RotateCcw className="w-3 h-3" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

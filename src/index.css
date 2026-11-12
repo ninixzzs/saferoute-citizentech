@@ -225,3 +225,80 @@ html.high-contrast *:focus-visible {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(115, 115, 115, 0.55);
 }
+
+/* Micro-animations during website navigation & interactions */
+@keyframes ambient-breathe {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(1.05);
+  }
+}
+
+.animate-ambient-breathe {
+  animation: ambient-breathe 7s ease-in-out infinite;
+}
+
+@keyframes radar-sweep {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-radar-sweep {
+  animation: radar-sweep 4s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes subtle-float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.animate-subtle-float {
+  animation: subtle-float 3.5s ease-in-out infinite;
+}
+
+@keyframes metallic-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer-badge {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.18) 50%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  background-size: 200% 100%;
+  animation: metallic-shimmer 4s infinite linear;
+}
+
+.hover-glass-glow {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
+}
+
+.hover-glass-glow:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.12), 0 0 16px 1px rgba(255, 255, 255, 0.08);
+}
+
+.dark .hover-glass-glow:hover {
+  box-shadow: 0 14px 32px -8px rgba(0, 0, 0, 0.65), 0 0 20px 2px rgba(255, 255, 255, 0.12);
+}
+

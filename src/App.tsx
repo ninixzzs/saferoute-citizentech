@@ -324,7 +324,7 @@ export function App() {
               </div>
 
               {/* Slogan de Impacto (Assinatura Escultural UX/UI) */}
-              <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-neutral-950 text-white border border-white/20 shadow-xl flex items-center justify-between gap-4 transition-all hover:border-white/40 group">
+              <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-neutral-950 text-white border border-white/20 shadow-xl flex items-center justify-between gap-4 transition-all hover:border-white/40 group hover-glass-glow">
                 <div className="flex items-center gap-3.5">
                   <div className="w-11 h-11 rounded-2xl bg-white text-black flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform">
                     <Shield className="w-5 h-5 fill-current" />
@@ -336,7 +336,7 @@ export function App() {
                     </span>
                   </div>
                 </div>
-                <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/10 text-[11px] font-mono text-neutral-300">
+                <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-[11px] font-mono text-neutral-300 shimmer-badge">
                   <Sparkles className="w-3 h-3 text-white" />
                   <span>São Paulo 24h</span>
                 </div>
@@ -349,7 +349,7 @@ export function App() {
                   onClick={() => {
                     document.getElementById('interactive-experience')?.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  className="px-5 py-3 rounded-2xl bg-neutral-950 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-neutral-950 text-xs sm:text-sm font-bold shadow-md flex items-center gap-2 transition-all active:scale-97"
+                  className="px-5 py-3 rounded-2xl bg-neutral-950 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-neutral-950 text-xs sm:text-sm font-bold shadow-md flex items-center gap-2 transition-all active:scale-97 hover-glass-glow"
                 >
                   <Map className="w-4 h-4" />
                   <span>Explorar Rotas &amp; Mapa</span>
@@ -359,7 +359,7 @@ export function App() {
                 <button
                   type="button"
                   onClick={handleOpenAssistant}
-                  className="px-4 py-3 rounded-2xl bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-950 dark:text-white text-xs sm:text-sm font-bold border border-neutral-300 dark:border-neutral-700 flex items-center gap-2 transition-all active:scale-97"
+                  className="px-4 py-3 rounded-2xl bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-950 dark:text-white text-xs sm:text-sm font-bold border border-neutral-300 dark:border-neutral-700 flex items-center gap-2 transition-all active:scale-97 hover-glass-glow"
                 >
                   <Sparkles className="w-4 h-4" />
                   <span>Perguntar à SafeRoute IA</span>
@@ -368,7 +368,7 @@ export function App() {
                 <button
                   type="button"
                   onClick={handleTriggerDemoAlert}
-                  className="px-4 py-3 rounded-2xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 hover:bg-neutral-100 dark:hover:bg-neutral-900 text-neutral-950 dark:text-white text-xs sm:text-sm font-semibold shadow-2xs flex items-center gap-2 transition-all active:scale-97"
+                  className="px-4 py-3 rounded-2xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 hover:bg-neutral-100 dark:hover:bg-neutral-900 text-neutral-950 dark:text-white text-xs sm:text-sm font-semibold shadow-2xs flex items-center gap-2 transition-all active:scale-97 hover-glass-glow"
                   title="Simular recebimento de alerta da Defesa Civil no aparelho"
                 >
                   <MessageSquareWarning className="w-4 h-4" />
