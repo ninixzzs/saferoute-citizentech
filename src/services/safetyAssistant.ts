@@ -207,6 +207,193 @@ function matchSpLocation(qNorm: string): SaoPauloLocationEntry | undefined {
   return undefined;
 }
 
+export interface FictionalPlaceRule {
+  keywords: string[];
+  universe: string;
+  response: string;
+}
+
+export const FICTIONAL_OR_FAKE_PLACES: FictionalPlaceRule[] = [
+  {
+    keywords: ['hogwarts', 'hogsmeade', 'beco diagonal', 'azkaban', 'godric', 'plataforma 9', 'gryffindor', 'sonserina'],
+    universe: 'Harry Potter',
+    response:
+      'Hogwarts e o Beco Diagonal são lugares mágicos fascinantes de Harry Potter! ⚡ Porém, como inteligência de segurança urbana da SafeRoute, meu escudo de proteção opera no mundo real de São Paulo. Nossos mapas ainda não têm acesso à Plataforma 9 ¾! Que tal me indicar um destino real por aqui, como Paulista, Pinheiros, Moema ou Centro?',
+  },
+  {
+    keywords: ['narnia', 'guarda roupa', 'cair paravel', 'aslam', 'feitico de narnia'],
+    universe: 'As Crônicas de Nárnia',
+    response:
+      'Nárnia é um reino fantástico das crônicas de C.S. Lewis! Porém, nossos radares e alertas da Defesa Civil cobrem a Região Metropolitana de São Paulo. Infelizmente não temos rotas mapeadas pelo guarda-roupa. Me diga um bairro ou avenida real de SP para viajarmos com segurança.',
+  },
+  {
+    keywords: ['namekusei', 'namek', 'planeta namekusei', 'planeta vegeta', 'planeta kaio', 'sala do tempo'],
+    universe: 'Dragon Ball',
+    response:
+      'O Planeta Namekusei fica a muitos anos-luz da Terra (e torcemos para que as Esferas do Dragão estejam a salvo do Freeza!). Na SafeRoute, monitoramos com precisão as ruas reais de São Paulo. Qual bairro ou avenida da capital você quer visitar?',
+  },
+  {
+    keywords: ['mordor', 'terra media', 'condado', 'valfenda', 'gondor', 'isengard', 'moria', 'rohan'],
+    universe: 'Senhor dos Anéis',
+    response:
+      'A Terra-Média e Mordor são terras épicas da obra de Tolkien! Mas aqui em São Paulo a SafeRoute foca em manter você protegido no asfalto real, evitando pontos de risco e alagamentos. Qual o seu destino real em SP?',
+  },
+  {
+    keywords: ['gotham', 'gotham city', 'metropolis', 'wakanda', 'krypton', 'asgard', 'atlantida', 'starling city', 'central city'],
+    universe: 'Quadrinhos / Heróis',
+    response:
+      'Gotham City e Metrópolis contam com o Batman e o Superman, mas em São Paulo quem cuida de você com rotas inteligentes e prevenção em tempo real é a SafeRoute! Diga-me qual bairro, estação ou avenida de São Paulo você deseja acessar.',
+  },
+  {
+    keywords: ['aldeia da folha', 'konoha', 'vila da folha', 'vila da areia', 'vila da nevoa', 'aldeia da areia'],
+    universe: 'Naruto',
+    response:
+      'A Aldeia da Folha (Konoha) é lendária no universo ninja, mas a SafeRoute opera com o trânsito e segurança das vias reais de São Paulo! Me diga para qual bairro ou avenida da capital você precisa ir.',
+  },
+  {
+    keywords: ['fenda do biquini', 'bikini bottom', 'fenda do bikini', 'siri cascudo'],
+    universe: 'Bob Esponja',
+    response:
+      'A Fenda do Biquíni fica no fundo do oceano com o Bob Esponja! Nosso app foi desenvolvido para quem roda no asfalto seco de São Paulo, longe de alagamentos e áreas de risco. Que tal me informar um bairro real de SP?',
+  },
+  {
+    keywords: ['springfield', 'silent hill', 'racoon city', 'raccoon city', 'los santos', 'vice city', 'liberty city', 'san andreas', 'groove street'],
+    universe: 'Games & Ficção',
+    response:
+      'Essa cidade pertence ao mundo dos jogos e ficção! Na SafeRoute levamos a sério a segurança real da Grande São Paulo, mapeando pontos de apoio e prevenindo imprevistos. Qual o seu bairro ou endereço de destino por aqui?',
+  },
+  {
+    keywords: ['winterfell', 'porto real', 'kings landing', 'westeros', 'braavos'],
+    universe: 'Game of Thrones',
+    response:
+      'Winterfell e Westeros ficam na ficção de George R.R. Martin. Em São Paulo, o clima pode até esfriar, mas nossa prioridade é manter suas rotas seguras e bem iluminadas! Para qual bairro ou região de SP você vai?',
+  },
+  {
+    keywords: ['terra do nunca', 'neverland', 'pais das maravilhas', 'cidade das esmeraldas', 'reino tao tao distante', 'tao tao distante', 'tão tão distante', 'el dorado', 'olimpo'],
+    universe: 'Contos & Mitologia',
+    response:
+      'Esse é um reino lendário dos contos e mitologias! Como assistente de mobilidade urbana da SafeRoute, monitoro com precisão as rotas de São Paulo e cidades vizinhas. Me diga um bairro real para planejarmos sua viagem.',
+  },
+  {
+    keywords: ['lua', 'marte', 'jupiter', 'saturno', 'plutao', 'venus', 'sol', 'galaxia', 'universo paralelo', 'buraco negro'],
+    universe: 'Espaço Sideral',
+    response:
+      'Uma viagem interplanetária seria fascinante, mas a SafeRoute cuida do trânsito e da segurança urbana aqui na Terra, nas ruas de São Paulo! Me diga para qual bairro, avenida ou estação da capital você quer traçar rota.',
+  },
+  {
+    keywords: ['ceu', 'inferno', 'purgatorio', 'paraiso', 'limbo'],
+    universe: 'Metafísico',
+    response:
+      'Esse destino pertence ao plano metafísico! O compromisso da SafeRoute é justamente garantir que você chegue com vida, calma e tranquilidade ao seu destino real aqui na Terra. Me diga para qual bairro de São Paulo você deseja ir.',
+  },
+  {
+    keywords: [
+      'lugar falso', 'lugar inventado', 'cidade inventada', 'lugar que nao existe',
+      'nao existe', 'lugar ficticio', 'bairro inventado', 'lugar imaginario',
+      'cidade falsa', 'rua falsa', 'bairro falso', 'mundo imaginario', 'cidade que nao existe'
+    ],
+    universe: 'Lugar Fictício',
+    response:
+      'Percebi que esse é um lugar fictício ou inventado! Eu sou uma IA especializada na segurança urbana real de São Paulo. Se você me informar um bairro ou endereço autêntico (como Consolação, Tatuapé, Moema ou Centro), analisarei os índices de segurança e pontos de apoio para você.',
+  },
+];
+
+export function detectFictionalPlace(text: string): { isFictional: boolean; response?: string } {
+  const norm = normalizeText(text);
+  for (const item of FICTIONAL_OR_FAKE_PLACES) {
+    if (item.keywords.some((kw) => containsWholePhrase(norm, normalizeText(kw)) || norm.includes(normalizeText(kw)))) {
+      return { isFictional: true, response: item.response };
+    }
+  }
+  return { isFictional: false };
+}
+
+export function isFictionalOrFakePlace(text: string): boolean {
+  return detectFictionalPlace(text).isFictional;
+}
+
+export function detectGibberishInput(text: string): boolean {
+  const clean = text.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (!clean || clean.length < 3) return false;
+
+  // Repetitive identical letters (e.g. "aaaaa", "zzzzz")
+  if (/(.)\1{3,}/.test(clean)) return true;
+
+  // Common keyboard row smashing (e.g. "asdfg", "zxcvb", "qwerty")
+  const keyboardSmashes = [
+    'asdf', 'sdfg', 'dfgh', 'fghj', 'ghjk', 'hjkl',
+    'qwer', 'wert', 'erty', 'rtyu', 'tyui', 'yuio', 'uiop',
+    'zxcv', 'xcvb', 'cvbn', 'vbnm',
+    'lkjh', 'kjhg', 'jhgf', 'hgfd', 'gfds', 'fdsa',
+    'poiuy', 'mnbvc',
+  ];
+  if (keyboardSmashes.some((smash) => clean.includes(smash))) return true;
+
+  // Words with length >= 4 with 0 vowels
+  if (clean.length >= 4 && !/[aeiouyáàâãéêíóôõú]/i.test(clean)) return true;
+
+  return false;
+}
+
+const SP_GREATER_MUNICIPALITIES = [
+  'sao paulo', 'osasco', 'guarulhos', 'santo andre', 'sao bernardo', 'sao caetano',
+  'diadema', 'maua', 'barueri', 'alphaville', 'santana de parnaiba', 'cotia',
+  'taboao da serra', 'embu das artes', 'itaquaquecetuba', 'suzano', 'mogi das cruzes',
+  'carapicuiba', 'jandira', 'franco da rocha', 'caieiras', 'jundiai', 'campinas',
+  'santos', 'guaruja', 'praia grande', 'sao vicente', 'ribeirao pires',
+  'rio grande da serra', 'ferraz de vasconcelos', 'poa', 'aruja', 'itapecerica',
+];
+
+const SP_KNOWN_NEIGHBORHOODS = [
+  'jardins', 'higienopolis', 'perdizes', 'pompeia', 'vila leopoldina', 'jaguare',
+  'vila sonia', 'morumbi', 'real parque', 'vila andrade', 'campo limpo', 'capao redondo',
+  'jardim angela', 'jardim sao luis', 'socorro', 'interlagos', 'cidade dutra', 'grajau',
+  'parelheiros', 'vila mariana', 'saude', 'praca da arvore', 'mirandopolis', 'jabaquara',
+  'cursino', 'ipiranga', 'sacoma', 'mooca', 'belem', 'tatuape', 'carrao', 'vila formosa',
+  'aricanduva', 'vila matilde', 'penha', 'ponte rasa', 'ermelino matarazzo',
+  'sao miguel paulista', 'itaim paulista', 'itaquera', 'artur alvim', 'guaianases',
+  'cidade tiradentes', 'sao mateus', 'sapopemba', 'vila prudente', 'vila alpina',
+  'agua rasa', 'santana', 'tucuruvi', 'jacana', 'mandaqui', 'casa verde', 'limao',
+  'freguesia do o', 'brasilandia', 'cachoeirinha', 'tremembe', 'vila guilherme',
+  'vila maria', 'anhanguera', 'perus', 'jaragua', 'pirituba', 'sao domingos',
+  'butanta', 'itaim bibi', 'cerqueira cesar', 'se', 'republica', 'luz', 'consolacao',
+  'bela vista', 'bom retiro', 'liberdade', 'bras', 'santa ifigenia', 'santa cecilia',
+  'cambuci', 'pari', 'paulista', 'faria lima', 'berrini', 'vila madalena', 'pinheiros',
+  'brooklin', 'campo belo', 'vila clementino', 'vila nova conceicao', 'chacara flora',
+  'chacara klabin', 'aclimacao', 'paraiso',
+];
+
+export function isRecognizedSpPlace(candidate: string): boolean {
+  const norm = normalizeText(candidate.trim());
+  if (!norm || norm.length < 2) return false;
+  if (isFictionalOrFakePlace(norm) || detectGibberishInput(norm)) return false;
+
+  // Direct matches in SP datasets
+  if (SAO_PAULO_LOCATIONS.some((l) => containsWholePhrase(norm, normalizeText(l.name)) || containsWholePhrase(normalizeText(l.name), norm))) {
+    return true;
+  }
+  if (LOCATION_ALIASES.some((a) => containsWholePhrase(norm, normalizeText(a.alias)) || containsWholePhrase(normalizeText(a.alias), norm))) {
+    return true;
+  }
+  if (SAO_PAULO_NEARBY_PLACES.some((p) => containsWholePhrase(norm, normalizeText(p.name)))) {
+    return true;
+  }
+  if (SP_GREATER_MUNICIPALITIES.some((m) => containsWholePhrase(norm, m))) {
+    return true;
+  }
+  if (SP_KNOWN_NEIGHBORHOODS.some((n) => containsWholePhrase(norm, n))) {
+    return true;
+  }
+
+  // Address prefixes like "Rua Augusta", "Av. Paulista", "Alameda Santos", "Praça da Sé", "Estação Tatuapé"
+  const addressPrefixRegex = /^(?:rua|r\.|avenida|av\.|av\b|alameda|al\.|estrada|rodovia|rod\.|praca|praça|largo|viaduto|ponte|estacao|estação|parque|terminal|travessa|beco|shopping|hospital|aeroporto)\s+[a-zà-ÿ0-9\s]{3,}/i;
+  if (addressPrefixRegex.test(candidate.trim())) {
+    return true;
+  }
+
+  return false;
+}
+
 function extractCustomPlacePhrase(rawQuestion: string): string | null {
   const clean = rawQuestion.trim().replace(/[?!.]+$/, '');
   const destMatch = clean.match(
@@ -221,6 +408,9 @@ function extractCustomPlacePhrase(rawQuestion: string): string | null {
       ) &&
       candidate.length >= 3
     ) {
+      if (isFictionalOrFakePlace(candidate) || detectGibberishInput(candidate)) {
+        return null;
+      }
       return capitalizeWords(candidate);
     }
   }
@@ -466,6 +656,36 @@ export function generateSafetyAssistantReply(
     };
   }
 
+  const namePrefix = userName ? `${userName}, ` : '';
+  const nameSuffix = userName ? ` ${userName}` : '';
+
+  // PRIORITY 1: FICTIONAL / FANTASY / POP CULTURE PLACES (e.g. Hogwarts, Nárnia, Namekusei, Gotham)
+  const fictionalCheck = detectFictionalPlace(question);
+  if (fictionalCheck.isFictional && fictionalCheck.response) {
+    return {
+      id: `reply-${Date.now()}`,
+      toneLabel: 'Tranquilo',
+      text: `${namePrefix}${fictionalCheck.response}`,
+      tips: [],
+      nearbyPlaces: [],
+      smsPreview: preSms.smsText,
+      nextStage: stage === 'ask_name' ? 'ask_destination' : stage,
+    };
+  }
+
+  // PRIORITY 2: GIBBERISH / KEYBOARD SMASH (e.g. "asdfgh", "qwerty", "zzzzz")
+  if (detectGibberishInput(question)) {
+    return {
+      id: `reply-${Date.now()}`,
+      toneLabel: 'Tranquilo',
+      text: `${namePrefix}não consegui identificar essa localização no mapa de São Paulo. Se puder me dizer um bairro, praça ou avenida real (como Paulista, Moema, Tatuapé, Pinheiros ou Centro), analisarei os índices de segurança e traçarei a rota para você!`,
+      tips: [],
+      nearbyPlaces: [],
+      smsPreview: preSms.smsText,
+      nextStage: stage === 'ask_name' ? 'ask_destination' : stage,
+    };
+  }
+
   // Meta / conversational question detectors (must never trigger random destination analysis)
   const asksAiIdentity =
     containsWholePhrase(qNorm, 'qual o seu nome') ||
@@ -576,9 +796,6 @@ export function generateSafetyAssistantReply(
     };
   }
 
-  const namePrefix = userName ? `${userName}, ` : '';
-  const nameSuffix = userName ? ` ${userName}` : '';
-
   // Allow user to update their name mid-conversation ("meu nome é X")
   if (
     qNorm.includes('meu nome e') ||
@@ -641,7 +858,60 @@ export function generateSafetyAssistantReply(
     return {
       id: `reply-${Date.now()}`,
       toneLabel: 'Tranquilo',
-      text: `${namePrefix}você pode me perguntar sobre qualquer bairro ou avenida de São Paulo, comparar rotas, pedir pontos de apoio próximos ou checar orientações antes de sair.`,
+      text: `${namePrefix}eu monitoro em tempo real os bairros e vias de São Paulo, integrando alertas da Defesa Civil, histórico de ocorrências e postos policiais (190). Você pode me pedir análise de qualquer local em SP, comparar rotas seguras ou solicitar apoio em emergências.`,
+      tips: ['Dica: Experimente me perguntar "Como está o trânsito na Paulista?" ou "Dicas de segurança à noite".'],
+      nearbyPlaces: [],
+      smsPreview: preSms.smsText,
+      nextStage: stage,
+    };
+  }
+
+  const asksIntelligence =
+    containsWholePhrase(qNorm, 'inteligente') ||
+    containsWholePhrase(qNorm, 'conversa') ||
+    containsWholePhrase(qNorm, 'conversar') ||
+    containsWholePhrase(qNorm, 'voce sabe falar') ||
+    containsWholePhrase(qNorm, 'sabe conversar') ||
+    containsWholePhrase(qNorm, 'voce pensa');
+  if (asksIntelligence) {
+    return {
+      id: `reply-${Date.now()}`,
+      toneLabel: 'Tranquilo',
+      text: `${namePrefix}sim! Fui desenvolvida para conversar com você com fluidez e empatia, usando inteligência voltada para a dinâmica urbana de São Paulo. Sei analisar riscos em cruzamentos, avaliar rotas alternativas, monitorar alertas da Defesa Civil e diferenciar locais reais de destinos fictícios. Como posso te orientar hoje?`,
+      tips: [],
+      nearbyPlaces: [],
+      smsPreview: preSms.smsText,
+      nextStage: stage,
+    };
+  }
+
+  const asksMobile =
+    containsWholePhrase(qNorm, 'celular') ||
+    containsWholePhrase(qNorm, 'smartphone') ||
+    containsWholePhrase(qNorm, 'mobile') ||
+    containsWholePhrase(qNorm, 'versao celular');
+  if (asksMobile) {
+    return {
+      id: `reply-${Date.now()}`,
+      toneLabel: 'Tranquilo',
+      text: `${namePrefix}o SafeRoute é 100% responsivo para celular e computador! Você pode traçar rotas com mapa interativo, conversar comigo por texto ou pelo Orbe de Voz e alternar entre os modos Carro, Moto e A pé com total fluidez.`,
+      tips: [],
+      nearbyPlaces: [],
+      smsPreview: preSms.smsText,
+      nextStage: stage,
+    };
+  }
+
+  const asksRouteDifference =
+    containsWholePhrase(qNorm, 'diferenca entre rotas') ||
+    containsWholePhrase(qNorm, 'rota segura ou rapida') ||
+    containsWholePhrase(qNorm, 'por que rota segura') ||
+    containsWholePhrase(qNorm, 'qual a diferenca');
+  if (asksRouteDifference) {
+    return {
+      id: `reply-${Date.now()}`,
+      toneLabel: 'Tranquilo',
+      text: `${namePrefix}a Rota Rápida prioriza o menor tempo no cronômetro, mesmo passando por áreas com lentidão ou risco. Já a Rota Segura calcula desvios preventivos para evitar vias com histórico de quebra de vidros ou alagamentos, garantindo sua tranquilidade com pouquíssimos minutos a mais.`,
       tips: [],
       nearbyPlaces: [],
       smsPreview: preSms.smsText,
@@ -838,7 +1108,52 @@ export function generateSafetyAssistantReply(
       ? capitalizeWords(question.replace(/[.!,]/g, ''))
       : null;
 
-  const customPlaceName = customSpPhrase || shortDirectPlace;
+  const candidateCustom = customSpPhrase || shortDirectPlace;
+
+  // Intercept and strictly reject any fictional or fake places from becoming a destination
+  if (candidateCustom) {
+    const candidateFictional = detectFictionalPlace(candidateCustom);
+    if (candidateFictional.isFictional && candidateFictional.response) {
+      return {
+        id: `reply-${Date.now()}`,
+        toneLabel: 'Tranquilo',
+        text: `${namePrefix}${candidateFictional.response}`,
+        tips: [],
+        nearbyPlaces: [],
+        smsPreview: preSms.smsText,
+        nextStage: 'ask_destination',
+        showQuickDestinations: true,
+      };
+    }
+
+    if (detectGibberishInput(candidateCustom)) {
+      return {
+        id: `reply-${Date.now()}`,
+        toneLabel: 'Tranquilo',
+        text: `${namePrefix}não consegui identificar essa localização no mapa de São Paulo. Se puder indicar um bairro, praça ou avenida real (como Paulista, Moema, Tatuapé ou Centro), calcularei sua rota imediatamente!`,
+        tips: [],
+        nearbyPlaces: [],
+        smsPreview: preSms.smsText,
+        nextStage: 'ask_destination',
+        showQuickDestinations: true,
+      };
+    }
+
+    if (!isRecognizedSpPlace(candidateCustom)) {
+      return {
+        id: `reply-${Date.now()}`,
+        toneLabel: 'Tranquilo',
+        text: `${namePrefix}não localizei "${candidateCustom}" no catálogo oficial de vias e bairros de São Paulo e Região Metropolitana. Como inteligência de segurança urbana de SP, posso te orientar se você me informar uma avenida, rua ou bairro reconhecido (ex: Paulista, Pinheiros, Itaquera ou Moema).`,
+        tips: [],
+        nearbyPlaces: [],
+        smsPreview: preSms.smsText,
+        nextStage: 'ask_destination',
+        showQuickDestinations: true,
+      };
+    }
+  }
+
+  const customPlaceName = candidateCustom && isRecognizedSpPlace(candidateCustom) ? candidateCustom : null;
 
   const focusName = mentionedSp?.name || customPlaceName || currentFocusPlace;
   const focusCoords = mentionedSp?.coordinates || destination.coordinates;

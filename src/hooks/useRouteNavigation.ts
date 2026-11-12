@@ -168,6 +168,35 @@ export function useRouteNavigation() {
     [originLocation, destinationLocation]
   );
 
+  // Apply current real GPS location directly on map as origin and recalculate journey
+  const applyCurrentGpsLocation = useCallback(
+    async (coords: [number, number], dangerZones: DangerZone[]) => {
+      setIsCalculatingRoute(true);
+      try {
+        const picked = await reverseGeocode(coords[0], coords[1]);
+        const newOrigin = picked;
+        const newRoutes = await calculateRoutesBetweenPoints(newOrigin, destinationLocation, dangerZones);
+        setOriginLocation(newOrigin);
+        setRoutes(newRoutes);
+
+        const safeRoute = newRoutes.find((r) => r.type === 'segura') || newRoutes[0];
+        setSelectedRoute(safeRoute);
+        setCurrentStepIndex(0);
+        setCurrentPosition(newOrigin.coordinates);
+        setIsNavigating(false);
+        setIsPaused(false);
+        setSpeedKmH(0);
+        return newOrigin;
+      } catch (err) {
+        console.error('Erro ao aplicar localização GPS:', err);
+        return null;
+      } finally {
+        setIsCalculatingRoute(false);
+      }
+    },
+    [destinationLocation]
+  );
+
   const resetToPresetRoutes = useCallback(() => {
     setRoutes(PRESET_ROUTES);
     setOriginLocation(DEFAULT_ORIGIN);
@@ -226,6 +255,7 @@ export function useRouteNavigation() {
     calculateJourney,
     swapOriginAndDestination,
     setPointFromMap,
+    applyCurrentGpsLocation,
     resetToPresetRoutes,
     originLocation,
     destinationLocation,

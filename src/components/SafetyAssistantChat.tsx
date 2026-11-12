@@ -22,7 +22,6 @@ import {
   LocateFixed,
   Loader2,
   ShieldAlert,
-  KeyRound,
   ArrowRight,
 } from 'lucide-react';
 import { DangerZone, IncidentReport, NavigationRoute } from '../types';
@@ -34,11 +33,12 @@ import {
   AssistantReply,
   NearbyPlaceResult,
   ConversationStage,
+  isFictionalOrFakePlace,
+  isRecognizedSpPlace,
 } from '../services/safetyAssistant';
 import {
   initGeminiKey,
   hasGeminiKeyConfigured,
-  saveUserGeminiKey,
 } from '../services/geminiClient';
 import {
   speakNaturalPortuguese,
@@ -110,7 +110,8 @@ function resolveDestinationTarget(
   currentDestName?: string
 ): string | null {
   if (msg.suggestedDestination && msg.suggestedDestination.trim().length > 0) {
-    return msg.suggestedDestination.trim();
+    const cand = msg.suggestedDestination.trim();
+    if (!isFictionalOrFakePlace(cand)) return cand;
   }
   if (msg.nearbyPlaces && msg.nearbyPlaces.length > 0) {
     return msg.nearbyPlaces[0].name;
@@ -123,10 +124,12 @@ function resolveDestinationTarget(
   const match = msg.text.match(/(?:ir para|indo para|rota para|caminho para|chegar em|destino:?)\s+([A-ZÀ-Úa-zà-ú0-9\s]+?)(?:[.,!?\n]|$)/i);
   if (match && match[1]) {
     const val = match[1].trim();
-    if (val.length >= 3 && val.length <= 35) return val;
+    if (val.length >= 3 && val.length <= 35 && !isFictionalOrFakePlace(val) && isRecognizedSpPlace(val)) {
+      return val;
+    }
   }
   if (currentDestName && currentDestName.trim().length > 0 && (msg.text.includes('rota') || msg.text.includes('trajeto') || msg.text.includes('viagem') || msg.text.includes('destino'))) {
-    return currentDestName.trim();
+    if (!isFictionalOrFakePlace(currentDestName)) return currentDestName.trim();
   }
   return null;
 }
@@ -213,10 +216,8 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
   const [isThinking, setIsThinking] = useState(false);
   const [isLocatingEmergencyGps, setIsLocatingEmergencyGps] = useState(false);
 
-  // Google Gemini Flash setup state
+  // Google Gemini Flash setup state (background-ready)
   const [geminiReady, setGeminiReady] = useState<boolean>(() => hasGeminiKeyConfigured());
-  const [showGeminiConfig, setShowGeminiConfig] = useState(false);
-  const [geminiKeyDraft, setGeminiKeyDraft] = useState('');
 
   // Speech-to-text dictation ("falar só escrevendo" inside composer)
   const [isDictating, setIsDictating] = useState(false);
@@ -484,14 +485,6 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
     );
   };
 
-  const handleSaveGeminiKey = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await saveUserGeminiKey(geminiKeyDraft);
-    setGeminiReady(hasGeminiKeyConfigured());
-    setGeminiKeyDraft('');
-    setShowGeminiConfig(false);
-  };
-
   const handleResetConversation = () => {
     stopPortugueseSpeech();
     try {
@@ -731,20 +724,6 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
 
               <button
                 type="button"
-                onClick={() => setShowGeminiConfig((prev) => !prev)}
-                className={`p-1.5 rounded-full border transition-colors ${
-                  showGeminiConfig
-                    ? 'bg-white text-neutral-950 border-white dark:bg-neutral-950 dark:text-white dark:border-neutral-950'
-                    : 'bg-white/15 dark:bg-neutral-950/10 border-white/25 dark:border-neutral-950/20 hover:bg-white/25'
-                }`}
-                title="Configurar chave Google Gemini Flash"
-                aria-label="Configurar chave Google Gemini Flash"
-              >
-                <KeyRound className="w-3.5 h-3.5" />
-              </button>
-
-              <button
-                type="button"
                 onClick={() => {
                   const next = !aiVoiceEnabled;
                   setAiVoiceEnabled(next);
@@ -771,45 +750,6 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
               </button>
             </div>
           </div>
-
-          {showGeminiConfig && (
-            <form
-              onSubmit={handleSaveGeminiKey}
-              className="p-2.5 rounded-2xl bg-white/10 dark:bg-neutral-950/10 border border-white/20 dark:border-neutral-950/20 space-y-2 animate-in fade-in duration-150"
-            >
-              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider">
-                <span>Conectar Google Gemini Flash (Criptografado AES-256)</span>
-                {geminiReady && (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      await saveUserGeminiKey('');
-                      setGeminiReady(hasGeminiKeyConfigured());
-                      setShowGeminiConfig(false);
-                    }}
-                    className="underline opacity-80 hover:opacity-100"
-                  >
-                    Desconectar
-                  </button>
-                )}
-              </div>
-              <div className="flex items-center gap-1.5">
-                <input
-                  type="password"
-                  value={geminiKeyDraft}
-                  onChange={(e) => setGeminiKeyDraft(e.target.value)}
-                  placeholder="Cole sua Gemini API Key (AIza...)"
-                  className="flex-1 min-w-0 px-2.5 py-1.5 rounded-xl bg-white text-neutral-950 text-xs placeholder-neutral-500 outline-none"
-                />
-                <button
-                  type="submit"
-                  className="px-3 py-1.5 rounded-xl bg-white text-neutral-950 dark:bg-neutral-950 dark:text-white text-xs font-bold shrink-0"
-                >
-                  Salvar
-                </button>
-              </div>
-            </form>
-          )}
 
           {/* Quick Emergency 190 & Focused Sub-tab Switcher */}
           <div className="flex items-center gap-1.5">

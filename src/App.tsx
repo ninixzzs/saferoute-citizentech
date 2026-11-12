@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { RouteSelector } from './components/RouteSelector';
 import { RouteItinerary } from './components/RouteItinerary';
@@ -90,6 +90,7 @@ export function App() {
     switchImmediatelyToSafeRoute,
     calculateJourney,
     swapOriginAndDestination,
+    applyCurrentGpsLocation,
     resetToPresetRoutes,
     originLocation,
     destinationLocation,
@@ -172,6 +173,29 @@ export function App() {
     },
     [setRoutes, setSelectedRoute]
   );
+
+  // Solicit real GPS geolocation on site entry to automatically place user on map as origin
+  useEffect(() => {
+    if (typeof window === 'undefined' || !navigator.geolocation) return;
+
+    let isMounted = true;
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        if (!isMounted) return;
+        const coords: [number, number] = [pos.coords.latitude, pos.coords.longitude];
+        await applyCurrentGpsLocation(coords, dangerZones);
+      },
+      (err) => {
+        // Fallback gracefully to default SP origin if permission denied or timeout
+        console.info('SafeRoute: Geolocalização automática não concedida ou aguardando permissão:', err.message);
+      },
+      { enableHighAccuracy: true, timeout: 9000, maximumAge: 60000 }
+    );
+
+    return () => {
+      isMounted = false;
+    };
+  }, [applyCurrentGpsLocation, dangerZones]);
 
   // Bidirectional scroll reveal observer for silky smooth on-scroll animations & text choreographies (scroll up & down)
   React.useEffect(() => {
