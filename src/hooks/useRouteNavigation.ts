@@ -38,27 +38,22 @@ export function useRouteNavigation() {
     setSpeedKmH(0);
   }, []);
 
-  // Switch smoothly to safe route from nearest point on the new path
+  // Switch smoothly to safe route preserving trip progress
   const switchImmediatelyToSafeRoute = useCallback(() => {
     const safeRoute = routes.find((r) => r.type === 'segura') || routes[1] || routes[0];
-    let closestIdx = 0;
-    let minDist = Infinity;
-
-    safeRoute.path.forEach((pt, idx) => {
-      const d = calculateDistanceMeters(currentPosition[0], currentPosition[1], pt[0], pt[1]);
-      if (d < minDist) {
-        minDist = d;
-        closestIdx = idx;
-      }
-    });
+    const currProgress = currentStepIndex / Math.max(1, selectedRoute.path.length - 1);
+    const targetIdx = Math.min(
+      safeRoute.path.length - 1,
+      Math.max(1, Math.floor(currProgress * safeRoute.path.length))
+    );
 
     setSelectedRoute(safeRoute);
-    setCurrentStepIndex(closestIdx);
-    setCurrentPosition(safeRoute.path[closestIdx]);
+    setCurrentStepIndex(targetIdx);
+    setCurrentPosition(safeRoute.path[targetIdx]);
     setIsNavigating(true);
     setIsPaused(false);
     setSpeedKmH(40);
-  }, [routes, currentPosition]);
+  }, [routes, currentStepIndex, selectedRoute.path.length]);
 
   const startNavigation = useCallback(() => {
     // If the trip already completed, restart smoothly from the beginning

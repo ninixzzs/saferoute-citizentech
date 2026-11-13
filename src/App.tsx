@@ -376,11 +376,17 @@ export function App() {
   };
 
   const handleRequestStartTrip = useCallback(() => {
-    startNavigation();
+    const briefing = evaluatePreTripBriefing({
+      route: selectedRoute,
+      destination: destinationLocation,
+      dangerZones,
+      incidents,
+    });
+    setPendingTripBriefing(briefing);
     if (voiceEnabled) {
-      speakAlert(`Iniciando navegação: ${selectedRoute.name}.`);
+      speakAlert(briefing.message);
     }
-  }, [startNavigation, selectedRoute.name, voiceEnabled, speakAlert]);
+  }, [selectedRoute, destinationLocation, dangerZones, incidents, voiceEnabled, speakAlert]);
 
   const handleConfirmStartTrip = () => {
     setPendingTripBriefing(null);
@@ -1335,11 +1341,27 @@ export function App() {
           <div className="w-full max-w-md rounded-3xl bg-white dark:bg-neutral-950 border-2 border-neutral-950 dark:border-white/25 shadow-2xl p-5 space-y-4">
             <div className="flex items-start justify-between gap-3 border-b border-neutral-200 dark:border-neutral-800 pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0">
-                  <ShieldCheck className="w-4 h-4" />
+                <div
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    pendingTripBriefing.status === 'calm'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-amber-600 text-white'
+                  }`}
+                >
+                  {pendingTripBriefing.status === 'calm' ? (
+                    <ShieldCheck className="w-5 h-5" />
+                  ) : (
+                    <AlertCircle className="w-5 h-5" />
+                  )}
                 </div>
                 <div>
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-500">
+                  <span
+                    className={`text-[10px] font-mono font-bold uppercase tracking-wider ${
+                      pendingTripBriefing.status === 'calm'
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-amber-600 dark:text-amber-400'
+                    }`}
+                  >
                     {pendingTripBriefing.toneLabel}
                   </span>
                   <h3 className="text-sm font-extrabold text-neutral-950 dark:text-white leading-snug">

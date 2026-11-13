@@ -490,26 +490,41 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
 
             {/* 1-Tap Route Switcher Pills */}
             {!isNavigating && allRoutes.length > 0 && (
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
-                {allRoutes.map((route) => {
-                  const isSelected = route.id === selectedRoute.id;
-                  return (
-                    <button
-                      key={route.id}
-                      type="button"
-                      onClick={() => onSelectRoute(route)}
-                      className={`px-2.5 py-1 rounded-xl border text-[11px] font-bold whitespace-nowrap transition-all flex items-center gap-1 shrink-0 ${
-                        isSelected
-                          ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border-neutral-950 dark:border-white'
-                          : 'bg-neutral-100 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 border-neutral-200 dark:border-neutral-800'
-                      }`}
-                    >
-                      {route.type === 'segura' && <ShieldCheck className="w-3 h-3" />}
-                      <span>{shortRouteLabel(route)}</span>
-                      <span className="font-mono opacity-80">{route.durationMin}m</span>
-                    </button>
-                  );
-                })}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                  {allRoutes.map((route) => {
+                    const isSelected = route.id === selectedRoute.id;
+                    return (
+                      <button
+                        key={route.id}
+                        type="button"
+                        onClick={() => onSelectRoute(route)}
+                        className={`px-2.5 py-1 rounded-xl border text-[11px] font-bold whitespace-nowrap transition-all flex items-center gap-1 shrink-0 ${
+                          isSelected
+                            ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border-neutral-950 dark:border-white'
+                            : 'bg-neutral-100 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 border-neutral-200 dark:border-neutral-800'
+                        }`}
+                      >
+                        {route.type === 'segura' && <ShieldCheck className="w-3 h-3" />}
+                        <span>{shortRouteLabel(route)}</span>
+                        <span className="font-mono opacity-80">{route.durationMin}m</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Instant safety assessment banner for mobile */}
+                {selectedRoute.type === 'segura' || selectedRoute.safetyScore >= 80 ? (
+                  <div className="px-2.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5 text-[10px] font-semibold">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span>Está tudo bem! Trajeto sem áreas de risco críticas.</span>
+                  </div>
+                ) : (
+                  <div className="px-2.5 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-950 dark:text-amber-200 flex items-center gap-1.5 text-[10px] font-semibold">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <span>Atenção: Cruza áreas de risco (ex: Santa Ifigênia).</span>
+                  </div>
+                )}
               </div>
             )}
 

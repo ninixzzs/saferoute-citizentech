@@ -823,32 +823,47 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
 
             {/* 1-Tap Route Switcher Pills inside Phone Simulator */}
             {!isNavigating && allRoutes.length > 0 && onSelectRoute && (
-              <div className="flex items-center gap-1 overflow-x-auto pb-0.5">
-                {allRoutes.map((route) => {
-                  const isSelected = route.id === selectedRoute.id;
-                  const label =
-                    route.type === 'segura'
-                      ? 'Segura'
-                      : route.type === 'rapida'
-                        ? 'Rápida'
-                        : 'Alternativa';
-                  return (
-                    <button
-                      key={route.id}
-                      type="button"
-                      onClick={() => onSelectRoute(route)}
-                      className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold whitespace-nowrap transition-all flex items-center gap-1 shrink-0 ${
-                        isSelected
-                          ? 'bg-neutral-950 text-white border-neutral-950'
-                          : 'bg-neutral-100 text-neutral-700 border-neutral-200 hover:bg-neutral-200'
-                      }`}
-                    >
-                      {route.type === 'segura' && <ShieldCheck className="w-3 h-3" />}
-                      <span>{label}</span>
-                      <span className="font-mono opacity-80">{route.durationMin}m</span>
-                    </button>
-                  );
-                })}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1 overflow-x-auto pb-0.5">
+                  {allRoutes.map((route) => {
+                    const isSelected = route.id === selectedRoute.id;
+                    const label =
+                      route.type === 'segura'
+                        ? 'Segura'
+                        : route.type === 'rapida'
+                          ? 'Rápida'
+                          : 'Alternativa';
+                    return (
+                      <button
+                        key={route.id}
+                        type="button"
+                        onClick={() => onSelectRoute(route)}
+                        className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold whitespace-nowrap transition-all flex items-center gap-1 shrink-0 ${
+                          isSelected
+                            ? 'bg-neutral-950 text-white border-neutral-950'
+                            : 'bg-neutral-100 text-neutral-700 border-neutral-200 hover:bg-neutral-200'
+                        }`}
+                      >
+                        {route.type === 'segura' && <ShieldCheck className="w-3 h-3" />}
+                        <span>{label}</span>
+                        <span className="font-mono opacity-80">{route.durationMin}m</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Instant safety assessment for selected route */}
+                {selectedRoute.type === 'segura' || selectedRoute.safetyScore >= 80 ? (
+                  <div className="px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-950 flex items-center gap-1.5 text-[10px] font-semibold">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>Está tudo bem! Trajeto sem áreas críticas mapeadas.</span>
+                  </div>
+                ) : (
+                  <div className="px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-950 flex items-center gap-1.5 text-[10px] font-semibold">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>Atenção: Cruza áreas com risco de furto (Santa Ifigênia).</span>
+                  </div>
+                )}
               </div>
             )}
 

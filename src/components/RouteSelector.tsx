@@ -18,6 +18,7 @@ import {
   Gauge,
   X,
   LocateFixed,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface RouteSelectorProps {
@@ -392,6 +393,45 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
           </span>
         </div>
 
+        {/* Selected Route Instant Safety Feedback */}
+        {(() => {
+          const currentRoute = routes.find((r) => r.id === selectedRouteId) || routes[0];
+          if (!currentRoute) return null;
+          const isRouteSafe =
+            currentRoute.type === 'segura' ||
+            (currentRoute.safetyScore >= 80 && (!currentRoute.dangerZoneIds || currentRoute.dangerZoneIds.length === 0));
+
+          return isRouteSafe ? (
+            <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-700/60 text-emerald-950 dark:text-emerald-100 flex items-start gap-2.5 shadow-xs animate-in fade-in duration-200">
+              <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <div className="text-xs space-y-0.5">
+                <div className="font-extrabold text-[11px] text-emerald-800 dark:text-emerald-300">
+                  Está tudo bem! &bull; Trajeto Tranquilo
+                </div>
+                <p className="text-emerald-900/90 dark:text-emerald-200/90 leading-relaxed text-[11px]">
+                  Esta rota não possui áreas de risco críticas no caminho. Percurso liberado e monitorado pela SafeRoute para sua tranquilidade.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700/60 text-amber-950 dark:text-amber-100 flex items-start gap-2.5 shadow-xs animate-in fade-in duration-200">
+              <div className="w-7 h-7 rounded-lg bg-amber-600 text-white flex items-center justify-center shrink-0 mt-0.5">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
+              <div className="text-xs space-y-0.5">
+                <div className="font-extrabold text-[11px] text-amber-800 dark:text-amber-300">
+                  Atenção: Ponto de Risco no Trajeto
+                </div>
+                <p className="text-amber-900/90 dark:text-amber-200/90 leading-relaxed text-[11px]">
+                  Esta rota atravessa pontos com histórico de furtos (ex: Santa Ifigênia / Centro). Mantenha vidros fechados ou opte pela <strong>Rota Segura Recomendada</strong>.
+                </p>
+              </div>
+            </div>
+          );
+        })()}
+
         <div className="space-y-2">
           {routes.map((route) => {
             const isSelected = route.id === selectedRouteId;
@@ -454,6 +494,19 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
                 <p className="text-[11px] text-neutral-600 dark:text-neutral-400 mt-2 leading-relaxed">
                   {route.description}
                 </p>
+
+                {/* Safety Status Pill inside card */}
+                {isSafe || route.safetyScore >= 80 ? (
+                  <div className="mt-2 flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
+                    <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                    <span>Está tudo bem &bull; Sem áreas de risco críticas</span>
+                  </div>
+                ) : (
+                  <div className="mt-2 flex items-center gap-1.5 text-[10px] font-bold text-amber-700 dark:text-amber-400">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Atenção &bull; Cruza áreas de atenção no trajeto</span>
+                  </div>
+                )}
 
                 {route.highlights && route.highlights.length > 0 && (
                   <div className="mt-2 pt-2 border-t border-neutral-200/70 dark:border-neutral-800/70 flex flex-wrap gap-2 text-[10px] text-neutral-500 dark:text-neutral-400">

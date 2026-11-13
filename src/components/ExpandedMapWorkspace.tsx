@@ -365,8 +365,16 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
                 </span>
               ) : isNavigating ? (
                 `Via atual: ${currentStreet}`
+              ) : selectedRoute.type === 'segura' || selectedRoute.safetyScore >= 80 ? (
+                <span className="text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                  Está tudo bem! Trajeto sem áreas de risco &bull; {selectedRoute.name}
+                </span>
               ) : (
-                selectedRoute.name
+                <span className="text-amber-700 dark:text-amber-400 font-bold flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                  Atenção: Área de risco no trajeto &bull; {selectedRoute.name}
+                </span>
               )}
             </p>
           </div>

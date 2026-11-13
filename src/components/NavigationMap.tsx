@@ -180,6 +180,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
   isNavigatingRef.current = isNavigating;
 
   const prevRouteIdRef = useRef<string | null>(null);
+  const focusingUntilRef = useRef<number>(0);
 
   const onSelectRouteRef = useRef(onSelectRoute);
   onSelectRouteRef.current = onSelectRoute;
@@ -555,17 +556,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
         if (currentSeg.length >= 2) segments.push(currentSeg);
       }
 
-      // Check distance from current vehicle to danger zone
-      const distFromCar = calculateDistanceMeters(
-        currentPosition[0],
-        currentPosition[1],
-        zone.coordinates[0],
-        zone.coordinates[1]
-      );
-
-      // Segment turns vibrant red like traffic when approaching (<= 800m) or inside alert zone
-      // or if this route has high danger score
-      const isApproaching = distFromCar <= 800 || (activeAlertZone && activeAlertZone.id === zone.id);
+      const isApproaching = (activeAlertZone && activeAlertZone.id === zone.id) || selectedRoute.type === 'rapida';
       const isHazardousRoute = selectedRoute.type === 'rapida' || selectedRoute.dangerZoneIds?.includes(zone.id);
 
       if (!isApproaching && !isHazardousRoute) return;
@@ -611,7 +602,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
         }
       });
     });
-  }, [selectedRoute, dangerZones, currentPosition, activeAlertZone, isNavigating]);
+  }, [selectedRoute.id, dangerZones, activeAlertZone?.id, isNavigating]);
 
   // When arriving at destination, smoothly keep focus on destination and show arrival badge
   useEffect(() => {
@@ -643,6 +634,9 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map || !focusPoint) return;
+
+    // Suppress navigation auto-pan for 4.5s so user can examine the focused zone
+    focusingUntilRef.current = Date.now() + 4500;
 
     // Invalidate size immediately to guarantee tiles render and prevent black screen
     map.invalidateSize();
@@ -838,12 +832,13 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
       carMarkerRef.current.setLatLng(currentPosition);
     }
 
-    if (isNavigating) {
+    if (isNavigating && Date.now() > focusingUntilRef.current) {
       map.panTo(currentPosition, { animate: true, duration: 0.9 });
     }
   }, [currentPosition, nextPosition, isNavigating, speedKmH, mapType]);
 
   const handleRecenter = () => {
+    focusingUntilRef.current = 0;
     const map = mapInstanceRef.current;
     if (!map) return;
     if (isNavigating) {

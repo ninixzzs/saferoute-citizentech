@@ -177,6 +177,23 @@ export const INITIAL_INCIDENT_REPORTS: IncidentReport[] = [
   }
 ];
 
+function interpolateWaypoints(coords: [number, number][], stepsPerSegment = 6): [number, number][] {
+  const result: [number, number][] = [];
+  for (let i = 0; i < coords.length - 1; i++) {
+    const [lat1, lng1] = coords[i];
+    const [lat2, lng2] = coords[i + 1];
+    for (let s = 0; s < stepsPerSegment; s++) {
+      const t = s / stepsPerSegment;
+      result.push([
+        Number((lat1 + (lat2 - lat1) * t).toFixed(6)),
+        Number((lng1 + (lng2 - lng1) * t).toFixed(6)),
+      ]);
+    }
+  }
+  result.push(coords[coords.length - 1]);
+  return result;
+}
+
 export const PRESET_ROUTES: NavigationRoute[] = [
   {
     id: 'route-fast',
@@ -194,17 +211,17 @@ export const PRESET_ROUTES: NavigationRoute[] = [
       'Recomendação: Ativar vidros fechados e travas'
     ],
     // Coordinates path starting around Paulista / Consolação down towards Santa Ifigênia, Sé, and ending at Brás
-    path: [
-      [-23.5587, -46.6601],
-      [-23.5525, -46.6515],
-      [-23.5460, -46.6450],
-      [-23.5398, -46.6395], // Zone 1 trigger
-      [-23.5375, -46.6372], // In Zone 1
-      [-23.5440, -46.6350],
-      [-23.5505, -46.6333], // Zone 2 trigger
-      [-23.5480, -46.6210],
+    path: interpolateWaypoints([
+      [-23.5587, -46.6601], // Paulista
+      [-23.5525, -46.6515], // Consolação
+      [-23.5460, -46.6450], // Centro / República
+      [-23.5398, -46.6395], // Zone 1 trigger (Santa Ifigênia approach)
+      [-23.5375, -46.6372], // In Zone 1 (Santa Ifigênia core)
+      [-23.5440, -46.6350], // São João / Anhangabaú
+      [-23.5505, -46.6333], // Zone 2 trigger (Praça da Sé)
+      [-23.5480, -46.6210], // Pq. Dom Pedro
       [-23.5432, -46.6087]  // Destination Brás
-    ]
+    ], 6)
   },
   {
     id: 'route-safe',
@@ -221,15 +238,15 @@ export const PRESET_ROUTES: NavigationRoute[] = [
       'Corredor monitorado Smart Sampa com iluminação LED',
       'Apenas +4 minutos para máxima segurança'
     ],
-    path: [
-      [-23.5587, -46.6601],
+    path: interpolateWaypoints([
+      [-23.5587, -46.6601], // Paulista
       [-23.5650, -46.6520], // Desvia pela Paulista / 23 de Maio
-      [-23.5680, -46.6430],
-      [-23.5620, -46.6350],
-      [-23.5550, -46.6200],
-      [-23.5470, -46.6120],
+      [-23.5680, -46.6430], // 23 de Maio sul
+      [-23.5620, -46.6350], // Aclimação / Liberdade
+      [-23.5550, -46.6200], // Glicério / Radial Leste
+      [-23.5470, -46.6120], // Acesso Brás seguro
       [-23.5432, -46.6087]  // Chegada segura no Brás
-    ]
+    ], 8)
   },
   {
     id: 'route-alternative',
@@ -246,14 +263,14 @@ export const PRESET_ROUTES: NavigationRoute[] = [
       'Fluxo contínuo em via expressa',
       'Índice de segurança favorável (78/100)'
     ],
-    path: [
+    path: interpolateWaypoints([
       [-23.5587, -46.6601],
       [-23.5490, -46.6570],
       [-23.5390, -46.6500],
       [-23.5310, -46.6350],
       [-23.5350, -46.6200],
       [-23.5432, -46.6087]
-    ]
+    ], 10)
   }
 ];
 
