@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { DangerZone, IncidentReport, NavigationRoute } from '../types';
+import { calculateDistanceMeters } from '../services/api';
 import { Crosshair, Plus, Minus, Maximize2, Minimize2, Map as MapIcon, Satellite } from 'lucide-react';
 
 interface NavigationMapProps {
@@ -13,6 +14,7 @@ interface NavigationMapProps {
   incidents: IncidentReport[];
   isNavigating: boolean;
   hasArrived?: boolean;
+  activeAlertZone?: DangerZone | null;
   speedKmH?: number;
   onZoneClick?: (zone: DangerZone) => void;
   focusPoint?: { coords: [number, number]; ts: number; title?: string; neighborhood?: string } | null;
@@ -20,6 +22,7 @@ interface NavigationMapProps {
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
   className?: string;
+  onSetPointFromMap?: (role: 'origin' | 'destination', coords: [number, number]) => void;
 }
 
 // Built-in São Paulo avenue & street simulation vectors (used automatically if tile network fails)
@@ -145,6 +148,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
   incidents,
   isNavigating,
   hasArrived = false,
+  activeAlertZone = null,
   speedKmH = 0,
   onZoneClick,
   focusPoint = null,
@@ -152,6 +156,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
   isFullscreen = false,
   onToggleFullscreen,
   className = '',
+  onSetPointFromMap,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -161,6 +166,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
   const routePolylineRef = useRef<L.Polyline | null>(null);
   const routeGlowRef = useRef<L.Polyline | null>(null);
   const altRoutesLayerRef = useRef<L.LayerGroup | null>(null);
+  const dangerTrafficLayerRef = useRef<L.LayerGroup | null>(null);
   const zonesLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const incidentsLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const simStreetsLayerRef = useRef<L.LayerGroup | null>(null);
@@ -177,6 +183,9 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
 
   const onSelectRouteRef = useRef(onSelectRoute);
   onSelectRouteRef.current = onSelectRoute;
+
+  const onSetPointFromMapRef = useRef(onSetPointFromMap);
+  onSetPointFromMapRef.current = onSetPointFromMap;
 
   const [mapType, setMapType] = useState<'street' | 'satellite'>('street');
 
@@ -231,7 +240,57 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     simStreetsLayerRef.current = L.layerGroup().addTo(map);
     zonesLayerGroupRef.current = L.layerGroup().addTo(map);
     altRoutesLayerRef.current = L.layerGroup().addTo(map);
+    dangerTrafficLayerRef.current = L.layerGroup().addTo(map);
     incidentsLayerGroupRef.current = L.layerGroup().addTo(map);
+
+    // Interactive map click to select Origin or Destination directly
+    map.on('click', (e: L.LeafletMouseEvent) => {
+      if (isNavigatingRef.current) return;
+      const clickedCoords: [number, number] = [
+        Number(e.latlng.lat.toFixed(5)),
+        Number(e.latlng.lng.toFixed(5)),
+      ];
+
+      const popupDiv = document.createElement('div');
+      popupDiv.style.fontFamily = 'system-ui, -apple-system, sans-serif';
+      popupDiv.style.fontSize = '12px';
+      popupDiv.style.padding = '4px 2px';
+      popupDiv.style.color = '#171717';
+      popupDiv.innerHTML = `
+        <div style="font-weight:700;margin-bottom:3px;display:flex;align-items:center;gap:5px;">
+          <span>📍 Ponto no Mapa</span>
+        </div>
+        <p style="margin:0 0 8px;font-size:10px;color:#737373;font-family:monospace;">${clickedCoords[0]}, ${clickedCoords[1]}</p>
+        <div style="display:flex;gap:6px;">
+          <button id="map-btn-orig" style="flex:1;padding:6px 10px;background:#171717;color:#ffffff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">
+            Definir Partida
+          </button>
+          <button id="map-btn-dest" style="flex:1;padding:6px 10px;background:#171717;color:#ffffff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">
+            Definir Destino
+          </button>
+        </div>
+      `;
+
+      L.popup({ closeButton: true, offset: [0, -10] })
+        .setLatLng(e.latlng)
+        .setContent(popupDiv)
+        .openOn(map);
+
+      setTimeout(() => {
+        popupDiv.querySelector('#map-btn-orig')?.addEventListener('click', () => {
+          map.closePopup();
+          if (onSetPointFromMapRef.current) {
+            onSetPointFromMapRef.current('origin', clickedCoords);
+          }
+        });
+        popupDiv.querySelector('#map-btn-dest')?.addEventListener('click', () => {
+          map.closePopup();
+          if (onSetPointFromMapRef.current) {
+            onSetPointFromMapRef.current('destination', clickedCoords);
+          }
+        });
+      }, 50);
+    });
 
     mapInstanceRef.current = map;
 
@@ -443,6 +502,116 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
       } catch {}
     }
   }, [selectedRoute, allRoutes, mapType]);
+
+  // 3. Red Hazard Traffic Congestion Route Segments ("Pedaço do trajeto vermelho como trânsito")
+  useEffect(() => {
+    const layer = dangerTrafficLayerRef.current;
+    if (!layer || !selectedRoute || !selectedRoute.path || selectedRoute.path.length < 2) return;
+
+    layer.clearLayers();
+
+    const path = selectedRoute.path;
+
+    dangerZones.forEach((zone) => {
+      // Find all points along the route path that pass near/through this danger zone
+      const matchingIndices: number[] = [];
+      const thresholdMeters = zone.radiusMeters + 260;
+
+      path.forEach((pt, idx) => {
+        const d = calculateDistanceMeters(pt[0], pt[1], zone.coordinates[0], zone.coordinates[1]);
+        if (d <= thresholdMeters) {
+          matchingIndices.push(idx);
+        }
+      });
+
+      if (matchingIndices.length === 0) return;
+
+      // Group consecutive matching points into contiguous segments
+      const segments: [number, number][][] = [];
+      let currentSeg: [number, number][] = [];
+
+      for (let i = 0; i < matchingIndices.length; i++) {
+        const idx = matchingIndices[i];
+        if (currentSeg.length === 0) {
+          if (idx > 0) currentSeg.push(path[idx - 1]);
+          currentSeg.push(path[idx]);
+        } else {
+          const prevIdx = matchingIndices[i - 1];
+          if (idx === prevIdx + 1) {
+            currentSeg.push(path[idx]);
+          } else {
+            if (prevIdx < path.length - 1) currentSeg.push(path[prevIdx + 1]);
+            if (currentSeg.length >= 2) segments.push(currentSeg);
+            currentSeg = [];
+            if (idx > 0) currentSeg.push(path[idx - 1]);
+            currentSeg.push(path[idx]);
+          }
+        }
+      }
+
+      if (currentSeg.length > 0) {
+        const lastIdx = matchingIndices[matchingIndices.length - 1];
+        if (lastIdx < path.length - 1) currentSeg.push(path[lastIdx + 1]);
+        if (currentSeg.length >= 2) segments.push(currentSeg);
+      }
+
+      // Check distance from current vehicle to danger zone
+      const distFromCar = calculateDistanceMeters(
+        currentPosition[0],
+        currentPosition[1],
+        zone.coordinates[0],
+        zone.coordinates[1]
+      );
+
+      // Segment turns vibrant red like traffic when approaching (<= 800m) or inside alert zone
+      // or if this route has high danger score
+      const isApproaching = distFromCar <= 800 || (activeAlertZone && activeAlertZone.id === zone.id);
+      const isHazardousRoute = selectedRoute.type === 'rapida' || selectedRoute.dangerZoneIds?.includes(zone.id);
+
+      if (!isApproaching && !isHazardousRoute) return;
+
+      segments.forEach((segCoords) => {
+        // Deep red casing border (traffic jam casing)
+        L.polyline(segCoords, {
+          color: isApproaching ? '#7f1d1d' : '#991b1b',
+          weight: isApproaching ? 10 : 8,
+          opacity: 0.95,
+          lineCap: 'round',
+          lineJoin: 'round',
+        }).addTo(layer);
+
+        // Traffic Congestion Red line (#ef4444)
+        L.polyline(segCoords, {
+          color: isApproaching ? '#ef4444' : '#dc2626',
+          weight: isApproaching ? 6.5 : 5,
+          opacity: 1.0,
+          lineCap: 'round',
+          lineJoin: 'round',
+          className: isApproaching ? 'traffic-red-pulse-segment' : '',
+        }).addTo(layer);
+
+        // Traffic Alert Badge at midpoint of the congested segment
+        if (isApproaching && segCoords.length >= 2) {
+          const midIdx = Math.floor(segCoords.length / 2);
+          const midCoord = segCoords[midIdx];
+
+          const trafficBadgeIcon = L.divIcon({
+            html: `
+              <div style="background:#b91c1c;color:#ffffff;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;display:flex;align-items:center;gap:4px;box-shadow:0 3px 10px rgba(220,38,38,0.55);border:1.5px solid #ffffff;white-space:nowrap;transform:translate(-50%,-50%);pointer-events:none;">
+                <span style="font-size:11px;">🚗⚠️</span>
+                <span>Trânsito Lento &bull; ${zone.neighborhood}</span>
+              </div>
+            `,
+            className: 'traffic-hazard-badge',
+            iconSize: [0, 0],
+            iconAnchor: [0, 0],
+          });
+
+          L.marker(midCoord, { icon: trafficBadgeIcon, interactive: false }).addTo(layer);
+        }
+      });
+    });
+  }, [selectedRoute, dangerZones, currentPosition, activeAlertZone, isNavigating]);
 
   // When arriving at destination, smoothly keep focus on destination and show arrival badge
   useEffect(() => {

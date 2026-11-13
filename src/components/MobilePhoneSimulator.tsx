@@ -77,6 +77,7 @@ interface MobilePhoneSimulatorProps {
   travelMode?: 'carro' | 'moto' | 'a_pe';
   onSelectTravelMode?: (mode: 'carro' | 'moto' | 'a_pe') => void;
   hasArrived?: boolean;
+  onSetPointFromMap?: (role: 'origin' | 'destination', coords: [number, number]) => void;
 }
 
 export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
@@ -117,6 +118,7 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
   travelMode = 'carro',
   onSelectTravelMode,
   hasArrived = false,
+  onSetPointFromMap,
 }) => {
   const [originInput, setOriginInput] = useState<string>(originLocation.name);
   const [destInput, setDestInput] = useState<string>(destinationLocation.name);
@@ -437,9 +439,11 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
               incidents={incidents}
               isNavigating={isNavigating}
               hasArrived={hasArrived}
+              activeAlertZone={activeAlertZone}
               speedKmH={speedKmH}
               focusPoint={focusPoint}
               className="w-full h-full border-0 rounded-none shadow-none"
+              onSetPointFromMap={onSetPointFromMap}
             />
           </div>
 

@@ -69,6 +69,7 @@ interface MobileMapExperienceProps {
   onToggleSimSpeed: (speed: '1x' | '2x') => void;
   travelMode?: TravelMode;
   onSelectTravelMode?: (mode: TravelMode) => void;
+  onSetPointFromMap?: (role: 'origin' | 'destination', coords: [number, number]) => void;
 }
 
 export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
@@ -106,6 +107,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
   onToggleSimSpeed,
   travelMode = 'carro',
   onSelectTravelMode,
+  onSetPointFromMap,
 }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
@@ -234,10 +236,12 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
             incidents={incidents}
             isNavigating={isNavigating}
             hasArrived={hasArrived}
+            activeAlertZone={activeAlertZone}
             speedKmH={speedKmH}
             focusPoint={focusPoint}
             topControlOffsetClass="top-[82px]"
             className="w-full h-full"
+            onSetPointFromMap={onSetPointFromMap}
           />
 
           {/* Top Bar: Search Pill OR Active Turn Guidance */}

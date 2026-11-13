@@ -110,6 +110,7 @@ export function App() {
     resetNavigation,
     setRoutes,
     hasArrived,
+    setPointFromMap,
   } = useRouteNavigation();
 
   const { voiceEnabled, setVoiceEnabled, speakAlert, stop: stopVoice } = useVoiceGuidance();
@@ -120,6 +121,16 @@ export function App() {
       speakAlert('Você chegou ao seu destino final com segurança. Trajeto concluído!');
     }
   }, [hasArrived, voiceEnabled, speakAlert]);
+
+  const handleSetPointFromMap = useCallback(
+    (role: 'origin' | 'destination', coords: [number, number]) => {
+      setPointFromMap(role, coords, dangerZones);
+      if (voiceEnabled) {
+        speakAlert(role === 'origin' ? 'Ponto de partida definido no mapa.' : 'Destino definido no mapa.');
+      }
+    },
+    [setPointFromMap, dangerZones, voiceEnabled, speakAlert]
+  );
 
   // Workspace states
   const [viewMode, setViewMode] = useState<'map' | 'phone'>('map');
@@ -200,29 +211,6 @@ export function App() {
     },
     [setRoutes, setSelectedRoute]
   );
-
-  // Solicit real GPS geolocation on site entry to automatically place user on map as origin
-  useEffect(() => {
-    if (typeof window === 'undefined' || !navigator.geolocation) return;
-
-    let isMounted = true;
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        if (!isMounted) return;
-        const coords: [number, number] = [pos.coords.latitude, pos.coords.longitude];
-        await applyCurrentGpsLocation(coords, dangerZones);
-      },
-      (err) => {
-        // Fallback gracefully to default SP origin if permission denied or timeout
-        console.info('SafeRoute: Geolocalização automática não concedida ou aguardando permissão:', err.message);
-      },
-      { enableHighAccuracy: true, timeout: 9000, maximumAge: 60000 }
-    );
-
-    return () => {
-      isMounted = false;
-    };
-  }, [applyCurrentGpsLocation, dangerZones]);
 
   // Bidirectional scroll reveal observer for silky smooth on-scroll animations & text choreographies (scroll up & down)
   React.useEffect(() => {
@@ -920,6 +908,7 @@ export function App() {
                 onToggleSimSpeed={setSimSpeed}
                 travelMode={travelMode}
                 onSelectTravelMode={handleSelectTravelMode}
+                onSetPointFromMap={handleSetPointFromMap}
               />
             ) : (
               <MobilePhoneSimulator
@@ -961,6 +950,7 @@ export function App() {
                 onOpenOnboarding={() => setIsOnboardingOpen(true)}
                 travelMode={travelMode}
                 onSelectTravelMode={handleSelectTravelMode}
+                onSetPointFromMap={handleSetPointFromMap}
               />
             )}
           </section>
@@ -1159,6 +1149,7 @@ export function App() {
                     onToggleSimSpeed={setSimSpeed}
                     travelMode={travelMode}
                     onSelectTravelMode={handleSelectTravelMode}
+                    onSetPointFromMap={handleSetPointFromMap}
                   />
                 ) : (
                   <MobilePhoneSimulator
@@ -1200,6 +1191,7 @@ export function App() {
                     onOpenOnboarding={() => setIsOnboardingOpen(true)}
                     travelMode={travelMode}
                     onSelectTravelMode={handleSelectTravelMode}
+                    onSetPointFromMap={handleSetPointFromMap}
                   />
                 )}
               </div>

@@ -395,3 +395,17 @@ html.high-contrast *:focus-visible {
   box-shadow: 0 14px 32px -8px rgba(0, 0, 0, 0.65), 0 0 20px 2px rgba(255, 255, 255, 0.12);
 }
 
+/* Traffic Congestion & Risk Area Route Polyline Pulse */
+@keyframes traffic-congestion-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 3px rgba(239, 68, 68, 0.75));
+  }
+  50% {
+    filter: drop-shadow(0 0 9px rgba(239, 68, 68, 1));
+  }
+}
+
+.traffic-red-pulse-segment {
+  animation: traffic-congestion-glow 1.6s ease-in-out infinite;
+}
+

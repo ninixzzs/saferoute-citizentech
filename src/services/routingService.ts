@@ -240,11 +240,9 @@ export async function searchAddressSuggestions(query: string): Promise<LocationS
     }
   }
 
-  // Query Photon API (extremely fast, CORS-friendly, biased to São Paulo)
+  // Query Photon API (extremely fast, CORS-friendly, nationwide coverage)
   try {
-    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(
-      clean
-    )}&lat=-23.5505&lon=-46.6333&limit=5`;
+    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(clean)}&limit=6`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 2800);
@@ -283,11 +281,11 @@ export async function searchAddressSuggestions(query: string): Promise<LocationS
     // Fallback to Nominatim if Photon fails
   }
 
-  // Secondary fallback: Nominatim
+  // Secondary fallback: Nominatim across Brazil (unrestricted city or state)
   try {
     const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
       clean
-    )}&viewbox=-46.85,-23.35,-46.35,-23.85&countrycodes=br&limit=4&addressdetails=1`;
+    )}&countrycodes=br&limit=6&addressdetails=1`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3000);
@@ -381,12 +379,11 @@ export async function geocodeAddress(
     }
   }
 
-  // 4. Try Photon API first (fast, São Paulo biased)
+  // 4. Try Photon API first (nationwide geocoding)
   try {
-    const qWithContext = effectiveQuery.includes(',') ? effectiveQuery : `${effectiveQuery}, São Paulo`;
     const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(
-      qWithContext
-    )}&lat=-23.5505&lon=-46.6333&limit=3`;
+      effectiveQuery
+    )}&limit=3`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3200);
@@ -414,12 +411,11 @@ export async function geocodeAddress(
     // Proceed to Nominatim
   }
 
-  // 5. Nominatim fallback
+  // 5. Nominatim fallback (nationwide across Brazil)
   try {
-    const searchQuery = effectiveQuery.includes(',') ? effectiveQuery : `${effectiveQuery}, São Paulo`;
     const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-      searchQuery
-    )}&viewbox=-46.85,-23.35,-46.35,-23.85&countrycodes=br&limit=1&addressdetails=1`;
+      effectiveQuery
+    )}&countrycodes=br&limit=1&addressdetails=1`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3500);
@@ -673,7 +669,7 @@ function computeDetourWaypoint(
   const dLat = destination[0] - origin[0];
   const dLng = destination[1] - origin[1];
   const len = Math.sqrt(dLat * dLat + dLng * dLng) || 0.01;
-  const offset = 0.014 * side;
+  const offset = Math.min(0.045, Math.max(0.007, len * 0.18)) * side;
   return [
     Number((midLat + (-dLng / len) * offset).toFixed(5)),
     Number((midLng + (dLat / len) * offset).toFixed(5)),

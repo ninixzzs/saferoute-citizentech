@@ -47,6 +47,7 @@ interface ExpandedMapWorkspaceProps {
   onToggleSimSpeed: (speed: '1x' | '2x') => void;
   travelMode?: TravelMode;
   onSelectTravelMode?: (mode: TravelMode) => void;
+  onSetPointFromMap?: (role: 'origin' | 'destination', coords: [number, number]) => void;
 }
 
 export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
@@ -77,6 +78,7 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
   onToggleSimSpeed,
   travelMode = 'carro',
   onSelectTravelMode,
+  onSetPointFromMap,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -137,12 +139,14 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
         incidents={incidents}
         isNavigating={isNavigating}
         hasArrived={hasArrived}
+        activeAlertZone={activeAlertZone}
         speedKmH={speedKmH}
         focusPoint={focusPoint}
         topControlOffsetClass="top-4"
         isFullscreen={isFullscreen}
         onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
         className="w-full h-full"
+        onSetPointFromMap={onSetPointFromMap}
       />
 
       {/* Floating Travel Mode Selector directly on Top of Map */}
