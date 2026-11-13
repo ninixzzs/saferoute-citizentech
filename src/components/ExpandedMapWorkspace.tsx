@@ -31,6 +31,7 @@ interface ExpandedMapWorkspaceProps {
   incidents: IncidentReport[];
   isNavigating: boolean;
   isPaused: boolean;
+  hasArrived?: boolean;
   speedKmH: number;
   progressPercentage: number;
   activeAlertZone: DangerZone | null;
@@ -54,12 +55,13 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
   selectedRoute,
   allRoutes,
   onSelectRoute,
-  originLocation: _originLocation,
-  destinationLocation: _destinationLocation,
+  originLocation,
+  destinationLocation,
   dangerZones,
   incidents,
   isNavigating,
   isPaused,
+  hasArrived = false,
   speedKmH,
   progressPercentage,
   activeAlertZone,
@@ -134,6 +136,7 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
         dangerZones={dangerZones}
         incidents={incidents}
         isNavigating={isNavigating}
+        hasArrived={hasArrived}
         speedKmH={speedKmH}
         focusPoint={focusPoint}
         topControlOffsetClass="top-4"
@@ -321,19 +324,26 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2.5 flex-wrap tabular-nums">
               <span className="font-display text-2xl font-extrabold tracking-tight min-w-[74px]">
-                {remainingMin} min
+                {hasArrived ? 'Chegada' : `${remainingMin} min`}
               </span>
               <span className="text-xs text-neutral-500 dark:text-neutral-400 font-mono min-w-[54px]">
-                ({remainingKm} km)
+                ({hasArrived ? '0.0 km' : `${remainingKm} km`})
               </span>
               <span className="text-[11px] text-neutral-500 dark:text-neutral-400 hidden sm:inline">
-                &bull; Chegada{' '}
-                <strong className="text-neutral-900 dark:text-white font-mono">
-                  {new Date(Date.now() + remainingMin * 60000).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </strong>
+                &bull;{' '}
+                {hasArrived ? (
+                  <strong className="text-neutral-900 dark:text-white font-bold">Trajeto Concluído com Sucesso!</strong>
+                ) : (
+                  <>
+                    Chegada{' '}
+                    <strong className="text-neutral-900 dark:text-white font-mono">
+                      {new Date(Date.now() + remainingMin * 60000).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </strong>
+                  </>
+                )}
               </span>
               <span
                 className={`px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-[11px] font-mono font-bold min-w-[66px] text-center transition-opacity ${
@@ -344,7 +354,16 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
               </span>
             </div>
             <p className="text-xs text-neutral-600 dark:text-neutral-400 truncate mt-0.5 h-4">
-              {isNavigating ? `Via atual: ${currentStreet}` : selectedRoute.name}
+              {hasArrived ? (
+                <span className="text-neutral-900 dark:text-white font-bold flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  Destino final alcançado &bull; {destinationLocation.name}
+                </span>
+              ) : isNavigating ? (
+                `Via atual: ${currentStreet}`
+              ) : (
+                selectedRoute.name
+              )}
             </p>
           </div>
 
@@ -365,8 +384,17 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
                 onClick={onStart}
                 className="px-4 py-2 rounded-xl bg-neutral-950 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-neutral-950 font-bold text-xs shadow-sm flex items-center gap-2 transition-all"
               >
-                <Play className="w-3.5 h-3.5 fill-current" />
-                <span>Iniciar Trajeto</span>
+                {hasArrived ? (
+                  <>
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Refazer Trajeto</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <span>Iniciar Trajeto</span>
+                  </>
+                )}
               </button>
             ) : isPaused ? (
               <button

@@ -16,6 +16,7 @@ export function useRouteNavigation() {
   const [selectedRoute, setSelectedRoute] = useState<NavigationRoute>(PRESET_ROUTES[0]);
   const [isNavigating, setIsNavigating] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [hasArrived, setHasArrived] = useState<boolean>(false);
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
   const [currentPosition, setCurrentPosition] = useState<[number, number]>(selectedRoute.path[0]);
   const [speedKmH, setSpeedKmH] = useState<number>(0);
@@ -33,6 +34,7 @@ export function useRouteNavigation() {
     setCurrentPosition(route.path[0]);
     setIsNavigating(false);
     setIsPaused(false);
+    setHasArrived(false);
     setSpeedKmH(0);
   }, []);
 
@@ -59,10 +61,19 @@ export function useRouteNavigation() {
   }, [routes, currentPosition]);
 
   const startNavigation = useCallback(() => {
+    // If the trip already completed, restart smoothly from the beginning
+    setCurrentStepIndex((prev) => {
+      if (prev >= selectedRoute.path.length - 1) {
+        setCurrentPosition(selectedRoute.path[0]);
+        return 0;
+      }
+      return prev;
+    });
+    setHasArrived(false);
     setIsNavigating(true);
     setIsPaused(false);
     setSpeedKmH(38);
-  }, []);
+  }, [selectedRoute.path]);
 
   const pauseNavigation = useCallback(() => {
     setIsPaused(true);
@@ -77,6 +88,7 @@ export function useRouteNavigation() {
   const resetNavigation = useCallback(() => {
     setIsNavigating(false);
     setIsPaused(false);
+    setHasArrived(false);
     setCurrentStepIndex(0);
     setCurrentPosition(selectedRoute.path[0]);
     setSpeedKmH(0);
@@ -216,7 +228,14 @@ export function useRouteNavigation() {
       return;
     }
 
-    const stepInterval = simSpeed === '1x' ? 4200 : 2200;
+    const totalPoints = selectedRoute.path.length;
+    // Adapt step interval so the entire route takes between 14-22s for preset routes,
+    // and for custom OSRM routes (~50-100 points) each step takes 250-450ms instead of 4.2s!
+    const baseInterval =
+      totalPoints > 20
+        ? Math.max(180, Math.round(18000 / totalPoints))
+        : Math.max(900, Math.round(15000 / totalPoints));
+    const stepInterval = simSpeed === '1x' ? baseInterval : Math.round(baseInterval * 0.5);
 
     timerRef.current = window.setInterval(() => {
       setCurrentStepIndex((prevIndex) => {
@@ -226,9 +245,14 @@ export function useRouteNavigation() {
           setSpeedKmH(Math.floor(36 + Math.random() * 10));
           return nextIndex;
         } else {
+          // Exactly reached the destination point
+          const finalIndex = selectedRoute.path.length - 1;
+          setCurrentPosition(selectedRoute.path[finalIndex]);
           setIsNavigating(false);
+          setIsPaused(false);
+          setHasArrived(true);
           setSpeedKmH(0);
-          return prevIndex;
+          return finalIndex;
         }
       });
     }, stepInterval);
@@ -262,6 +286,7 @@ export function useRouteNavigation() {
     isCalculatingRoute,
     isNavigating,
     isPaused,
+    hasArrived,
     simSpeed,
     setSimSpeed,
     currentStepIndex,

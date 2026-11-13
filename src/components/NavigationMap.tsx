@@ -12,6 +12,7 @@ interface NavigationMapProps {
   dangerZones: DangerZone[];
   incidents: IncidentReport[];
   isNavigating: boolean;
+  hasArrived?: boolean;
   speedKmH?: number;
   onZoneClick?: (zone: DangerZone) => void;
   focusPoint?: { coords: [number, number]; ts: number; title?: string; neighborhood?: string } | null;
@@ -143,6 +144,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
   dangerZones,
   incidents,
   isNavigating,
+  hasArrived = false,
   speedKmH = 0,
   onZoneClick,
   focusPoint = null,
@@ -170,6 +172,8 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
 
   const isNavigatingRef = useRef<boolean>(isNavigating);
   isNavigatingRef.current = isNavigating;
+
+  const prevRouteIdRef = useRef<string | null>(null);
 
   const onSelectRouteRef = useRef(onSelectRoute);
   onSelectRouteRef.current = onSelectRoute;
@@ -427,13 +431,44 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     `);
     destinationMarkerRef.current = destMarker;
 
-    if (!isNavigatingRef.current) {
+    // Only auto-fit map view when a new route is actively chosen or calculated.
+    // NEVER snap back or zoom away when arriving at the destination!
+    const isNewRoute = prevRouteIdRef.current !== selectedRoute.id;
+    prevRouteIdRef.current = selectedRoute.id;
+
+    if (isNewRoute && !isNavigatingRef.current) {
       try {
         const bounds = L.latLngBounds(selectedRoute.path);
         map.flyToBounds(bounds, { padding: [55, 55], duration: 1.0 });
       } catch {}
     }
-  }, [selectedRoute, allRoutes, isNavigating, mapType]);
+  }, [selectedRoute, allRoutes, mapType]);
+
+  // When arriving at destination, smoothly keep focus on destination and show arrival badge
+  useEffect(() => {
+    if (!hasArrived) return;
+    const map = mapInstanceRef.current;
+    if (!map || !selectedRoute.path.length) return;
+
+    const destCoords = selectedRoute.path[selectedRoute.path.length - 1];
+    if (destCoords) {
+      map.panTo(destCoords, { animate: true, duration: 0.8 });
+      if (destinationMarkerRef.current) {
+        destinationMarkerRef.current
+          .bindPopup(`
+            <div style="font-family:system-ui,sans-serif;font-size:12px;color:#171717;padding:3px;min-width:180px;">
+              <div style="display:flex;align-items:center;gap:4px;font-weight:800;color:#16a34a;margin-bottom:2px;">
+                <span>✓</span>
+                <span>Chegada Concluída!</span>
+              </div>
+              <div style="font-weight:700;margin-bottom:2px;">Destino alcançado com sucesso</div>
+              <p style="margin:2px 0 0;font-size:11px;color:#52525b;">${selectedRoute.name} finalizada sem desvios pendentes.</p>
+            </div>
+          `)
+          .openPopup();
+      }
+    }
+  }, [hasArrived, selectedRoute]);
 
   // Focus specific coordinate and open popup when user clicks an incident or alert
   useEffect(() => {

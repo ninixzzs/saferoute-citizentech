@@ -41,17 +41,30 @@ export const PhoneMiniAppSimulation: React.FC<PhoneMiniAppSimulationProps> = ({
     { x: 270, y: 110 },
   ];
 
+  const handleTogglePlay = () => {
+    if (progress >= 1) {
+      setProgress(0);
+      setIsPlaying(true);
+    } else {
+      setIsPlaying(!isPlaying);
+    }
+  };
+
   useEffect(() => {
     if (!isPlaying) return;
 
     const intervalTime = 50; // 20 updates per second
-    const totalDurationMs = 16000 / simSpeed; // 16s loop
+    const totalDurationMs = 14000 / simSpeed; // 14s complete journey
     const step = intervalTime / totalDurationMs;
 
     const timer = setInterval(() => {
       setProgress((prev) => {
         const next = prev + step;
-        return next >= 1 ? 0 : next;
+        if (next >= 1) {
+          setIsPlaying(false);
+          return 1;
+        }
+        return next;
       });
     }, intervalTime);
 
@@ -89,20 +102,24 @@ export const PhoneMiniAppSimulation: React.FC<PhoneMiniAppSimulationProps> = ({
     phaseText = 'Monitoramento SP 24h';
     speedKmH = isWalk ? 5 : Math.round((isMoto ? 54 : 44) + Math.sin(progress * 20) * 5);
     turnText = 'Acesse Av. Rebouças (Segura)';
-  } else if (progress < 0.85) {
+  } else if (progress < 0.88) {
     phaseText = 'Área Crítica Evitada';
     speedKmH = isWalk ? 5 : Math.round((isMoto ? 48 : 38) + Math.sin(progress * 15) * 4);
     turnText = 'Vire à direita na Av. Paulista';
+  } else if (progress < 1) {
+    phaseText = 'Aproximação Final';
+    speedKmH = isWalk ? 3 : Math.max(12, Math.round((1 - progress) * 80));
+    turnText = 'Chegando ao destino na Av. Paulista';
   } else {
-    phaseText = 'Chegada Segura';
-    speedKmH = isWalk ? 3 : Math.max(0, Math.round((1 - progress) * 110));
+    phaseText = 'Chegada ao Destino';
+    speedKmH = 0;
     turnText = 'Destino alcançado com sucesso!';
   }
 
   // Realistic trip duration based on travel mode in São Paulo
   const baseMinutes = isMoto ? 13 : isWalk ? 89 : 21;
-  const remainingMin = Math.max(1, Math.round(baseMinutes * (1 - progress)));
-  const remainingKm = Math.max(0.2, +(7.4 * (1 - progress)).toFixed(1)).toFixed(1);
+  const remainingMin = progress >= 1 ? 0 : Math.max(1, Math.round(baseMinutes * (1 - progress)));
+  const remainingKm = progress >= 1 ? '0.0' : Math.max(0.2, +(7.4 * (1 - progress)).toFixed(1)).toFixed(1);
 
   return (
     <div className={`relative w-full h-[580px] bg-[#050505] text-white flex flex-col justify-between overflow-hidden select-none font-sans ${className}`}>
@@ -361,17 +378,26 @@ export const PhoneMiniAppSimulation: React.FC<PhoneMiniAppSimulationProps> = ({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setIsPlaying(!isPlaying)}
+              onClick={handleTogglePlay}
               className="w-6 h-6 rounded-lg bg-black text-white flex items-center justify-center transition-transform active:scale-90"
-              title={isPlaying ? 'Pausar simulação' : 'Iniciar simulação'}
+              title={progress >= 1 ? 'Refazer trajeto' : isPlaying ? 'Pausar simulação' : 'Iniciar simulação'}
             >
-              {isPlaying ? <Pause className="w-3 h-3 fill-current" /> : <Play className="w-3 h-3 fill-current" />}
+              {progress >= 1 ? (
+                <RotateCcw className="w-3 h-3" />
+              ) : isPlaying ? (
+                <Pause className="w-3 h-3 fill-current" />
+              ) : (
+                <Play className="w-3 h-3 fill-current" />
+              )}
             </button>
             <button
               type="button"
-              onClick={() => setProgress(0)}
+              onClick={() => {
+                setProgress(0);
+                setIsPlaying(true);
+              }}
               className="p-1 rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-800"
-              title="Reiniciar"
+              title="Reiniciar trajeto desde o início"
             >
               <RotateCcw className="w-3 h-3" />
             </button>

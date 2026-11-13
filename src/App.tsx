@@ -109,9 +109,17 @@ export function App() {
     resumeNavigation,
     resetNavigation,
     setRoutes,
+    hasArrived,
   } = useRouteNavigation();
 
   const { voiceEnabled, setVoiceEnabled, speakAlert, stop: stopVoice } = useVoiceGuidance();
+
+  // Voice announcement upon reaching destination
+  useEffect(() => {
+    if (hasArrived && voiceEnabled) {
+      speakAlert('Você chegou ao seu destino final com segurança. Trajeto concluído!');
+    }
+  }, [hasArrived, voiceEnabled, speakAlert]);
 
   // Workspace states
   const [viewMode, setViewMode] = useState<'map' | 'phone'>('map');
@@ -895,6 +903,7 @@ export function App() {
                 dangerZones={dangerZones}
                 incidents={incidents}
                 isNavigating={isNavigating}
+                hasArrived={hasArrived}
                 isPaused={isPaused}
                 speedKmH={speedKmH}
                 progressPercentage={progressPercentage}
@@ -922,6 +931,7 @@ export function App() {
                 dangerZones={dangerZones}
                 incidents={incidents}
                 isNavigating={isNavigating}
+                hasArrived={hasArrived}
                 isPaused={isPaused}
                 speedKmH={speedKmH}
                 progressPercentage={progressPercentage}
@@ -1130,6 +1140,7 @@ export function App() {
                     incidents={incidents}
                     onOpenReportModal={() => setIsReportModalOpen(true)}
                     isNavigating={isNavigating}
+                    hasArrived={hasArrived}
                     isPaused={isPaused}
                     speedKmH={speedKmH}
                     progressPercentage={progressPercentage}
@@ -1159,6 +1170,7 @@ export function App() {
                     dangerZones={dangerZones}
                     incidents={incidents}
                     isNavigating={isNavigating}
+                    hasArrived={hasArrived}
                     isPaused={isPaused}
                     speedKmH={speedKmH}
                     progressPercentage={progressPercentage}

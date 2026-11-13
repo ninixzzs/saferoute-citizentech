@@ -76,6 +76,7 @@ interface MobilePhoneSimulatorProps {
   onOpenOnboarding?: () => void;
   travelMode?: 'carro' | 'moto' | 'a_pe';
   onSelectTravelMode?: (mode: 'carro' | 'moto' | 'a_pe') => void;
+  hasArrived?: boolean;
 }
 
 export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
@@ -115,6 +116,7 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
   onOpenOnboarding,
   travelMode = 'carro',
   onSelectTravelMode,
+  hasArrived = false,
 }) => {
   const [originInput, setOriginInput] = useState<string>(originLocation.name);
   const [destInput, setDestInput] = useState<string>(destinationLocation.name);
@@ -229,10 +231,14 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
 
   // Dynamic remaining distance & duration during trip
   const remainingFactor = Math.max(0, 1 - progressPercentage / 100);
-  const remainingMin = isNavigating
+  const remainingMin = hasArrived
+    ? 0
+    : isNavigating
     ? Math.max(1, Math.round(selectedRoute.durationMin * remainingFactor))
     : selectedRoute.durationMin;
-  const remainingKm = isNavigating
+  const remainingKm = hasArrived
+    ? 0.0
+    : isNavigating
     ? Math.max(0.1, Number((selectedRoute.distanceKm * remainingFactor).toFixed(1)))
     : selectedRoute.distanceKm;
 
@@ -430,6 +436,7 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
               dangerZones={dangerZones}
               incidents={incidents}
               isNavigating={isNavigating}
+              hasArrived={hasArrived}
               speedKmH={speedKmH}
               focusPoint={focusPoint}
               className="w-full h-full border-0 rounded-none shadow-none"
@@ -885,7 +892,15 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
             </div>
 
             <div className="flex items-center gap-2 pt-0.5">
-              {!isNavigating ? (
+              {hasArrived ? (
+                <button
+                  onClick={onStart}
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-neutral-950 hover:bg-neutral-800 text-white font-bold text-xs shadow-md transition-all active:scale-98 flex items-center justify-center gap-2"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Refazer Trajeto</span>
+                </button>
+              ) : !isNavigating ? (
                 <button
                   onClick={onStart}
                   className="flex-1 py-2.5 px-4 rounded-xl bg-neutral-950 hover:bg-neutral-800 text-white font-bold text-xs shadow-md transition-all active:scale-98 flex items-center justify-center gap-2"

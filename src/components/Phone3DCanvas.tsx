@@ -95,8 +95,8 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
 
   // Draw 60fps Dynamic Living Mini-App Video Screen on Canvas
   const drawScreenFrame = useCallback((ctx: CanvasRenderingContext2D, time: number) => {
-    const totalDuration = 18; // 18 seconds loop
-    const progress = (time % totalDuration) / totalDuration;
+    const totalDuration = 18; // 18 seconds complete journey
+    const progress = Math.min(1, Math.max(0, time / totalDuration));
     const vehicle = getInterpolatedPosition(progress);
 
     // Dynamic phase info
@@ -709,13 +709,21 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
       if (isPlayingRef.current) {
         simTimeRef.current += delta * simSpeedRef.current;
         const totalDuration = 18;
-        const currProgress = (simTimeRef.current % totalDuration) / totalDuration;
-        setSimProgressPercent(Math.round(currProgress * 100));
+        if (simTimeRef.current >= totalDuration) {
+          simTimeRef.current = totalDuration;
+          isPlayingRef.current = false;
+          setIsPlaying(false);
+          setSimProgressPercent(100);
+          setSimPhaseLabel('Chegada ao Destino Concluída');
+        } else {
+          const currProgress = Math.min(1, simTimeRef.current / totalDuration);
+          setSimProgressPercent(Math.round(currProgress * 100));
 
-        if (currProgress < 0.25) setSimPhaseLabel('Planejando Desvio Seguro');
-        else if (currProgress < 0.55) setSimPhaseLabel('Deslocamento em Tempo Real');
-        else if (currProgress < 0.85) setSimPhaseLabel('Alerta Evitado com Sucesso');
-        else setSimPhaseLabel('Chegada Segura');
+          if (currProgress < 0.25) setSimPhaseLabel('Planejando Desvio Seguro');
+          else if (currProgress < 0.55) setSimPhaseLabel('Deslocamento em Tempo Real');
+          else if (currProgress < 0.85) setSimPhaseLabel('Alerta Evitado com Sucesso');
+          else setSimPhaseLabel('Chegada Segura');
+        }
       }
 
       // Update Screen Texture Canvas at ~30-40fps for high performance
@@ -870,11 +878,25 @@ export const Phone3DCanvas: React.FC<Phone3DCanvasProps> = ({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setIsPlaying(!isPlaying)}
+              onClick={() => {
+                if (simTimeRef.current >= 18) {
+                  simTimeRef.current = 0;
+                  setSimProgressPercent(0);
+                  setIsPlaying(true);
+                } else {
+                  setIsPlaying(!isPlaying);
+                }
+              }}
               className="w-7 h-7 rounded-lg bg-white text-black hover:bg-neutral-200 flex items-center justify-center transition-transform active:scale-90"
-              title={isPlaying ? 'Pausar vídeo demo' : 'Reproduzir vídeo demo'}
+              title={simTimeRef.current >= 18 ? 'Refazer trajeto demo' : isPlaying ? 'Pausar vídeo demo' : 'Reproduzir vídeo demo'}
             >
-              {isPlaying ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+              {simTimeRef.current >= 18 ? (
+                <RotateCcw className="w-3.5 h-3.5" />
+              ) : isPlaying ? (
+                <Pause className="w-3.5 h-3.5 fill-current" />
+              ) : (
+                <Play className="w-3.5 h-3.5 fill-current" />
+              )}
             </button>
 
             <button

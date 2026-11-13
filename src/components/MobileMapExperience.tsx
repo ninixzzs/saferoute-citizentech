@@ -51,6 +51,7 @@ interface MobileMapExperienceProps {
   onOpenReportModal: () => void;
   isNavigating: boolean;
   isPaused: boolean;
+  hasArrived?: boolean;
   speedKmH: number;
   progressPercentage: number;
   activeAlertZone: DangerZone | null;
@@ -87,6 +88,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
   onOpenReportModal,
   isNavigating,
   isPaused,
+  hasArrived = false,
   speedKmH,
   progressPercentage,
   activeAlertZone,
@@ -231,6 +233,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
             dangerZones={dangerZones}
             incidents={incidents}
             isNavigating={isNavigating}
+            hasArrived={hasArrived}
             speedKmH={speedKmH}
             focusPoint={focusPoint}
             topControlOffsetClass="top-[82px]"
@@ -544,8 +547,17 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
                     onClick={onStart}
                     className="px-4 py-2.5 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs shadow-md flex items-center gap-1.5 active:scale-95 transition-transform"
                   >
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>Iniciar</span>
+                    {hasArrived ? (
+                      <>
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Refazer</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3.5 h-3.5 fill-current" />
+                        <span>Iniciar</span>
+                      </>
+                    )}
                   </button>
                 ) : isPaused ? (
                   <button
