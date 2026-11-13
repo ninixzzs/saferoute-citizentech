@@ -166,7 +166,6 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
   const routePolylineRef = useRef<L.Polyline | null>(null);
   const routeGlowRef = useRef<L.Polyline | null>(null);
   const altRoutesLayerRef = useRef<L.LayerGroup | null>(null);
-  const dangerTrafficLayerRef = useRef<L.LayerGroup | null>(null);
   const zonesLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const incidentsLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const simStreetsLayerRef = useRef<L.LayerGroup | null>(null);
@@ -241,7 +240,6 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     simStreetsLayerRef.current = L.layerGroup().addTo(map);
     zonesLayerGroupRef.current = L.layerGroup().addTo(map);
     altRoutesLayerRef.current = L.layerGroup().addTo(map);
-    dangerTrafficLayerRef.current = L.layerGroup().addTo(map);
     incidentsLayerGroupRef.current = L.layerGroup().addTo(map);
 
     // Interactive map click to select Origin or Destination directly
@@ -504,106 +502,6 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     }
   }, [selectedRoute, allRoutes, mapType]);
 
-  // 3. Red Hazard Traffic Congestion Route Segments ("Pedaço do trajeto vermelho como trânsito")
-  useEffect(() => {
-    const layer = dangerTrafficLayerRef.current;
-    if (!layer || !selectedRoute || !selectedRoute.path || selectedRoute.path.length < 2) return;
-
-    layer.clearLayers();
-
-    const path = selectedRoute.path;
-
-    dangerZones.forEach((zone) => {
-      // Find all points along the route path that pass near/through this danger zone
-      const matchingIndices: number[] = [];
-      const thresholdMeters = zone.radiusMeters + 260;
-
-      path.forEach((pt, idx) => {
-        const d = calculateDistanceMeters(pt[0], pt[1], zone.coordinates[0], zone.coordinates[1]);
-        if (d <= thresholdMeters) {
-          matchingIndices.push(idx);
-        }
-      });
-
-      if (matchingIndices.length === 0) return;
-
-      // Group consecutive matching points into contiguous segments
-      const segments: [number, number][][] = [];
-      let currentSeg: [number, number][] = [];
-
-      for (let i = 0; i < matchingIndices.length; i++) {
-        const idx = matchingIndices[i];
-        if (currentSeg.length === 0) {
-          if (idx > 0) currentSeg.push(path[idx - 1]);
-          currentSeg.push(path[idx]);
-        } else {
-          const prevIdx = matchingIndices[i - 1];
-          if (idx === prevIdx + 1) {
-            currentSeg.push(path[idx]);
-          } else {
-            if (prevIdx < path.length - 1) currentSeg.push(path[prevIdx + 1]);
-            if (currentSeg.length >= 2) segments.push(currentSeg);
-            currentSeg = [];
-            if (idx > 0) currentSeg.push(path[idx - 1]);
-            currentSeg.push(path[idx]);
-          }
-        }
-      }
-
-      if (currentSeg.length > 0) {
-        const lastIdx = matchingIndices[matchingIndices.length - 1];
-        if (lastIdx < path.length - 1) currentSeg.push(path[lastIdx + 1]);
-        if (currentSeg.length >= 2) segments.push(currentSeg);
-      }
-
-      const isApproaching = (activeAlertZone && activeAlertZone.id === zone.id) || selectedRoute.type === 'rapida';
-      const isHazardousRoute = selectedRoute.type === 'rapida' || selectedRoute.dangerZoneIds?.includes(zone.id);
-
-      if (!isApproaching && !isHazardousRoute) return;
-
-      segments.forEach((segCoords) => {
-        // Deep red casing border (traffic jam casing)
-        L.polyline(segCoords, {
-          color: isApproaching ? '#7f1d1d' : '#991b1b',
-          weight: isApproaching ? 10 : 8,
-          opacity: 0.95,
-          lineCap: 'round',
-          lineJoin: 'round',
-        }).addTo(layer);
-
-        // Traffic Congestion Red line (#ef4444)
-        L.polyline(segCoords, {
-          color: isApproaching ? '#ef4444' : '#dc2626',
-          weight: isApproaching ? 6.5 : 5,
-          opacity: 1.0,
-          lineCap: 'round',
-          lineJoin: 'round',
-          className: isApproaching ? 'traffic-red-pulse-segment' : '',
-        }).addTo(layer);
-
-        // Traffic Alert Badge at midpoint of the congested segment
-        if (isApproaching && segCoords.length >= 2) {
-          const midIdx = Math.floor(segCoords.length / 2);
-          const midCoord = segCoords[midIdx];
-
-          const trafficBadgeIcon = L.divIcon({
-            html: `
-              <div style="background:#b91c1c;color:#ffffff;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;display:flex;align-items:center;gap:4px;box-shadow:0 3px 10px rgba(220,38,38,0.55);border:1.5px solid #ffffff;white-space:nowrap;transform:translate(-50%,-50%);pointer-events:none;">
-                <span style="font-size:11px;">🚗⚠️</span>
-                <span>Trânsito Lento &bull; ${zone.neighborhood}</span>
-              </div>
-            `,
-            className: 'traffic-hazard-badge',
-            iconSize: [0, 0],
-            iconAnchor: [0, 0],
-          });
-
-          L.marker(midCoord, { icon: trafficBadgeIcon, interactive: false }).addTo(layer);
-        }
-      });
-    });
-  }, [selectedRoute.id, dangerZones, activeAlertZone?.id, isNavigating]);
-
   // When arriving at destination, smoothly keep focus on destination and show arrival badge
   useEffect(() => {
     if (!hasArrived) return;
@@ -708,7 +606,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     return () => clearTimeout(openTimer);
   }, [focusPoint]);
 
-  // Update Danger Zones
+  // Update Danger Zones (Visually prominent red perimeter + center badge)
   useEffect(() => {
     const layerGroup = zonesLayerGroupRef.current;
     if (!layerGroup) return;
@@ -717,31 +615,48 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     zoneCirclesRef.current.clear();
 
     dangerZones.forEach((zone) => {
+      const isActive = activeAlertZone && activeAlertZone.id === zone.id;
+
+      // 1. Soft glowing outer warning halo
+      L.circle(zone.coordinates, {
+        color: '#ef4444',
+        fillColor: '#ef4444',
+        fillOpacity: isActive ? 0.16 : 0.08,
+        radius: zone.radiusMeters + 75,
+        weight: 1,
+        dashArray: '4, 6',
+        interactive: false,
+      }).addTo(layerGroup);
+
+      // 2. Main prominent danger zone circle (bold red border, vibrant fill)
       const circle = L.circle(zone.coordinates, {
-        color: '#262626',
-        fillColor: '#404040',
-        fillOpacity: mapType === 'street' ? 0.14 : 0.22,
+        color: isActive ? '#991b1b' : '#dc2626',
+        fillColor: isActive ? '#dc2626' : '#ef4444',
+        fillOpacity: isActive ? 0.42 : mapType === 'street' ? 0.28 : 0.35,
         radius: zone.radiusMeters,
-        weight: 1.5,
-        dashArray: '5, 5',
+        weight: isActive ? 3.5 : 2.5,
+        dashArray: isActive ? undefined : '5, 5',
       });
 
-      circle.bindPopup(`
-        <div style="font-family:system-ui,-apple-system,sans-serif;font-size:12px;line-height:1.4;color:#171717;min-width:200px;">
-          <div style="font-weight:700;color:#171717;margin-bottom:2px;">
-            Zona de Atenção &bull; ${zone.neighborhood}
+      const popupHtml = `
+        <div style="font-family:system-ui,-apple-system,sans-serif;font-size:12px;line-height:1.4;color:#171717;min-width:210px;">
+          <div style="display:flex;align-items:center;gap:5px;font-weight:800;color:#dc2626;margin-bottom:2px;">
+            <span>⚠️</span>
+            <span>Área de Risco &bull; ${zone.neighborhood}</span>
           </div>
-          <div style="font-weight:600;margin-bottom:4px;font-size:11px;">
+          <div style="font-weight:700;margin-bottom:4px;font-size:12px;color:#111827;">
             ${zone.name}
           </div>
-          <div style="color:#404040;margin:4px 0;font-size:11px;">
+          <div style="color:#4b5563;margin:4px 0;font-size:11px;">
             ${zone.title}
           </div>
-          <div style="margin-top:6px;padding:6px 8px;background:#f5f5f5;border-left:3px solid #171717;border-radius:4px;font-size:11px;color:#262626;">
-            <strong>Recomendação:</strong> ${zone.defenseCivilTip}
+          <div style="margin-top:6px;padding:6px 8px;background:#fef2f2;border-left:3px solid #dc2626;border-radius:4px;font-size:11px;color:#991b1b;">
+            <strong>Recomendação Defesa Civil:</strong> ${zone.defenseCivilTip}
           </div>
         </div>
-      `);
+      `;
+
+      circle.bindPopup(popupHtml);
       circle.on('click', () => {
         if (onZoneClick) onZoneClick(zone);
       });
@@ -749,8 +664,28 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
       zoneCirclesRef.current.set(zone.id, circle);
       zoneCirclesRef.current.set(`${zone.coordinates[0].toFixed(5)},${zone.coordinates[1].toFixed(5)}`, circle);
       circle.addTo(layerGroup);
+
+      // 3. Prominent floating center badge pin
+      const centerBadgeIcon = L.divIcon({
+        html: `
+          <div style="background:#09090b;color:#ffffff;padding:3.5px 8.5px;border-radius:999px;font-size:10px;font-weight:800;display:flex;align-items:center;gap:4px;box-shadow:0 3px 12px rgba(220,38,38,0.5);border:1.5px solid #ef4444;white-space:nowrap;transform:translate(-50%,-50%);cursor:pointer;">
+            <span style="color:#ef4444;font-size:11px;">⚠️</span>
+            <span>Área de Risco &bull; ${zone.neighborhood}</span>
+          </div>
+        `,
+        className: 'danger-zone-center-badge',
+        iconSize: [0, 0],
+        iconAnchor: [0, 0],
+      });
+
+      const centerMarker = L.marker(zone.coordinates, { icon: centerBadgeIcon });
+      centerMarker.bindPopup(popupHtml);
+      centerMarker.on('click', () => {
+        if (onZoneClick) onZoneClick(zone);
+      });
+      centerMarker.addTo(layerGroup);
     });
-  }, [dangerZones, onZoneClick, mapType]);
+  }, [dangerZones, onZoneClick, mapType, activeAlertZone]);
 
   // Update Incident Markers
   useEffect(() => {
