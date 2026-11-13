@@ -664,26 +664,6 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
       zoneCirclesRef.current.set(zone.id, circle);
       zoneCirclesRef.current.set(`${zone.coordinates[0].toFixed(5)},${zone.coordinates[1].toFixed(5)}`, circle);
       circle.addTo(layerGroup);
-
-      // 3. Prominent floating center badge pin
-      const centerBadgeIcon = L.divIcon({
-        html: `
-          <div style="background:#09090b;color:#ffffff;padding:3.5px 8.5px;border-radius:999px;font-size:10px;font-weight:800;display:flex;align-items:center;gap:4px;box-shadow:0 3px 12px rgba(220,38,38,0.5);border:1.5px solid #ef4444;white-space:nowrap;transform:translate(-50%,-50%);cursor:pointer;">
-            <span style="color:#ef4444;font-size:11px;">⚠️</span>
-            <span>Área de Risco &bull; ${zone.neighborhood}</span>
-          </div>
-        `,
-        className: 'danger-zone-center-badge',
-        iconSize: [0, 0],
-        iconAnchor: [0, 0],
-      });
-
-      const centerMarker = L.marker(zone.coordinates, { icon: centerBadgeIcon });
-      centerMarker.bindPopup(popupHtml);
-      centerMarker.on('click', () => {
-        if (onZoneClick) onZoneClick(zone);
-      });
-      centerMarker.addTo(layerGroup);
     });
   }, [dangerZones, onZoneClick, mapType, activeAlertZone]);
 
