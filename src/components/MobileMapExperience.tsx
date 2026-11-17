@@ -328,11 +328,11 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
             )}
           </div>
 
-          {/* Top-Left Quick Map Tools (Travel Mode & Voice only - Zero overlap with Street/Satellite dock) */}
+          {/* Top-Left Quick Map Tools (Stacked vertically on the left - Zero overlap with Street/Satellite dock) */}
           <div
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
-            className="absolute top-[72px] left-3 z-[400] flex items-center gap-1.5 pointer-events-auto"
+            className="absolute top-[72px] left-3 z-[400] flex flex-col items-start gap-1.5 pointer-events-auto"
           >
             {/* Travel Mode Pills on Mobile Map */}
             <div
@@ -390,25 +390,28 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
               </button>
             </div>
 
-            <button
-              type="button"
-              onClick={onToggleVoice}
-              aria-pressed={voiceEnabled}
-              className={`h-7 px-2 rounded-xl border shadow-lg flex items-center gap-1 text-[10px] font-bold active:scale-95 transition-all backdrop-blur-md ${
-                voiceEnabled
-                  ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border-neutral-950 dark:border-white shadow-xs'
-                  : 'bg-white/95 dark:bg-neutral-950/90 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-white/15'
-              }`}
-              title={voiceEnabled ? 'Voz ativada' : 'Voz desativada'}
-              aria-label={voiceEnabled ? 'Desativar voz de navegação' : 'Ativar voz de navegação'}
-            >
-              {voiceEnabled ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3 text-neutral-400" />}
-              <span>Voz</span>
-            </button>
+            {/* Voice toggle button placed directly below travel mode on the left edge, never colliding with map controls on the right */}
+            {!isNavigating && (
+              <button
+                type="button"
+                onClick={onToggleVoice}
+                aria-pressed={voiceEnabled}
+                className={`h-7 px-2.5 rounded-xl border shadow-lg flex items-center gap-1.5 text-[10px] font-bold active:scale-95 transition-all backdrop-blur-md ${
+                  voiceEnabled
+                    ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border-neutral-950 dark:border-white shadow-xs'
+                    : 'bg-white/95 dark:bg-neutral-950/90 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-white/15'
+                }`}
+                title={voiceEnabled ? 'Voz ativada' : 'Voz desativada'}
+                aria-label={voiceEnabled ? 'Desativar voz de navegação' : 'Ativar voz de navegação'}
+              >
+                {voiceEnabled ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3 text-neutral-400" />}
+                <span>Voz</span>
+              </button>
+            )}
 
             {isNavigating && (
-              <div className="w-8 h-8 rounded-full bg-neutral-950/92 border border-white/20 shadow-xl flex flex-col items-center justify-center text-white font-mono shrink-0 ml-1">
-                <span className="text-[10px] font-black leading-none">{speedKmH}</span>
+              <div className="w-9 h-9 rounded-full bg-neutral-950/92 border border-white/20 shadow-xl flex flex-col items-center justify-center text-white font-mono shrink-0">
+                <span className="text-[11px] font-black leading-none">{speedKmH}</span>
                 <span className="text-[6px] text-neutral-400 uppercase leading-none">km/h</span>
               </div>
             )}

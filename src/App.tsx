@@ -579,16 +579,14 @@ export function App() {
               </div>
             </div>
 
-            {/* Right Column: Authentic Flagship Smartphone with 3D Tilt & Mini App Video (Active on BOTH Mobile and Desktop) */}
-            <div className="flex lg:col-span-5 justify-center items-center scroll-reveal-scale reveal-delay-2 w-full mt-8 lg:mt-0">
-              <div className="w-full max-w-[340px] sm:max-w-[420px] mx-auto scale-[0.92] sm:scale-100 origin-center">
-                <Interactive3DPhone className="w-full">
-                  <PhoneMiniAppSimulation
-                    travelMode={travelMode}
-                    onSelectTravelMode={handleSelectTravelMode}
-                  />
-                </Interactive3DPhone>
-              </div>
+            {/* Right Column: Authentic Flagship Smartphone with 3D Tilt & Mini App Video (Desktop Only - Clean on Mobile) */}
+            <div className="hidden lg:flex lg:col-span-5 justify-center items-center scroll-reveal-scale reveal-delay-2 w-full">
+              <Interactive3DPhone className="w-full">
+                <PhoneMiniAppSimulation
+                  travelMode={travelMode}
+                  onSelectTravelMode={handleSelectTravelMode}
+                />
+              </Interactive3DPhone>
             </div>
           </div>
 
