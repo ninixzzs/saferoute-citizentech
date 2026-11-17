@@ -488,17 +488,24 @@ export function App() {
         onResetAccessibility={resetAccessibility}
       />
 
-      {/* Tela Inicial Interativa 3D Inspirada no Design Showcase (Pinterest / Awwwards) */}
+      {/* Tela Inicial: Celular (Radar Branco + Logo Original) vs. Computador (Matriz 3D de Luzes Reativas ao Mouse) */}
       {showIntroScreen && (
-        <LuminousIntroScreen
-          onEnterApp={() => setShowIntroScreen(false)}
-          onOpenAiChat={() => {
-            setShowIntroScreen(false);
-            setSidebarTab('messages');
-            setMobileView('ai');
-            setAssistantFocusTrigger((prev) => prev + 1);
-          }}
-        />
+        isMobileScreen ? (
+          <SplashScreen
+            onFinish={() => setShowIntroScreen(false)}
+            onComplete={() => setShowIntroScreen(false)}
+          />
+        ) : (
+          <LuminousIntroScreen
+            onEnterApp={() => setShowIntroScreen(false)}
+            onOpenAiChat={() => {
+              setShowIntroScreen(false);
+              setSidebarTab('messages');
+              setMobileView('ai');
+              setAssistantFocusTrigger((prev) => prev + 1);
+            }}
+          />
+        )
       )}
 
       {/* Main Content */}
