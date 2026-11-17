@@ -784,14 +784,14 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
         className={`absolute ${topControlOffsetClass} right-3 sm:right-4 z-[400] flex flex-col items-end gap-2.5 pointer-events-auto select-none`}
       >
         {/* Layer Switcher (Modo Rua / Satélite) + Fullscreen */}
-        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-white/95 dark:bg-neutral-950/92 backdrop-blur-xl border border-neutral-200/90 dark:border-white/15 shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-all">
-          <div role="radiogroup" aria-label="Visualização do mapa" className="flex items-center gap-1">
+        <div className="flex items-center gap-1 p-0.5 sm:p-1 rounded-2xl bg-white/95 dark:bg-neutral-950/92 backdrop-blur-xl border border-neutral-200/90 dark:border-white/15 shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-all">
+          <div role="radiogroup" aria-label="Visualização do mapa" className="flex items-center gap-0.5 sm:gap-1">
             <button
               type="button"
               role="radio"
               aria-checked={mapType === 'street'}
               onClick={() => setMapType('street')}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-white focus:outline-none ${
+              className={`px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold flex items-center gap-1 sm:gap-1.5 transition-all focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-white focus:outline-none ${
                 mapType === 'street'
                   ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm scale-[1.02]'
                   : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-900'
@@ -799,14 +799,14 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
               title="Modo Rua (Mapa Vetorial com Vias e Cruzamentos)"
             >
               <MapIcon className="w-3.5 h-3.5 shrink-0" />
-              <span className="inline text-[11px] sm:text-xs">Rua</span>
+              <span>Rua</span>
             </button>
             <button
               type="button"
               role="radio"
               aria-checked={mapType === 'satellite'}
               onClick={() => setMapType('satellite')}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-white focus:outline-none ${
+              className={`px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold flex items-center gap-1 sm:gap-1.5 transition-all focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-white focus:outline-none ${
                 mapType === 'satellite'
                   ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm scale-[1.02]'
                   : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-900'
@@ -814,7 +814,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
               title="Visualização por Satélite (Imagens Aéreas de Alta Definição)"
             >
               <Satellite className="w-3.5 h-3.5 shrink-0" />
-              <span className="inline text-[11px] sm:text-xs">Satélite</span>
+              <span>Satélite</span>
             </button>
           </div>
 

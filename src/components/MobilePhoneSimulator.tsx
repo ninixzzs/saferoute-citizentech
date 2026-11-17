@@ -442,7 +442,7 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
               activeAlertZone={activeAlertZone}
               speedKmH={speedKmH}
               focusPoint={focusPoint}
-              topControlOffsetClass="top-[76px]"
+              topControlOffsetClass={isNavigating ? "top-[78px]" : "top-[68px]"}
               className="w-full h-full border-0 rounded-none shadow-none"
               onSetPointFromMap={onSetPointFromMap}
             />
@@ -452,7 +452,9 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
           <div
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
-            className="absolute top-0 left-0 right-0 z-30 p-2.5 space-y-2 pointer-events-auto select-none"
+            className={`absolute top-0 left-0 right-0 p-2.5 space-y-2 pointer-events-auto select-none transition-all ${
+              isExpandedPlanner ? 'z-[450]' : 'z-30'
+            }`}
           >
             {isNavigating ? (
               /* Turn-by-Turn Guidance Header */
@@ -691,48 +693,61 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
               </div>
             )}
 
-            {/* Travel Mode Selector Capsule ('Carro' | 'Moto' | 'A pé') */}
+            {/* Travel Mode Selector Capsule ('Carro' | 'Moto' | 'A pé') - Left-aligned to eliminate any overlap with Street/Satellite dock */}
             {!isExpandedPlanner && (
-              <div className="flex items-center justify-center gap-1 p-1 mx-auto w-fit rounded-2xl bg-neutral-950/92 backdrop-blur-xl border border-neutral-700/80 shadow-2xl select-none animate-in fade-in duration-200">
+              <div
+                role="radiogroup"
+                aria-label="Modo de transporte"
+                className="flex items-center gap-0.5 p-0.5 rounded-xl bg-white/95 dark:bg-neutral-950/92 backdrop-blur-xl border border-neutral-300 dark:border-neutral-800 shadow-md select-none animate-in fade-in duration-200 w-fit"
+              >
                 <button
                   type="button"
+                  role="radio"
+                  aria-checked={travelMode === 'carro'}
                   onClick={() => onSelectTravelMode?.('carro')}
-                  className={`px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-white focus:outline-none ${
                     travelMode === 'carro'
-                      ? 'bg-white text-neutral-950 shadow-md font-extrabold scale-102'
-                      : 'text-neutral-400 hover:text-white'
+                      ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-sm scale-102 font-extrabold'
+                      : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
                   }`}
                   title="Modo Carro (Trânsito Convencional)"
+                  aria-label="Modo Carro"
                 >
-                  <Car className="w-3.5 h-3.5" />
+                  <Car className="w-3 h-3" />
                   <span>Carro</span>
                 </button>
 
                 <button
                   type="button"
+                  role="radio"
+                  aria-checked={travelMode === 'moto'}
                   onClick={() => onSelectTravelMode?.('moto')}
-                  className={`px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-white focus:outline-none ${
                     travelMode === 'moto'
-                      ? 'bg-white text-neutral-950 shadow-md font-extrabold scale-102'
-                      : 'text-neutral-400 hover:text-white'
+                      ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-sm scale-102 font-extrabold'
+                      : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
                   }`}
                   title="Modo Moto (Corredores Ágeis)"
+                  aria-label="Modo Moto"
                 >
-                  <Bike className="w-3.5 h-3.5" />
+                  <Bike className="w-3 h-3" />
                   <span>Moto</span>
                 </button>
 
                 <button
                   type="button"
+                  role="radio"
+                  aria-checked={travelMode === 'a_pe'}
                   onClick={() => onSelectTravelMode?.('a_pe')}
-                  className={`px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-white focus:outline-none ${
                     travelMode === 'a_pe'
-                      ? 'bg-white text-neutral-950 shadow-md font-extrabold scale-102'
-                      : 'text-neutral-400 hover:text-white'
+                      ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-sm scale-102 font-extrabold'
+                      : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
                   }`}
                   title="Modo A pé (Vias Iluminadas e Calçadas Monitoradas)"
+                  aria-label="Modo A pé"
                 >
-                  <Footprints className="w-3.5 h-3.5" />
+                  <Footprints className="w-3 h-3" />
                   <span>A pé</span>
                 </button>
               </div>
