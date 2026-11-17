@@ -112,6 +112,84 @@ html {
   transform: scale(1) translate3d(0, 0, 0);
 }
 
+/* Kinetic Letter & Typography Animations for Academic Presentation */
+@keyframes letter-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.text-kinetic-shimmer {
+  background: linear-gradient(
+    90deg,
+    #262626 0%,
+    #0a0a0a 25%,
+    #525252 50%,
+    #0a0a0a 75%,
+    #262626 100%
+  );
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: letter-shimmer 5s ease-in-out infinite;
+}
+
+.dark .text-kinetic-shimmer {
+  background: linear-gradient(
+    90deg,
+    #737373 0%,
+    #ffffff 45%,
+    #ffffff 55%,
+    #737373 100%
+  );
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: letter-shimmer 5s ease-in-out infinite;
+}
+
+@keyframes letter-float {
+  0%, 100% {
+    transform: translateY(0);
+    letter-spacing: -0.04em;
+  }
+  50% {
+    transform: translateY(-2px);
+    letter-spacing: -0.035em;
+  }
+}
+
+.animate-letter-float {
+  animation: letter-float 5s ease-in-out infinite;
+}
+
+@keyframes glow-brand-pulse {
+  0%, 100% {
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.08);
+  }
+  50% {
+    text-shadow: 0 0 18px rgba(0, 0, 0, 0.16);
+  }
+}
+
+.dark .brand-text-glow {
+  animation: glow-brand-pulse-dark 4s ease-in-out infinite;
+}
+
+@keyframes glow-brand-pulse-dark {
+  0%, 100% {
+    text-shadow: 0 0 12px rgba(255, 255, 255, 0.2), 0 0 28px rgba(255, 255, 255, 0.08);
+  }
+  50% {
+    text-shadow: 0 0 22px rgba(255, 255, 255, 0.5), 0 0 45px rgba(255, 255, 255, 0.25);
+  }
+}
+
 /* Mobile-Specific Fluid Reductions for Ultra-Responsive Smartphone Scrolling */
 @media (max-width: 768px) {
   .scroll-reveal {
@@ -196,13 +274,17 @@ html.high-contrast *:focus-visible {
   outline-offset: 2px !important;
 }
 
-/* Leaflet styles and container adjustments */
+/* Leaflet styles and container adjustments - Smooth map tile loading without black flashes */
 .leaflet-container {
-  background-color: #171717 !important;
+  background-color: #e2e8f0;
   font-family: inherit;
   width: 100% !important;
   height: 100% !important;
   z-index: 1;
+}
+
+.dark .leaflet-container {
+  background-color: #1e293b;
 }
 
 .leaflet-popup-content-wrapper {

@@ -126,10 +126,22 @@ export function App() {
     (role: 'origin' | 'destination', coords: [number, number]) => {
       setPointFromMap(role, coords, dangerZones);
       if (voiceEnabled) {
-        speakAlert(role === 'origin' ? 'Ponto de partida definido no mapa.' : 'Destino definido no mapa.');
+        speakAlert(role === 'origin' ? 'Partida selecionada' : 'Destino selecionado');
       }
     },
     [setPointFromMap, dangerZones, voiceEnabled, speakAlert]
+  );
+
+  // Calculated Journey with Clean Narration (speaks ONLY the location name, no long phrases)
+  const handleCalculateJourney = useCallback(
+    async (orig: string, dest: string) => {
+      const result = await calculateJourney(orig, dest, dangerZones);
+      if (result && voiceEnabled && result.destination?.name) {
+        speakAlert(result.destination.name);
+      }
+      return result;
+    },
+    [calculateJourney, dangerZones, voiceEnabled, speakAlert]
   );
 
   // Workspace states
@@ -291,14 +303,15 @@ export function App() {
   };
 
   const handleFocusIncident = (coords: [number, number], incident?: import('./types').IncidentReport) => {
-    // 1. Desativar qualquer bloqueio ou standby do simulador para nunca ficar tela preta:
+    // 1. Desativar qualquer bloqueio da tela para garantir visualização imediata:
     setIsPhoneLocked(false);
 
-    // 2. Garantir que tanto na visualização mobile quanto no desktop o modo seja 'map':
-    setViewMode('map');
-    setMobileView('map');
+    // 2. Se estiver no celular e na aba de IA, direciona para o mapa
+    if (window.innerWidth < 1024 && mobileView === 'ai') {
+      setMobileView('map');
+    }
 
-    // 3. Definir o ponto de foco com título e bairro para abrir popup destacado no mapa:
+    // 3. Definir o ponto de foco com coordenadas e dados para abrir o popup:
     setFocusPoint({
       coords,
       ts: Date.now(),
@@ -313,55 +326,66 @@ export function App() {
       } else {
         document.getElementById('desktop-workspace')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
-    }, 60);
+    }, 50);
 
+    // Narração concisa: apenas o nome do local, sem frases longas
     if (voiceEnabled && incident) {
-      speakAlert(`Exibindo no mapa: ${incident.title} em ${incident.neighborhood}.`);
+      speakAlert(incident.neighborhood ? `${incident.neighborhood}, ${incident.title}` : incident.title);
     }
   };
 
   const handleFocusZone = (zone: DangerZone) => {
     setIsPhoneLocked(false);
-    setViewMode('map');
-    setMobileView('map');
+
+    if (window.innerWidth < 1024 && mobileView === 'ai') {
+      setMobileView('map');
+    }
+
     setFocusPoint({
       coords: zone.coordinates,
       ts: Date.now(),
       title: zone.title,
       neighborhood: zone.neighborhood,
     });
+
     setTimeout(() => {
       if (window.innerWidth < 1024) {
         document.getElementById('mobile-stage')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else {
         document.getElementById('desktop-workspace')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
-    }, 60);
+    }, 50);
+
+    // Narração concisa: apenas o nome do local
     if (voiceEnabled) {
-      speakAlert(`Área de atenção em ${zone.neighborhood}: ${zone.name}.`);
+      speakAlert(zone.neighborhood ? `${zone.neighborhood}, ${zone.name}` : zone.name);
     }
   };
 
   const handleFocusCoordinates = (coords: [number, number], title?: string, neighborhood?: string) => {
     setIsPhoneLocked(false);
-    setViewMode('map');
-    setMobileView('map');
+
+    if (window.innerWidth < 1024 && mobileView === 'ai') {
+      setMobileView('map');
+    }
+
     setFocusPoint({
       coords,
       ts: Date.now(),
       title,
       neighborhood,
     });
+
     setTimeout(() => {
       if (window.innerWidth < 1024) {
         document.getElementById('mobile-stage')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else {
         document.getElementById('desktop-workspace')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
-    }, 60);
+    }, 50);
 
-    if (voiceEnabled && title) {
-      speakAlert(`Exibindo no mapa: ${title}.`);
+    if (voiceEnabled && (title || neighborhood)) {
+      speakAlert(neighborhood ? `${neighborhood}, ${title}` : (title || ''));
     }
   };
 
@@ -430,7 +454,8 @@ export function App() {
       }
 
       if (voiceEnabled) {
-        speakAlert(`Traçando rota para ${destName}. Trajeto carregado no mapa.`);
+        // Fala APENAS o nome do local novo, sem frases longas
+        speakAlert(destName);
       }
     },
     [calculateJourney, originLocation.name, dangerZones, mobileView, voiceEnabled, speakAlert]
@@ -490,13 +515,19 @@ export function App() {
           aria-label="Apresentação do SafeRoute"
           className="scroll-reveal rounded-[28px] sm:rounded-[36px] bg-white/95 dark:bg-neutral-950/90 border border-neutral-200/90 dark:border-neutral-800/90 backdrop-blur-2xl p-5 sm:p-8 lg:p-10 shadow-[0_16px_50px_rgba(0,0,0,0.08)] dark:shadow-[0_24px_64px_rgba(0,0,0,0.7)] space-y-8"
         >
-          {/* Top Badge Strip */}
+          {/* Top Badge Strip with Academic Presentation Flag */}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xs scroll-reveal-badge">
-              <span className="w-2.5 h-2.5 rounded-full bg-neutral-950 dark:bg-white animate-pulse" />
-              <span className="text-[11px] font-mono font-bold tracking-widest uppercase text-neutral-950 dark:text-white">
-                SISTEMA INTELIGENTE DE ROTAS &bull; SÃO PAULO
-              </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xs scroll-reveal-badge">
+                <span className="w-2.5 h-2.5 rounded-full bg-neutral-950 dark:bg-white animate-pulse" />
+                <span className="text-[11px] font-mono font-bold tracking-widest uppercase text-neutral-950 dark:text-white">
+                  SISTEMA INTELIGENTE DE ROTAS &bull; SÃO PAULO
+                </span>
+              </div>
+              <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-100/90 dark:bg-neutral-900/90 border border-neutral-300 dark:border-neutral-700 text-[10px] font-mono font-bold text-neutral-700 dark:text-neutral-300">
+                <Sparkles className="w-3 h-3 text-neutral-900 dark:text-white" />
+                <span>CITIZENTECH &bull; APRESENTAÇÃO OFICIAL</span>
+              </div>
             </div>
 
             <div className="flex items-center gap-2 scroll-reveal-badge reveal-delay-1">
@@ -518,14 +549,14 @@ export function App() {
               <div>
                 <h1 className="font-display text-[2.2rem] sm:text-[3.2rem] lg:text-[3.8rem] font-black tracking-[-0.04em] text-neutral-950 dark:text-white leading-[1.03] scroll-reveal-title reveal-delay-1">
                   Com o{' '}
-                  <span className="relative inline-block px-3.5 py-1 mx-1.5 rounded-2xl bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-[0_10px_35px_rgba(0,0,0,0.4)] dark:shadow-[0_10px_40px_rgba(255,255,255,0.45)] border border-neutral-700/80 dark:border-neutral-200 tracking-tight transition-transform duration-300 hover:scale-105">
+                  <span className="relative inline-block px-3.5 py-1 mx-1.5 rounded-2xl bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-[0_10px_35px_rgba(0,0,0,0.4)] dark:shadow-[0_10px_40px_rgba(255,255,255,0.45)] border border-neutral-700/80 dark:border-neutral-200 tracking-tight transition-transform duration-300 hover:scale-105 brand-text-glow">
                     SafeRoute
                   </span>
-                  , você sabe dos riscos antes mesmo de chegar até eles.
+                  , <span className="text-kinetic-shimmer">você sabe dos riscos antes mesmo de chegar até eles.</span>
                 </h1>
               </div>
 
-              {/* Slogan de Impacto (Assinatura Escultural UX/UI) */}
+              {/* Slogan de Impacto com Animação Tipográfica (Assinatura Escultural UX/UI) */}
               <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-neutral-950 text-white border border-white/20 shadow-xl flex items-center justify-between gap-4 transition-all hover:border-white/40 group hover-glass-glow scroll-reveal-scale reveal-delay-2">
                 <div className="flex items-center gap-3.5">
                   <div className="w-11 h-11 rounded-2xl bg-white text-black flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform">
@@ -533,7 +564,7 @@ export function App() {
                   </div>
                   <div>
                     <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 font-bold block">Assinatura do Ecossistema</span>
-                    <span className="text-base sm:text-lg font-black tracking-tight text-white">
+                    <span className="text-base sm:text-lg font-black tracking-tight text-white animate-letter-float block">
                       &ldquo;Vá com segurança. Vá de SafeRoute.&rdquo;
                     </span>
                   </div>
@@ -943,7 +974,7 @@ export function App() {
                 onOpenReportModal={() => setIsReportModalOpen(true)}
                 originLocation={originLocation}
                 destinationLocation={destinationLocation}
-                onCalculateJourney={(orig, dest) => calculateJourney(orig, dest, dangerZones)}
+                onCalculateJourney={handleCalculateJourney}
                 onSwapLocations={() => swapOriginAndDestination(dangerZones)}
                 isCalculatingRoute={isCalculatingRoute}
                 onResetPresetRoutes={resetToPresetRoutes}
@@ -1042,7 +1073,7 @@ export function App() {
                   progressPercentage={progressPercentage}
                   originLocation={originLocation}
                   destinationLocation={destinationLocation}
-                  onCalculateJourney={(orig, dest) => calculateJourney(orig, dest, dangerZones)}
+                  onCalculateJourney={handleCalculateJourney}
                   onSwapLocations={() => swapOriginAndDestination(dangerZones)}
                   isCalculatingRoute={isCalculatingRoute}
                   onResetPresetRoutes={resetToPresetRoutes}
@@ -1128,7 +1159,7 @@ export function App() {
                     onSelectRoute={selectRoute}
                     originLocation={originLocation}
                     destinationLocation={destinationLocation}
-                    onCalculateJourney={(orig, dest) => calculateJourney(orig, dest, dangerZones)}
+                    onCalculateJourney={handleCalculateJourney}
                     onSwapLocations={() => swapOriginAndDestination(dangerZones)}
                     onResetPresetRoutes={resetToPresetRoutes}
                     isCalculatingRoute={isCalculatingRoute}
@@ -1184,7 +1215,7 @@ export function App() {
                     onOpenReportModal={() => setIsReportModalOpen(true)}
                     originLocation={originLocation}
                     destinationLocation={destinationLocation}
-                    onCalculateJourney={(orig, dest) => calculateJourney(orig, dest, dangerZones)}
+                    onCalculateJourney={handleCalculateJourney}
                     onSwapLocations={() => swapOriginAndDestination(dangerZones)}
                     isCalculatingRoute={isCalculatingRoute}
                     onResetPresetRoutes={resetToPresetRoutes}
@@ -1269,7 +1300,7 @@ export function App() {
                       progressPercentage={progressPercentage}
                       originLocation={originLocation}
                       destinationLocation={destinationLocation}
-                      onCalculateJourney={(orig, dest) => calculateJourney(orig, dest, dangerZones)}
+                      onCalculateJourney={handleCalculateJourney}
                       onSwapLocations={() => swapOriginAndDestination(dangerZones)}
                       isCalculatingRoute={isCalculatingRoute}
                       onResetPresetRoutes={resetToPresetRoutes}

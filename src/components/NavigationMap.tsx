@@ -533,13 +533,16 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     const map = mapInstanceRef.current;
     if (!map || !focusPoint) return;
 
-    // Suppress navigation auto-pan for 4.5s so user can examine the focused zone
-    focusingUntilRef.current = Date.now() + 4500;
+    // Suppress navigation auto-pan for 6s so user can examine the focused zone
+    focusingUntilRef.current = Date.now() + 6000;
 
-    // Invalidate size immediately to guarantee tiles render and prevent black screen
+    // Multiple staggered invalidation cycles to guarantee tiles render smoothly without black flashes
     map.invalidateSize();
+    map.flyTo(focusPoint.coords, 16, { duration: 0.65 });
 
-    map.flyTo(focusPoint.coords, 17, { duration: 0.8 });
+    const t1 = setTimeout(() => map.invalidateSize(), 80);
+    const t2 = setTimeout(() => map.invalidateSize(), 250);
+    const t3 = setTimeout(() => map.invalidateSize(), 550);
 
     const openTimer = setTimeout(() => {
       map.invalidateSize();
@@ -560,7 +563,7 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
       });
 
       const matchedMarker = targetMarker as L.Marker | null;
-      if (matchedMarker && minDist < 0.005) {
+      if (matchedMarker && minDist < 0.006) {
         matchedMarker.openPopup();
         return;
       }
@@ -580,30 +583,36 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
       });
 
       const matchedCircle = targetCircle as L.Circle | null;
-      if (matchedCircle && minZoneDist < 0.008) {
+      if (matchedCircle && minZoneDist < 0.01) {
         matchedCircle.openPopup();
         return;
       }
 
       // Fallback: create a temporary highlight popup right on focusPoint
       if (focusPoint.title || focusPoint.neighborhood) {
-        L.popup()
+        L.popup({ autoPan: false, offset: [0, -8] })
           .setLatLng(focusPoint.coords)
           .setContent(`
-            <div style="font-family:system-ui,-apple-system,sans-serif;font-size:12px;color:#171717;min-width:180px;">
-              <div style="font-weight:700;color:#171717;margin-bottom:2px;">
-                ${focusPoint.neighborhood || 'Local em Destaque'}
+            <div style="font-family:system-ui,-apple-system,sans-serif;font-size:12px;color:#171717;min-width:190px;">
+              <div style="font-weight:800;color:#dc2626;margin-bottom:2px;display:flex;align-items:center;gap:4px;">
+                <span>⚠️</span>
+                <span>${focusPoint.neighborhood || 'Local em Destaque'}</span>
               </div>
-              <div style="font-size:11px;color:#404040;">
-                ${focusPoint.title || 'Ocorrência selecionada'}
+              <div style="font-size:11px;color:#374151;font-weight:600;">
+                ${focusPoint.title || 'Área em monitoramento SafeRoute'}
               </div>
             </div>
           `)
           .openOn(map);
       }
-    }, 450);
+    }, 400);
 
-    return () => clearTimeout(openTimer);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(openTimer);
+    };
   }, [focusPoint]);
 
   // Update Danger Zones (Visually prominent red perimeter + center badge)
