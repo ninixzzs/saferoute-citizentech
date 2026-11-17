@@ -773,88 +773,96 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
 
-      {/* Right-side Map Controls */}
-      <div
+      {/* Right-side Map Controls Dock */}
+      <nav
+        aria-label="Controles de visualização e navegação do mapa"
         onMouseDown={(e) => e.stopPropagation()}
         onDoubleClick={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
-        className={`absolute ${topControlOffsetClass} right-3 z-[400] flex flex-col items-end gap-2 pointer-events-auto select-none`}
+        className={`absolute ${topControlOffsetClass} right-3 sm:right-4 z-[400] flex flex-col items-end gap-2.5 pointer-events-auto select-none`}
       >
-        <div className="flex items-center gap-1.5">
-          {/* Monochrome Mode Toggle */}
-          <div className="inline-flex items-center p-0.5 rounded-xl bg-white/95 dark:bg-neutral-950/90 backdrop-blur-md border border-neutral-200 dark:border-white/15 shadow-lg">
+        {/* Layer Switcher (Modo Rua / Satélite) + Fullscreen */}
+        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-white/95 dark:bg-neutral-950/92 backdrop-blur-xl border border-neutral-200/90 dark:border-white/15 shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-all">
+          <div role="radiogroup" aria-label="Visualização do mapa" className="flex items-center gap-1">
             <button
               type="button"
+              role="radio"
+              aria-checked={mapType === 'street'}
               onClick={() => setMapType('street')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-white focus:outline-none ${
                 mapType === 'street'
-                  ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-xs'
-                  : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white'
+                  ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm scale-[1.02]'
+                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-900'
               }`}
-              title="Modo Rua"
+              title="Modo Rua (Mapa Vetorial com Vias e Cruzamentos)"
             >
-              <MapIcon className="w-3 h-3" />
-              <span>Rua</span>
+              <MapIcon className="w-3.5 h-3.5 shrink-0" />
+              <span className="inline text-[11px] sm:text-xs">Rua</span>
             </button>
             <button
               type="button"
+              role="radio"
+              aria-checked={mapType === 'satellite'}
               onClick={() => setMapType('satellite')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-white focus:outline-none ${
                 mapType === 'satellite'
-                  ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-950 shadow-xs'
-                  : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white'
+                  ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-sm scale-[1.02]'
+                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-900'
               }`}
-              title="Visualização por Satélite"
+              title="Visualização por Satélite (Imagens Aéreas de Alta Definição)"
             >
-              <Satellite className="w-3 h-3" />
-              <span>Satélite</span>
+              <Satellite className="w-3.5 h-3.5 shrink-0" />
+              <span className="inline text-[11px] sm:text-xs">Satélite</span>
             </button>
           </div>
 
           {onToggleFullscreen && (
-            <button
-              type="button"
-              onClick={onToggleFullscreen}
-              className="w-8 h-8 rounded-xl bg-white/95 dark:bg-neutral-950/90 hover:bg-neutral-100 dark:hover:bg-neutral-900 text-neutral-900 dark:text-white backdrop-blur-md border border-neutral-200 dark:border-white/15 shadow-lg flex items-center justify-center transition-all active:scale-95"
-              title={isFullscreen ? 'Sair da tela cheia' : 'Expandir mapa em tela cheia'}
-              aria-label={isFullscreen ? 'Sair da tela cheia' : 'Expandir mapa em tela cheia'}
-            >
-              {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-            </button>
+            <>
+              <div className="w-px h-4 bg-neutral-200 dark:border-neutral-800 mx-0.5" />
+              <button
+                type="button"
+                onClick={onToggleFullscreen}
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-900 text-neutral-800 dark:text-neutral-200 flex items-center justify-center transition-all active:scale-95 focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-white focus:outline-none"
+                title={isFullscreen ? 'Sair da tela cheia' : 'Expandir mapa em tela cheia'}
+                aria-label={isFullscreen ? 'Sair da tela cheia' : 'Expandir mapa em tela cheia'}
+              >
+                {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+              </button>
+            </>
           )}
         </div>
 
-        <div className="flex flex-col rounded-xl overflow-hidden bg-white/95 dark:bg-neutral-950/90 backdrop-blur-md border border-neutral-200 dark:border-white/15 shadow-lg">
+        {/* Zoom & Recenter Unified Tool Cluster */}
+        <div className="flex flex-col rounded-2xl overflow-hidden bg-white/95 dark:bg-neutral-950/92 backdrop-blur-xl border border-neutral-200/90 dark:border-white/15 shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
           <button
             type="button"
             onClick={() => mapInstanceRef.current?.zoomIn()}
-            className="w-8 h-8 flex items-center justify-center text-neutral-900 dark:text-white hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors border-b border-neutral-200 dark:border-white/10"
-            title="Aumentar zoom"
-            aria-label="Aumentar zoom"
+            className="w-9 h-9 flex items-center justify-center text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors border-b border-neutral-200/80 dark:border-white/10 active:scale-95 focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-white focus:outline-none"
+            title="Aumentar zoom do mapa"
+            aria-label="Aumentar zoom do mapa"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-4 h-4" />
           </button>
           <button
             type="button"
             onClick={() => mapInstanceRef.current?.zoomOut()}
-            className="w-8 h-8 flex items-center justify-center text-neutral-900 dark:text-white hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors"
-            title="Diminuir zoom"
-            aria-label="Diminuir zoom"
+            className="w-9 h-9 flex items-center justify-center text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors border-b border-neutral-200/80 dark:border-white/10 active:scale-95 focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-white focus:outline-none"
+            title="Diminuir zoom do mapa"
+            aria-label="Diminuir zoom do mapa"
           >
-            <Minus className="w-3.5 h-3.5" />
+            <Minus className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={handleRecenter}
+            className="w-9 h-9 flex items-center justify-center text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors active:scale-90 focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-white focus:outline-none"
+            title="Centralizar mapa no veículo e trajeto"
+            aria-label="Centralizar mapa no veículo e trajeto"
+          >
+            <Crosshair className="w-4 h-4" />
           </button>
         </div>
-
-        <button
-          type="button"
-          onClick={handleRecenter}
-          className="w-8 h-8 rounded-full bg-white/95 dark:bg-neutral-950/90 hover:bg-neutral-100 dark:hover:bg-neutral-900 text-neutral-900 dark:text-white backdrop-blur-md border border-neutral-200 dark:border-white/15 shadow-lg flex items-center justify-center transition-all active:scale-90"
-          title="Centralizar mapa no trajeto"
-          aria-label="Centralizar mapa no trajeto"
-        >
-          <Crosshair className="w-3.5 h-3.5" />
-        </button>
-      </div>
+      </nav>
     </div>
   );
 };

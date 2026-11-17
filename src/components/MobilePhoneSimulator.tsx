@@ -442,6 +442,7 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
               activeAlertZone={activeAlertZone}
               speedKmH={speedKmH}
               focusPoint={focusPoint}
+              topControlOffsetClass="top-[76px]"
               className="w-full h-full border-0 rounded-none shadow-none"
               onSetPointFromMap={onSetPointFromMap}
             />

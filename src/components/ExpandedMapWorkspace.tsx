@@ -151,14 +151,20 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
 
       {/* Floating Travel Mode Selector directly on Top of Map */}
       <div
+        role="radiogroup"
+        aria-label="Modo de transporte"
         onMouseDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
-        className="absolute top-4 left-1/2 -translate-x-1/2 z-[420] flex items-center p-1 rounded-2xl bg-white/95 dark:bg-neutral-950/92 backdrop-blur-xl border border-neutral-300 dark:border-neutral-800 shadow-xl select-none"
+        className={`absolute top-4 left-1/2 -translate-x-1/2 z-[420] flex items-center p-1 rounded-2xl bg-white/95 dark:bg-neutral-950/92 backdrop-blur-xl border border-neutral-300 dark:border-neutral-800 shadow-xl select-none transition-all ${
+          isNavigating ? 'hidden xl:flex opacity-90' : 'flex'
+        }`}
       >
         <button
           type="button"
+          role="radio"
+          aria-checked={travelMode === 'carro'}
           onClick={() => onSelectTravelMode?.('carro')}
-          className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-white focus:outline-none ${
             travelMode === 'carro'
               ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md scale-102'
               : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
@@ -171,8 +177,10 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
 
         <button
           type="button"
+          role="radio"
+          aria-checked={travelMode === 'moto'}
           onClick={() => onSelectTravelMode?.('moto')}
-          className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-white focus:outline-none ${
             travelMode === 'moto'
               ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md scale-102'
               : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
@@ -185,8 +193,10 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
 
         <button
           type="button"
+          role="radio"
+          aria-checked={travelMode === 'a_pe'}
           onClick={() => onSelectTravelMode?.('a_pe')}
-          className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-white focus:outline-none ${
             travelMode === 'a_pe'
               ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-md scale-102'
               : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'

@@ -443,7 +443,9 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
                 key={route.id}
                 onClick={() => !isNavigating && onSelectRoute(route)}
                 disabled={isNavigating}
-                className={`w-full text-left p-3.5 rounded-2xl border transition-all active:scale-[0.99] touch-manipulation ${
+                aria-pressed={isSelected}
+                aria-label={`Selecionar ${route.name}. Duração estimada de ${route.durationMin} minutos, distância de ${route.distanceKm} km, pontuação de segurança ${route.safetyScore} de 100.`}
+                className={`w-full text-left p-3.5 rounded-2xl border transition-all active:scale-[0.99] touch-manipulation focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-white focus:outline-none ${
                   isSelected
                     ? 'bg-neutral-100 dark:bg-neutral-900 border-neutral-900 dark:border-neutral-400 ring-1 ring-neutral-900/15 dark:ring-white/15 shadow-md'
                     : 'bg-white dark:bg-neutral-950/80 border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900/70'
