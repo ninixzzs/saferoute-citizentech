@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { DangerZone, IncidentReport, NavigationRoute } from '../types';
 import { calculateDistanceMeters } from '../services/api';
-import { Crosshair, Plus, Minus, Maximize2, Minimize2, Map as MapIcon, Satellite } from 'lucide-react';
+import { Crosshair, Plus, Minus, Maximize2, Minimize2, Map as MapIcon, Satellite, Compass } from 'lucide-react';
 
 interface NavigationMapProps {
   currentPosition: [number, number];
@@ -765,6 +765,8 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
     }
   };
 
+  const currentBearing = nextPosition ? calculateBearing(currentPosition, nextPosition) : 0;
+
   return (
     <div className={`relative w-full h-full bg-[#eef2f6] dark:bg-neutral-900 overflow-hidden select-none ${className}`}>
       <div
@@ -851,6 +853,19 @@ export const NavigationMap: React.FC<NavigationMapProps> = ({
             aria-label="Diminuir zoom do mapa"
           >
             <Minus className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={handleRecenter}
+            className="w-9 h-9 flex items-center justify-center text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors border-b border-neutral-200/80 dark:border-white/10 active:scale-90 focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-white focus:outline-none relative group"
+            title="Bússola Dinâmica 3D (Alinhar ao Norte e Trajeto)"
+            aria-label="Alinhar mapa ao norte e trajeto"
+          >
+            <Compass
+              className="w-4 h-4 text-neutral-800 dark:text-neutral-200 group-hover:text-neutral-950 dark:group-hover:text-white transition-transform duration-500 ease-out"
+              style={{ transform: `rotate(${-currentBearing}deg)` }}
+            />
+            <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
           </button>
           <button
             type="button"

@@ -239,7 +239,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
             activeAlertZone={activeAlertZone}
             speedKmH={speedKmH}
             focusPoint={focusPoint}
-            topControlOffsetClass="top-[82px]"
+            topControlOffsetClass="top-[72px]"
             className="w-full h-full"
             onSetPointFromMap={onSetPointFromMap}
           />
@@ -328,85 +328,88 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
             )}
           </div>
 
-          {/* Top-Left Quick Map Tools */}
+          {/* Top-Left Quick Map Tools (Travel Mode & Voice only - Zero overlap with Street/Satellite dock) */}
           <div
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
-            className="absolute top-[82px] left-3 z-[400] flex flex-col items-start gap-2 pointer-events-auto"
+            className="absolute top-[72px] left-3 z-[400] flex items-center gap-1.5 pointer-events-auto"
           >
-            <div className="flex flex-wrap items-center gap-1.5">
-              {/* Travel Mode Pills on Mobile Map */}
-              <div className="flex items-center p-0.5 rounded-xl bg-white/95 dark:bg-neutral-950/90 border border-neutral-200 dark:border-white/15 shadow-lg backdrop-blur-md">
-                <button
-                  type="button"
-                  onClick={() => onSelectTravelMode?.('carro')}
-                  className={`h-7 px-2 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
-                    travelMode === 'carro'
-                      ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-xs'
-                      : 'text-neutral-600 dark:text-neutral-400'
-                  }`}
-                  title="Carro"
-                >
-                  <Car className="w-3 h-3" />
-                  <span>Carro</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onSelectTravelMode?.('moto')}
-                  className={`h-7 px-2 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
-                    travelMode === 'moto'
-                      ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-xs'
-                      : 'text-neutral-600 dark:text-neutral-400'
-                  }`}
-                  title="Moto"
-                >
-                  <Bike className="w-3 h-3" />
-                  <span>Moto</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onSelectTravelMode?.('a_pe')}
-                  className={`h-7 px-2 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
-                    travelMode === 'a_pe'
-                      ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-xs'
-                      : 'text-neutral-600 dark:text-neutral-400'
-                  }`}
-                  title="A pé"
-                >
-                  <Footprints className="w-3 h-3" />
-                  <span>A pé</span>
-                </button>
-              </div>
-
+            {/* Travel Mode Pills on Mobile Map */}
+            <div
+              role="radiogroup"
+              aria-label="Modo de transporte"
+              className="flex items-center p-0.5 rounded-xl bg-white/95 dark:bg-neutral-950/90 border border-neutral-200 dark:border-white/15 shadow-lg backdrop-blur-md"
+            >
               <button
                 type="button"
-                onClick={onOpenReportModal}
-                className="h-8 px-2.5 rounded-xl bg-white/95 dark:bg-neutral-950/90 text-neutral-950 dark:text-white border border-neutral-200 dark:border-white/15 shadow-lg flex items-center gap-1 text-[11px] font-bold active:scale-95 transition-transform backdrop-blur-md"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Alertar</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={onToggleVoice}
-                aria-pressed={voiceEnabled}
-                className={`h-8 px-2.5 rounded-xl border shadow-lg flex items-center gap-1.5 text-[11px] font-bold active:scale-95 transition-all backdrop-blur-md ${
-                  voiceEnabled
-                    ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border-neutral-950 dark:border-white shadow-xs'
-                    : 'bg-white/95 dark:bg-neutral-950/90 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-white/15'
+                role="radio"
+                aria-checked={travelMode === 'carro'}
+                onClick={() => onSelectTravelMode?.('carro')}
+                className={`h-7 px-2 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
+                  travelMode === 'carro'
+                    ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-xs scale-102'
+                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
                 }`}
-                title={voiceEnabled ? 'Voz ativada' : 'Voz desativada'}
+                title="Carro"
+                aria-label="Modo Carro"
               >
-                {voiceEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5 text-neutral-400" />}
-                <span>Voz</span>
+                <Car className="w-3 h-3" />
+                <span>Carro</span>
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={travelMode === 'moto'}
+                onClick={() => onSelectTravelMode?.('moto')}
+                className={`h-7 px-2 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
+                  travelMode === 'moto'
+                    ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-xs scale-102'
+                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
+                }`}
+                title="Moto"
+                aria-label="Modo Moto"
+              >
+                <Bike className="w-3 h-3" />
+                <span>Moto</span>
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={travelMode === 'a_pe'}
+                onClick={() => onSelectTravelMode?.('a_pe')}
+                className={`h-7 px-2 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
+                  travelMode === 'a_pe'
+                    ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-xs scale-102'
+                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
+                }`}
+                title="A pé"
+                aria-label="Modo A pé"
+              >
+                <Footprints className="w-3 h-3" />
+                <span>A pé</span>
               </button>
             </div>
 
+            <button
+              type="button"
+              onClick={onToggleVoice}
+              aria-pressed={voiceEnabled}
+              className={`h-7 px-2 rounded-xl border shadow-lg flex items-center gap-1 text-[10px] font-bold active:scale-95 transition-all backdrop-blur-md ${
+                voiceEnabled
+                  ? 'bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border-neutral-950 dark:border-white shadow-xs'
+                  : 'bg-white/95 dark:bg-neutral-950/90 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-white/15'
+              }`}
+              title={voiceEnabled ? 'Voz ativada' : 'Voz desativada'}
+              aria-label={voiceEnabled ? 'Desativar voz de navegação' : 'Ativar voz de navegação'}
+            >
+              {voiceEnabled ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3 text-neutral-400" />}
+              <span>Voz</span>
+            </button>
+
             {isNavigating && (
-              <div className="w-11 h-11 rounded-full bg-neutral-950/92 border border-white/20 shadow-xl flex flex-col items-center justify-center text-white font-mono">
-                <span className="text-xs font-black leading-none">{speedKmH}</span>
-                <span className="text-[7px] text-neutral-400 uppercase">km/h</span>
+              <div className="w-8 h-8 rounded-full bg-neutral-950/92 border border-white/20 shadow-xl flex flex-col items-center justify-center text-white font-mono shrink-0 ml-1">
+                <span className="text-[10px] font-black leading-none">{speedKmH}</span>
+                <span className="text-[6px] text-neutral-400 uppercase leading-none">km/h</span>
               </div>
             )}
           </div>
@@ -472,6 +475,26 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
               </div>
             </div>
           )}
+
+          {/* Floating Ergonomic Action: Alertar / Report Hazard (Thumb-friendly FAB - Zero overlap with Street/Satellite dock) */}
+          <div
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            className="absolute bottom-[136px] right-3 z-[415] pointer-events-auto"
+          >
+            <button
+              type="button"
+              onClick={onOpenReportModal}
+              className="h-9 px-3.5 rounded-full bg-neutral-950/95 dark:bg-white text-white dark:text-neutral-950 border border-neutral-700/80 dark:border-neutral-200 shadow-[0_8px_25px_rgba(0,0,0,0.35)] flex items-center gap-1.5 text-xs font-bold active:scale-95 hover:scale-105 transition-all group backdrop-blur-xl focus-visible:ring-2 focus-visible:ring-neutral-900 dark:focus-visible:ring-white focus:outline-none"
+              title="Reportar ocorrência ou risco na via"
+              aria-label="Reportar ocorrência ou perigo"
+            >
+              <div className="w-4 h-4 rounded-full bg-red-600 flex items-center justify-center text-white shrink-0 group-hover:rotate-90 transition-transform">
+                <Plus className="w-3 h-3 stroke-[3]" />
+              </div>
+              <span className="tracking-wide">Alertar</span>
+            </button>
+          </div>
 
           {/* Compact Bottom Telemetry + Drive Action Bar ONLY (Details/Steps/Alerts cleanly separated below the map) */}
           <div

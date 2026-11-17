@@ -814,6 +814,28 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
             </div>
           )}
 
+          {/* Floating Report Hazard Button inside Phone Simulator */}
+          {onOpenReportModal && (
+            <div
+              onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              className="absolute bottom-[160px] right-3 z-20 pointer-events-auto"
+            >
+              <button
+                type="button"
+                onClick={onOpenReportModal}
+                className="h-9 px-3 rounded-full bg-neutral-950 text-white border border-neutral-700/80 shadow-xl flex items-center gap-1.5 text-[11px] font-bold active:scale-95 hover:scale-105 transition-all group backdrop-blur-md"
+                title="Reportar ocorrência ou risco na via"
+                aria-label="Reportar ocorrência ou perigo"
+              >
+                <div className="w-4 h-4 rounded-full bg-red-600 flex items-center justify-center text-white shrink-0 group-hover:rotate-90 transition-transform">
+                  <Plus className="w-3 h-3 stroke-[3]" />
+                </div>
+                <span>Alertar</span>
+              </button>
+            </div>
+          )}
+
           {/* 5. Bottom Navigation Sheet */}
           <div
             onMouseDown={(e) => e.stopPropagation()}

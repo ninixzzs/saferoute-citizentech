@@ -579,20 +579,22 @@ export function App() {
               </div>
             </div>
 
-            {/* Right Column: Authentic Flagship Smartphone with 3D Tilt & Mini App Video (Desktop Only - Hidden on Mobile) */}
-            <div className="hidden lg:flex lg:col-span-5 justify-center items-center scroll-reveal-scale reveal-delay-2">
-              <Interactive3DPhone className="w-full">
-                <PhoneMiniAppSimulation
-                  travelMode={travelMode}
-                  onSelectTravelMode={handleSelectTravelMode}
-                />
-              </Interactive3DPhone>
+            {/* Right Column: Authentic Flagship Smartphone with 3D Tilt & Mini App Video (Active on BOTH Mobile and Desktop) */}
+            <div className="flex lg:col-span-5 justify-center items-center scroll-reveal-scale reveal-delay-2 w-full mt-8 lg:mt-0">
+              <div className="w-full max-w-[340px] sm:max-w-[420px] mx-auto scale-[0.92] sm:scale-100 origin-center">
+                <Interactive3DPhone className="w-full">
+                  <PhoneMiniAppSimulation
+                    travelMode={travelMode}
+                    onSelectTravelMode={handleSelectTravelMode}
+                  />
+                </Interactive3DPhone>
+              </div>
             </div>
           </div>
 
-          {/* Architectural System Pillars Grid (UX/UI Sênior) */}
+          {/* Architectural System Pillars Grid with 3D Interactive Depth (UX/UI Sênior) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 border-t border-neutral-200/80 dark:border-neutral-800/80">
-            <div className="p-5 rounded-2xl bg-neutral-50/80 dark:bg-neutral-900/60 border border-neutral-200/80 dark:border-neutral-800/80 hover-glass-glow scroll-reveal-scale reveal-delay-1 space-y-2.5">
+            <div className="p-5 rounded-2xl bg-neutral-50/80 dark:bg-neutral-900/60 border border-neutral-200/80 dark:border-neutral-800/80 hover-glass-glow scroll-reveal-scale reveal-delay-1 space-y-2.5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
               <div className="w-9 h-9 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0 shadow-xs">
                 <Route className="w-4 h-4" />
               </div>
@@ -604,7 +606,7 @@ export function App() {
               </p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-neutral-50/80 dark:bg-neutral-900/60 border border-neutral-200/80 dark:border-neutral-800/80 hover-glass-glow scroll-reveal-scale reveal-delay-2 space-y-2.5">
+            <div className="p-5 rounded-2xl bg-neutral-50/80 dark:bg-neutral-900/60 border border-neutral-200/80 dark:border-neutral-800/80 hover-glass-glow scroll-reveal-scale reveal-delay-2 space-y-2.5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
               <div className="w-9 h-9 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0 shadow-xs">
                 <ShieldCheck className="w-4 h-4" />
               </div>
@@ -616,7 +618,7 @@ export function App() {
               </p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-neutral-50/80 dark:bg-neutral-900/60 border border-neutral-200/80 dark:border-neutral-800/80 hover-glass-glow scroll-reveal-scale reveal-delay-3 space-y-2.5">
+            <div className="p-5 rounded-2xl bg-neutral-50/80 dark:bg-neutral-900/60 border border-neutral-200/80 dark:border-neutral-800/80 hover-glass-glow scroll-reveal-scale reveal-delay-3 space-y-2.5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
               <div className="w-9 h-9 rounded-xl bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 flex items-center justify-center shrink-0 shadow-xs">
                 <Sparkles className="w-4 h-4" />
               </div>
