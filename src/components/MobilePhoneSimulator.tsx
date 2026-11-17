@@ -442,7 +442,7 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
               activeAlertZone={activeAlertZone}
               speedKmH={speedKmH}
               focusPoint={focusPoint}
-              topControlOffsetClass={isNavigating ? "top-[78px]" : "top-[68px]"}
+              topControlOffsetClass={isNavigating ? "top-[82px]" : "top-[112px]"}
               className="w-full h-full border-0 rounded-none shadow-none"
               onSetPointFromMap={onSetPointFromMap}
             />
@@ -752,10 +752,16 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
                 </button>
               </div>
             )}
+          </div>
 
-            {/* 3. DEFESA CIVIL NOTIFICATION BANNER */}
-            {visibleAlert && (
-              <div className="animate-in slide-in-from-top-4 duration-300 rounded-2xl bg-neutral-950 text-white border border-neutral-800 shadow-2xl p-3.5 space-y-2">
+          {/* Floating Risk Alert (Anchored above bottom navigation sheet - Never covers top controls) */}
+          {visibleAlert && (
+            <div
+              onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              className="absolute bottom-[170px] left-3 right-3 z-30 pointer-events-auto"
+            >
+              <div className="animate-in slide-in-from-bottom-3 duration-300 rounded-2xl bg-neutral-950 text-white border border-neutral-800 shadow-2xl p-3.5 space-y-2">
                 <div className="flex items-center justify-between text-[11px] text-neutral-400 border-b border-neutral-800 pb-1.5">
                   <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-neutral-200">
                     <AlertTriangle className="w-3.5 h-3.5 text-neutral-400" />
@@ -814,8 +820,8 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
                   </button>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Speedometer */}
           {isNavigating && (
