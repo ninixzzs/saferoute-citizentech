@@ -1,6 +1,6 @@
 import React from 'react';
 import { IncidentReport, IncidentCategory, RiskLevel } from '../types';
-import { Search, Trash2, CheckCircle2, MapPin, ThumbsUp, RefreshCw, Crosshair } from 'lucide-react';
+import { Search, Trash2, CheckCircle2, MapPin, ThumbsUp, RefreshCw } from 'lucide-react';
 
 interface IncidentListProps {
   incidents: IncidentReport[];
@@ -148,17 +148,6 @@ export const IncidentList: React.FC<IncidentListProps> = ({
               <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-neutral-500 pt-1.5 border-t border-neutral-200/70 dark:border-neutral-900">
                 <span>{inc.timestamp}</span>
                 <div className="flex flex-wrap items-center gap-1.5">
-                  {onFocusIncident && (
-                    <button
-                      type="button"
-                      onClick={() => onFocusIncident(inc.coordinates, inc)}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 hover:opacity-90 font-bold text-[11px] transition-all shadow-xs active:scale-95"
-                      title="Centralizar ocorrência e ver no mapa"
-                    >
-                      <Crosshair className="w-3.5 h-3.5" />
-                      <span>Ver no mapa</span>
-                    </button>
-                  )}
                   <button
                     type="button"
                     onClick={() => onConfirm(inc.id)}

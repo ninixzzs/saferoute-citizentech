@@ -397,12 +397,12 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
                   <div className="flex items-center justify-between text-[10px] font-mono text-neutral-400">
                     <span className="flex items-center gap-1 font-bold text-white">
                       <Shield className="w-3 h-3" />
-                      SafeRoute Alerta
+                      SafeRoute
                     </span>
                     <span>agora</span>
                   </div>
                   <p className="text-[11px] text-neutral-300 leading-tight">
-                    Zonas de atenção monitoradas. Toque para destravar e ver o mapa em tempo real.
+                    Zonas de atenção monitoradas com proteção ativa em tempo real.
                   </p>
                 </div>
               </div>
@@ -421,7 +421,7 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
                   <span>Deslize ou toque para destravar</span>
                 </button>
                 <p className="text-[10px] font-mono text-neutral-500">
-                  Modo Standby &bull; Toque para mapa ao vivo
+                  Modo Standby &bull; SafeRoute SP
                 </p>
               </div>
             </div>

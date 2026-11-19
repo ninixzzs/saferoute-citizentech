@@ -1130,17 +1130,6 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
                               Atendimento 24h &bull; Emergência {post.phone}
                             </div>
                             <div className="flex items-center gap-2 pt-0.5 flex-wrap">
-                              {onFocusCoordinates && (
-                                <button
-                                  type="button"
-                                  onClick={() => onFocusCoordinates(post.coordinates, post.name, post.neighborhood)}
-                                  className="py-1 px-2.5 rounded-lg bg-white/15 dark:bg-neutral-950/15 hover:bg-white/25 dark:hover:bg-neutral-950/25 text-[11px] font-bold flex items-center gap-1 transition-all"
-                                  title="Ver no mapa"
-                                >
-                                  <MapPin className="w-3 h-3" />
-                                  <span>Ver no Mapa</span>
-                                </button>
-                              )}
                               {onSelectCustomDestination && (
                                 <button
                                   type="button"
@@ -1186,8 +1175,7 @@ export const SafetyAssistantChat: React.FC<SafetyAssistantChatProps> = ({
                         <span className="truncate">Traçar rota para {targetDest}</span>
                       </div>
                       <span className="flex items-center gap-1 text-[11px] font-mono opacity-80 group-hover:translate-x-0.5 transition-transform shrink-0">
-                        <span>Ver no Mapa</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
+                        <ArrowRight className="w-4 h-4" />
                       </span>
                     </button>
                   );
