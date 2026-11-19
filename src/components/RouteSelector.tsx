@@ -35,6 +35,7 @@ interface RouteSelectorProps {
   onResetPresetRoutes?: () => void;
   simSpeed: '1x' | '2x';
   onToggleSimSpeed: (speed: '1x' | '2x') => void;
+  onRequestStartTrip?: () => void;
 }
 
 export const RouteSelector: React.FC<RouteSelectorProps> = ({
@@ -51,6 +52,7 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
   onResetPresetRoutes,
   simSpeed,
   onToggleSimSpeed,
+  onRequestStartTrip,
 }) => {
   const [originInput, setOriginInput] = useState(originLocation.name);
   const [destinationInput, setDestinationInput] = useState(destinationLocation.name);
@@ -402,13 +404,30 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
             (currentRoute.safetyScore >= 80 && (!currentRoute.dangerZoneIds || currentRoute.dangerZoneIds.length === 0));
 
           return isRouteSafe ? (
-            <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-700/60 text-emerald-950 dark:text-emerald-100 flex items-start gap-2.5 shadow-xs animate-in fade-in duration-200">
-              <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5">
-                <ShieldCheck className="w-4 h-4" />
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => onRequestStartTrip?.()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onRequestStartTrip?.();
+                }
+              }}
+              title="Clique para abrir a notificação de segurança no meio da tela"
+              className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-400 dark:border-emerald-600/80 text-emerald-950 dark:text-emerald-100 flex items-start gap-3 shadow-md hover:shadow-lg hover:border-emerald-500 cursor-pointer active:scale-[0.99] transition-all animate-in fade-in duration-200 group"
+            >
+              <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform mt-0.5">
+                <ShieldCheck className="w-5 h-5 stroke-[2.5]" />
               </div>
-              <div className="text-xs space-y-0.5">
-                <div className="font-extrabold text-[11px] text-emerald-800 dark:text-emerald-300">
-                  Está tudo bem! &bull; Trajeto Tranquilo
+              <div className="text-xs space-y-1 min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-1 flex-wrap">
+                  <span className="font-black text-xs text-emerald-800 dark:text-emerald-300">
+                    Está tudo bem! &bull; Trajeto Tranquilo
+                  </span>
+                  <span className="text-[10px] font-mono font-bold text-emerald-700 dark:text-emerald-400 underline group-hover:text-emerald-900 dark:group-hover:text-emerald-200">
+                    Toque para abrir aviso &rarr;
+                  </span>
                 </div>
                 <p className="text-emerald-900/90 dark:text-emerald-200/90 leading-relaxed text-[11px]">
                   Esta rota não possui áreas de risco críticas no caminho. Percurso liberado e monitorado pela SafeRoute para sua tranquilidade.
@@ -416,13 +435,30 @@ export const RouteSelector: React.FC<RouteSelectorProps> = ({
               </div>
             </div>
           ) : (
-            <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700/60 text-amber-950 dark:text-amber-100 flex items-start gap-2.5 shadow-xs animate-in fade-in duration-200">
-              <div className="w-7 h-7 rounded-lg bg-amber-600 text-white flex items-center justify-center shrink-0 mt-0.5">
-                <AlertTriangle className="w-4 h-4" />
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => onRequestStartTrip?.()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onRequestStartTrip?.();
+                }
+              }}
+              title="Clique para abrir a notificação de segurança no meio da tela"
+              className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-400 dark:border-amber-600/80 text-amber-950 dark:text-amber-100 flex items-start gap-3 shadow-md hover:shadow-lg hover:border-amber-500 cursor-pointer active:scale-[0.99] transition-all animate-in fade-in duration-200 group"
+            >
+              <div className="w-8 h-8 rounded-xl bg-amber-600 text-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform mt-0.5">
+                <AlertTriangle className="w-5 h-5 stroke-[2.5]" />
               </div>
-              <div className="text-xs space-y-0.5">
-                <div className="font-extrabold text-[11px] text-amber-800 dark:text-amber-300">
-                  Atenção: Ponto de Risco no Trajeto
+              <div className="text-xs space-y-1 min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-1 flex-wrap">
+                  <span className="font-black text-xs text-amber-800 dark:text-amber-300">
+                    Atenção: Ponto de Risco no Trajeto
+                  </span>
+                  <span className="text-[10px] font-mono font-bold text-amber-700 dark:text-amber-400 underline group-hover:text-amber-900 dark:group-hover:text-amber-200">
+                    Toque para abrir aviso &rarr;
+                  </span>
                 </div>
                 <p className="text-amber-900/90 dark:text-amber-200/90 leading-relaxed text-[11px]">
                   Esta rota atravessa pontos com histórico de furtos (ex: Santa Ifigênia / Centro). Mantenha vidros fechados ou opte pela <strong>Rota Segura Recomendada</strong>.

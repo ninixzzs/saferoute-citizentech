@@ -761,15 +761,17 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
               onTouchStart={(e) => e.stopPropagation()}
               className="absolute bottom-[170px] left-3 right-3 z-30 pointer-events-auto"
             >
-              <div className="animate-in slide-in-from-bottom-3 duration-300 rounded-2xl bg-neutral-950 text-white border border-neutral-800 shadow-2xl p-3.5 space-y-2">
-                <div className="flex items-center justify-between text-[11px] text-neutral-400 border-b border-neutral-800 pb-1.5">
-                  <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-neutral-200">
-                    <AlertTriangle className="w-3.5 h-3.5 text-neutral-400" />
-                    <span>ALERTA SAFEROUTE</span>
+              <div className="animate-in slide-in-from-bottom-3 duration-300 rounded-3xl bg-neutral-950/95 backdrop-blur-xl text-white border-2 border-red-500/50 shadow-[0_12px_40px_rgba(239,68,68,0.35)] p-4 space-y-2.5">
+                <div className="flex items-center justify-between text-[11px] text-neutral-400 border-b border-white/10 pb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
+                    <span className="font-mono font-black text-red-400 uppercase tracking-widest text-[10px]">
+                      ALERTA DE RISCO &bull; DEFESA CIVIL
+                    </span>
                   </div>
                   <button
                     onClick={handleDismiss}
-                    className="text-neutral-400 hover:text-white p-0.5 rounded-full"
+                    className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 text-neutral-300 hover:text-white flex items-center justify-center transition-colors"
                     title="Fechar alerta"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -777,44 +779,46 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
                 </div>
 
                 <div>
-                  <h4 className="text-xs font-bold text-white uppercase tracking-tight">
-                    {visibleAlert.neighborhood} &bull; {visibleAlert.name}
+                  <h4 className="text-xs sm:text-sm font-black text-white uppercase tracking-tight flex items-center gap-1.5">
+                    <span>{visibleAlert.neighborhood}</span>
+                    <span className="text-neutral-500 font-normal">&bull;</span>
+                    <span className="text-neutral-300 font-medium text-xs">{visibleAlert.name}</span>
                   </h4>
-                  <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed font-medium">
+                  <p className="text-xs text-neutral-300 mt-1 leading-relaxed font-normal">
                     {visibleAlert.defenseCivilTip}
                   </p>
                 </div>
 
-                <div className="pt-1 flex items-center gap-2 flex-wrap">
+                <div className="pt-1.5 flex items-center gap-2 flex-wrap">
                   {onFocusZone && (
                     <button
                       onClick={() => onFocusZone(visibleAlert)}
-                      className="py-1.5 px-3 rounded-xl bg-neutral-900 text-white border border-neutral-800 text-xs font-semibold hover:bg-neutral-800 transition-colors flex items-center gap-1 active:scale-95"
+                      className="py-2 px-3 rounded-xl bg-neutral-900/90 text-white border border-neutral-700 hover:border-neutral-500 text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 shadow-xs"
                       title="Ver localização desta área no mapa"
                     >
-                      <MapPin className="w-3.5 h-3.5" />
+                      <MapPin className="w-3.5 h-3.5 text-red-400" />
                       <span>Ver no Mapa</span>
                     </button>
                   )}
                   {selectedRoute.type !== 'segura' ? (
                     <button
                       onClick={handleAcceptRerouteAndClose}
-                      className="flex-1 py-1.5 px-3 rounded-xl bg-white text-neutral-950 font-bold text-xs hover:bg-neutral-200 transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                      className="flex-1 py-2 px-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-black text-xs transition-all flex items-center justify-center gap-1.5 shadow-md active:scale-95"
                     >
-                      <ShieldCheck className="w-3.5 h-3.5 text-neutral-900" />
+                      <ShieldCheck className="w-4 h-4 text-neutral-950 stroke-[2.5]" />
                       <span>Desviar Rota</span>
                     </button>
                   ) : (
                     <button
                       onClick={handleDismiss}
-                      className="flex-1 py-1.5 px-3 rounded-xl bg-neutral-900 text-neutral-300 hover:bg-neutral-800 text-xs font-semibold transition-colors border border-neutral-800"
+                      className="flex-1 py-2 px-3 rounded-xl bg-neutral-900 text-neutral-300 hover:bg-neutral-800 text-xs font-semibold transition-colors border border-neutral-800"
                     >
                       Fechar
                     </button>
                   )}
                   <button
                     onClick={handleDismiss}
-                    className="py-1.5 px-2.5 rounded-xl bg-neutral-900 text-neutral-400 hover:text-white text-xs font-semibold transition-colors border border-neutral-800"
+                    className="py-2 px-3 rounded-xl bg-neutral-900/80 text-neutral-400 hover:text-white text-xs font-medium transition-colors border border-neutral-800"
                   >
                     Dispensar
                   </button>
@@ -896,17 +900,37 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
                   })}
                 </div>
 
-                {/* Instant safety assessment for selected route */}
+                {/* Instant safety assessment for selected route - Interactive click to trigger central notification */}
                 {selectedRoute.type === 'segura' || selectedRoute.safetyScore >= 80 ? (
-                  <div className="px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-950 flex items-center gap-1.5 text-[10px] font-semibold">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Está tudo bem! Trajeto sem áreas críticas mapeadas.</span>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={onStart}
+                    className="w-full text-left px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100/90 border border-emerald-300 text-emerald-950 flex items-center justify-between gap-1.5 text-[11px] font-semibold transition-all cursor-pointer shadow-xs active:scale-98 group"
+                    title="Clique para abrir notificação no meio da tela"
+                  >
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 group-hover:scale-110 transition-transform" />
+                      <span className="truncate">Está tudo bem! Trajeto sem áreas críticas mapeadas.</span>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold text-emerald-700 underline shrink-0">
+                      Abrir aviso &rarr;
+                    </span>
+                  </button>
                 ) : (
-                  <div className="px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-950 flex items-center gap-1.5 text-[10px] font-semibold">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                    <span>Atenção: Cruza áreas com risco de furto (Santa Ifigênia).</span>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={onStart}
+                    className="w-full text-left px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100/90 border border-amber-300 text-amber-950 flex items-center justify-between gap-1.5 text-[11px] font-semibold transition-all cursor-pointer shadow-xs active:scale-98 group"
+                    title="Clique para abrir notificação no meio da tela"
+                  >
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 group-hover:scale-110 transition-transform" />
+                      <span className="truncate">Atenção: Cruza áreas com risco de furto (Santa Ifigênia).</span>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold text-amber-700 underline shrink-0">
+                      Abrir aviso &rarr;
+                    </span>
+                  </button>
                 )}
               </div>
             )}

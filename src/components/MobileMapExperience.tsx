@@ -424,57 +424,61 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
               onTouchStart={(e) => e.stopPropagation()}
               className="absolute bottom-[132px] left-3 right-3 z-[425] space-y-2 pointer-events-auto"
             >
-              <div className="rounded-2xl bg-neutral-950 text-white border border-neutral-800 shadow-2xl p-3.5 space-y-2 animate-in slide-in-from-bottom-3 duration-200">
-                  <div className="flex items-center justify-between border-b border-neutral-800 pb-1.5">
-                    <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
-                      <AlertTriangle className="w-4 h-4 text-white" />
-                      <span>Alerta SafeRoute</span>
-                    </span>
+              <div className="rounded-3xl bg-neutral-950/95 backdrop-blur-xl text-white border-2 border-red-500/50 shadow-[0_12px_40px_rgba(239,68,68,0.35)] p-4 space-y-2.5 animate-in slide-in-from-bottom-3 duration-200">
+                <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                  <span className="flex items-center gap-2 text-xs font-mono font-black text-red-400 uppercase tracking-widest">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
+                    <span>ALERTA DEFESA CIVIL SP</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onDismissAlert(activeAlertZone.id)}
+                    className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 text-neutral-300 hover:text-white flex items-center justify-center transition-colors"
+                    aria-label="Fechar alerta"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div>
+                  <h4 className="text-xs sm:text-sm font-black text-white uppercase tracking-tight flex items-center gap-1.5">
+                    <span>{activeAlertZone.neighborhood}</span>
+                    <span className="text-neutral-500">&bull;</span>
+                    <span className="text-neutral-300 font-medium text-xs">{activeAlertZone.name}</span>
+                  </h4>
+                  <p className="text-xs text-neutral-300 mt-1 leading-relaxed">
+                    {activeAlertZone.defenseCivilTip}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 pt-1 flex-wrap">
+                  {onFocusZone && (
                     <button
                       type="button"
-                      onClick={() => onDismissAlert(activeAlertZone.id)}
-                      className="text-neutral-400 hover:text-white p-0.5"
-                      aria-label="Fechar alerta"
+                      onClick={() => onFocusZone(activeAlertZone)}
+                      className="py-2 px-3 rounded-xl bg-neutral-900/90 text-white border border-neutral-700 hover:border-neutral-500 text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-transform"
+                      title="Ver localização desta área no mapa"
                     >
-                      <X className="w-4 h-4" />
+                      <MapPin className="w-3.5 h-3.5 text-red-400" />
+                      <span>Ver no Mapa</span>
                     </button>
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold">{activeAlertZone.neighborhood}</h4>
-                    <p className="text-xs text-neutral-300 mt-0.5 leading-relaxed">
-                      {activeAlertZone.defenseCivilTip}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 pt-0.5 flex-wrap">
-                    {onFocusZone && (
-                      <button
-                        type="button"
-                        onClick={() => onFocusZone(activeAlertZone)}
-                        className="py-2 px-3 rounded-xl bg-neutral-900 text-white border border-neutral-800 text-xs font-semibold flex items-center gap-1 active:scale-95 transition-transform"
-                        title="Ver localização desta área no mapa"
-                      >
-                        <MapPin className="w-3.5 h-3.5" />
-                        <span>Ver no Mapa</span>
-                      </button>
-                    )}
-                    {selectedRoute.type !== 'segura' && (
-                      <button
-                        type="button"
-                        onClick={onAcceptReroute}
-                        className="flex-1 py-2 px-3 rounded-xl bg-white text-neutral-950 font-bold text-xs flex items-center justify-center gap-1.5"
-                      >
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                        <span>Desviar para Rota Segura</span>
-                      </button>
-                    )}
+                  )}
+                  {selectedRoute.type !== 'segura' && (
                     <button
                       type="button"
-                      onClick={() => onDismissAlert(activeAlertZone.id)}
-                      className="py-2 px-3 rounded-xl bg-neutral-900 text-neutral-300 border border-neutral-800 text-xs font-semibold"
+                      onClick={onAcceptReroute}
+                      className="flex-1 py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all"
                     >
-                      Dispensar
+                      <ShieldCheck className="w-4 h-4 text-neutral-950 stroke-[2.5]" />
+                      <span>Desviar para Rota Segura</span>
                     </button>
-                  </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => onDismissAlert(activeAlertZone.id)}
+                    className="py-2 px-3 rounded-xl bg-neutral-900/80 text-neutral-400 hover:text-white border border-neutral-800 text-xs font-medium transition-colors"
+                  >
+                    Dispensar
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -539,17 +543,37 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
                   })}
                 </div>
 
-                {/* Instant safety assessment banner for mobile */}
+                {/* Instant safety assessment banner for mobile - Interactive click to trigger central notification */}
                 {selectedRoute.type === 'segura' || selectedRoute.safetyScore >= 80 ? (
-                  <div className="px-2.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5 text-[10px] font-semibold">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    <span>Está tudo bem! Trajeto sem áreas de risco críticas.</span>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={onStart}
+                    className="w-full text-left px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-950 dark:text-emerald-200 flex items-center justify-between gap-1.5 text-[11px] font-semibold transition-all cursor-pointer shadow-xs active:scale-98 group"
+                    title="Clique para abrir notificação no meio da tela"
+                  >
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 group-hover:scale-110 transition-transform" />
+                      <span className="truncate">Está tudo bem! Trajeto sem áreas de risco críticas.</span>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold text-emerald-700 dark:text-emerald-400 underline shrink-0">
+                      Abrir aviso &rarr;
+                    </span>
+                  </button>
                 ) : (
-                  <div className="px-2.5 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-950 dark:text-amber-200 flex items-center gap-1.5 text-[10px] font-semibold">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-                    <span>Atenção: Cruza áreas de risco (ex: Santa Ifigênia).</span>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={onStart}
+                    className="w-full text-left px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-950 dark:text-amber-200 flex items-center justify-between gap-1.5 text-[11px] font-semibold transition-all cursor-pointer shadow-xs active:scale-98 group"
+                    title="Clique para abrir notificação no meio da tela"
+                  >
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 group-hover:scale-110 transition-transform" />
+                      <span className="truncate">Atenção: Cruza áreas de risco (ex: Santa Ifigênia).</span>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold text-amber-700 dark:text-amber-400 underline shrink-0">
+                      Abrir aviso &rarr;
+                    </span>
+                  </button>
                 )}
               </div>
             )}

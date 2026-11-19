@@ -491,3 +491,16 @@ html.high-contrast *:focus-visible {
   animation: traffic-congestion-glow 1.6s ease-in-out infinite;
 }
 
+/* Performance & Snappy Render Optimizations */
+[role="dialog"] {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.gpu-accelerate {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
