@@ -1,10 +1,11 @@
 # AI.md &bull; Documentação de Engenharia com IA & Decisões Arquiteturais
 
-> **Projeto**: SafeRoute SP &bull; CitizenTech  
-> **Repositório**: [ninixzzs/saferoute-citizentech](https://github.com/ninixzzs/saferoute-citizentech)  
-> **Liderança Técnica (Tech Lead)**: Nicolly  
-> **Módulo**: Front-end Design & Web Development (Interface & Interação)  
-> **Data**: Novembro de 2026  
+> ### 🎓 Projeto Acadêmico Integrado
+> **Disciplinas:** Frontend & Web Development  
+> **Fundadora & Desenvolvedora:** **Nicolly Vilela** &middot; [LinkedIn](https://www.linkedin.com/in/nicollyvilela) &middot; [@ninixzzs](https://github.com/ninixzzs)  
+> **Repositório GitHub (Privado):** [https://github.com/ninixzzs/saferoute-citizentech](https://github.com/ninixzzs/saferoute-citizentech)  
+> **Deploy Oficial em Produção:** [https://saferoute-citizentech.vercel.app/](https://saferoute-citizentech.vercel.app/)  
+> **Data:** Novembro de 2026  
 
 ---
 
@@ -178,4 +179,4 @@ O projeto SafeRoute adota uma postura responsável e orientada à cidadania:
 - Promove a autoproteção consciente sem estimular o pânico, capacitando motoristas e passageiros com informações preventivas claras.
 
 ---
-*Documento elaborado e assinado por **Nicolly (Tech Lead)** em colaboração com Antigravity (Google DeepMind).*
+*Documento elaborado e assinado por **Nicolly Vilela (Fundadora & Desenvolvedora)** &middot; [LinkedIn](https://www.linkedin.com/in/nicollyvilela).*

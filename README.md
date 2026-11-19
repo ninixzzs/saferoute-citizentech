@@ -8,7 +8,16 @@
 
 **Rotas que avisam antes do risco.**
 
-*Navegação urbana preventiva para São Paulo que compara o trajeto mais rápido com um desvio seguro e dispara alertas estilo Defesa Civil quando você se aproxima de uma área crítica.*
+*Navegação urbana preventiva para São Paulo que compara o trajeto mais rápido com um desvio seguro e notifica antes de entrar em áreas críticas.*
+
+<br />
+
+> ### 🎓 Projeto Acadêmico Integrado
+> **Disciplinas:** Frontend & Web Development  
+> **Fundadora & Desenvolvedora:** **Nicolly Vilela** &middot; [LinkedIn](https://www.linkedin.com/in/nicollyvilela) &middot; [@ninixzzs](https://github.com/ninixzzs)  
+> **Repositório Privado no GitHub:** [https://github.com/ninixzzs/saferoute-citizentech](https://github.com/ninixzzs/saferoute-citizentech)  
+> **Deploy Oficial em Produção:** [https://saferoute-citizentech.vercel.app/](https://saferoute-citizentech.vercel.app/)  
+> **Documentação de Uso de IA:** [`AI.md`](AI.md)
 
 <br />
 
