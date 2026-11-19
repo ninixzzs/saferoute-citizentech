@@ -761,12 +761,12 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
               onTouchStart={(e) => e.stopPropagation()}
               className="absolute bottom-[170px] left-3 right-3 z-30 pointer-events-auto"
             >
-              <div className="animate-in slide-in-from-bottom-3 duration-300 rounded-3xl bg-neutral-950/95 backdrop-blur-xl text-white border-2 border-red-500/50 shadow-[0_12px_40px_rgba(239,68,68,0.35)] p-4 space-y-2.5">
+              <div className="animate-in slide-in-from-bottom-3 duration-300 rounded-3xl bg-neutral-950/95 backdrop-blur-xl text-white border-2 border-red-500/50 shadow-[0_15px_45px_rgba(239,68,68,0.35)] p-4 space-y-2.5">
                 <div className="flex items-center justify-between text-[11px] text-neutral-400 border-b border-white/10 pb-2">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
                     <span className="font-mono font-black text-red-400 uppercase tracking-widest text-[10px]">
-                      ALERTA DE RISCO &bull; DEFESA CIVIL
+                      ALERTA SAFEROUTE &bull; DEFESA CIVIL
                     </span>
                   </div>
                   <button
@@ -789,36 +789,20 @@ export const MobilePhoneSimulator: React.FC<MobilePhoneSimulatorProps> = ({
                   </p>
                 </div>
 
+                {/* Actions (Removed 'Ver no Mapa' as requested) */}
                 <div className="pt-1.5 flex items-center gap-2 flex-wrap">
-                  {onFocusZone && (
-                    <button
-                      onClick={() => onFocusZone(visibleAlert)}
-                      className="py-2 px-3 rounded-xl bg-neutral-900/90 text-white border border-neutral-700 hover:border-neutral-500 text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 shadow-xs"
-                      title="Ver localização desta área no mapa"
-                    >
-                      <MapPin className="w-3.5 h-3.5 text-red-400" />
-                      <span>Ver no Mapa</span>
-                    </button>
-                  )}
                   {selectedRoute.type !== 'segura' ? (
                     <button
                       onClick={handleAcceptRerouteAndClose}
-                      className="flex-1 py-2 px-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-black text-xs transition-all flex items-center justify-center gap-1.5 shadow-md active:scale-95"
+                      className="flex-1 py-2.5 px-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-black text-xs transition-all flex items-center justify-center gap-1.5 shadow-md active:scale-95"
                     >
                       <ShieldCheck className="w-4 h-4 text-neutral-950 stroke-[2.5]" />
-                      <span>Desviar Rota</span>
+                      <span>Desviar para Rota Segura</span>
                     </button>
-                  ) : (
-                    <button
-                      onClick={handleDismiss}
-                      className="flex-1 py-2 px-3 rounded-xl bg-neutral-900 text-neutral-300 hover:bg-neutral-800 text-xs font-semibold transition-colors border border-neutral-800"
-                    >
-                      Fechar
-                    </button>
-                  )}
+                  ) : null}
                   <button
                     onClick={handleDismiss}
-                    className="py-2 px-3 rounded-xl bg-neutral-900/80 text-neutral-400 hover:text-white text-xs font-medium transition-colors border border-neutral-800"
+                    className="py-2.5 px-3.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white text-xs font-semibold transition-colors border border-neutral-800 active:scale-95"
                   >
                     Dispensar
                   </button>

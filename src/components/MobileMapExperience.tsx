@@ -424,11 +424,11 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
               onTouchStart={(e) => e.stopPropagation()}
               className="absolute bottom-[132px] left-3 right-3 z-[425] space-y-2 pointer-events-auto"
             >
-              <div className="rounded-3xl bg-neutral-950/95 backdrop-blur-xl text-white border-2 border-red-500/50 shadow-[0_12px_40px_rgba(239,68,68,0.35)] p-4 space-y-2.5 animate-in slide-in-from-bottom-3 duration-200">
+              <div className="rounded-3xl bg-neutral-950/95 backdrop-blur-xl text-white border-2 border-red-500/50 shadow-[0_15px_45px_rgba(239,68,68,0.35)] p-4 space-y-2.5 animate-in slide-in-from-bottom-3 duration-200">
                 <div className="flex items-center justify-between border-b border-white/10 pb-2">
                   <span className="flex items-center gap-2 text-xs font-mono font-black text-red-400 uppercase tracking-widest">
                     <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
-                    <span>ALERTA DEFESA CIVIL SP</span>
+                    <span>ALERTA SAFEROUTE &bull; DEFESA CIVIL</span>
                   </span>
                   <button
                     type="button"
@@ -449,23 +449,13 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
                     {activeAlertZone.defenseCivilTip}
                   </p>
                 </div>
+                {/* Actions (Removed 'Ver no Mapa' as requested) */}
                 <div className="flex items-center gap-2 pt-1 flex-wrap">
-                  {onFocusZone && (
-                    <button
-                      type="button"
-                      onClick={() => onFocusZone(activeAlertZone)}
-                      className="py-2 px-3 rounded-xl bg-neutral-900/90 text-white border border-neutral-700 hover:border-neutral-500 text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-transform"
-                      title="Ver localização desta área no mapa"
-                    >
-                      <MapPin className="w-3.5 h-3.5 text-red-400" />
-                      <span>Ver no Mapa</span>
-                    </button>
-                  )}
                   {selectedRoute.type !== 'segura' && (
                     <button
                       type="button"
                       onClick={onAcceptReroute}
-                      className="flex-1 py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all"
+                      className="flex-1 py-2.5 px-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all"
                     >
                       <ShieldCheck className="w-4 h-4 text-neutral-950 stroke-[2.5]" />
                       <span>Desviar para Rota Segura</span>
@@ -474,7 +464,7 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
                   <button
                     type="button"
                     onClick={() => onDismissAlert(activeAlertZone.id)}
-                    className="py-2 px-3 rounded-xl bg-neutral-900/80 text-neutral-400 hover:text-white border border-neutral-800 text-xs font-medium transition-colors"
+                    className="py-2.5 px-3.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-800 text-xs font-semibold transition-colors active:scale-95"
                   >
                     Dispensar
                   </button>

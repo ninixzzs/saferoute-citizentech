@@ -237,58 +237,59 @@ export const ExpandedMapWorkspace: React.FC<ExpandedMapWorkspaceProps> = ({
       )}
 
       {/* Floating Defesa Civil Alert */}
+      {/* Floating Active Risk Alert (SafeRoute Alert - Clean, Modern & High-Contrast) */}
       {activeAlertZone && (
         <div
           onMouseDown={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
-          className="absolute top-22 left-4 right-16 sm:right-auto sm:w-96 z-[410] rounded-2xl bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white border border-neutral-200 dark:border-neutral-800 shadow-2xl p-4 space-y-2.5 animate-in slide-in-from-top-4 duration-200 select-none"
+          className="absolute top-22 left-4 right-16 sm:right-auto sm:w-[410px] z-[410] rounded-3xl bg-neutral-950/95 backdrop-blur-xl text-white border-2 border-red-500/50 shadow-[0_15px_45px_rgba(239,68,68,0.35)] p-4 sm:p-5 space-y-3 animate-in slide-in-from-top-4 duration-200 select-none"
         >
-          <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-2">
-            <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
-              <AlertTriangle className="w-4 h-4 text-neutral-900 dark:text-white" />
-              <span>Alerta SafeRoute</span>
-            </span>
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
+              <span className="text-[11px] font-mono font-black uppercase tracking-widest text-red-400">
+                ALERTA SAFEROUTE &bull; DEFESA CIVIL
+              </span>
+            </div>
             <button
               type="button"
               onClick={() => onDismissAlert(activeAlertZone.id)}
-              className="text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+              className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-neutral-300 hover:text-white flex items-center justify-center transition-colors"
               aria-label="Fechar alerta"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
+
+          {/* Incident Details */}
           <div>
-            <h4 className="text-xs font-bold">{activeAlertZone.neighborhood}</h4>
-            <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-0.5 leading-relaxed">
+            <h4 className="text-sm font-black text-white tracking-tight uppercase flex items-center gap-1.5">
+              <span>{activeAlertZone.neighborhood}</span>
+              <span className="text-neutral-500">&bull;</span>
+              <span className="text-neutral-300 font-semibold text-xs">{activeAlertZone.name}</span>
+            </h4>
+            <p className="text-xs text-neutral-300 mt-1 leading-relaxed">
               {activeAlertZone.defenseCivilTip}
             </p>
           </div>
+
+          {/* Action Buttons (Removed 'Ver no Mapa' as requested) */}
           <div className="flex items-center gap-2 pt-1 flex-wrap">
-            {onFocusZone && (
-              <button
-                type="button"
-                onClick={() => onFocusZone(activeAlertZone)}
-                className="py-1.5 px-3 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white text-xs font-semibold flex items-center gap-1 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-                title="Ver localização desta área no mapa"
-              >
-                <MapPin className="w-3.5 h-3.5" />
-                <span>Ver no Mapa</span>
-              </button>
-            )}
-            {selectedRoute.type !== 'segura' && (
+            {selectedRoute.type !== 'segura' ? (
               <button
                 type="button"
                 onClick={onAcceptReroute}
-                className="flex-1 py-1.5 px-3 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-950 font-bold text-xs flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all"
               >
-                <ShieldCheck className="w-3.5 h-3.5" />
+                <ShieldCheck className="w-4 h-4 text-neutral-950 stroke-[2.5]" />
                 <span>Desviar para Rota Segura</span>
               </button>
-            )}
+            ) : null}
             <button
               type="button"
               onClick={() => onDismissAlert(activeAlertZone.id)}
-              className="py-1.5 px-3 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs font-semibold"
+              className="py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-800 text-xs font-semibold transition-colors active:scale-95"
             >
               Dispensar
             </button>

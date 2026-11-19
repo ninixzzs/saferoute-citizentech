@@ -18,27 +18,27 @@ export const AlertBanner: React.FC<AlertBannerProps> = ({
   if (!zone) return null;
 
   return (
-    <div className="w-full bg-gradient-to-r from-red-950 via-slate-900 to-amber-950 border-y sm:border sm:rounded-xl border-red-500/50 shadow-2xl p-4 my-2 transition-all duration-300 emergency-broadcast">
+    <div className="w-full bg-neutral-950/95 backdrop-blur-xl border-y sm:border sm:rounded-2xl border-red-500/50 shadow-[0_10px_35px_rgba(239,68,68,0.25)] p-4 my-2 transition-all duration-300 emergency-broadcast select-none">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         {/* Warning Icon and Message */}
-        <div className="flex items-start gap-3 flex-1">
-          <div className="p-2.5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/40 shrink-0">
-            <AlertTriangle className="w-6 h-6 animate-bounce" />
+        <div className="flex items-start gap-3.5 flex-1">
+          <div className="w-10 h-10 rounded-2xl bg-red-500/20 text-red-400 border border-red-500/40 flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+            <AlertTriangle className="w-5 h-5 stroke-[2.5]" />
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-red-500 text-white font-mono">
-                ALERTA SAFEROUTE
+              <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 font-mono">
+                ALERTA SAFEROUTE &bull; DEFESA CIVIL
               </span>
-              <span className="text-xs font-semibold text-red-300">
-                {zone.neighborhood} - {zone.name}
+              <span className="text-xs font-bold text-red-300">
+                {zone.neighborhood} &bull; {zone.name}
               </span>
             </div>
-            <h4 className="text-sm sm:text-base font-bold text-white mt-1">
+            <h4 className="text-sm sm:text-base font-black text-white mt-1 leading-snug">
               {zone.title}
             </h4>
-            <p className="text-xs sm:text-sm text-amber-200/90 font-medium mt-1 flex items-center gap-1.5">
-              <span className="font-semibold text-amber-400">Instrução:</span> {zone.defenseCivilTip}
+            <p className="text-xs sm:text-sm text-neutral-300 font-normal mt-1 flex items-center gap-1.5">
+              <span className="font-bold text-amber-400">Instrução Oficial:</span> {zone.defenseCivilTip}
             </p>
           </div>
         </div>
@@ -51,7 +51,7 @@ export const AlertBanner: React.FC<AlertBannerProps> = ({
                 `Atenção: Você está em ${zone.neighborhood}. ${zone.defenseCivilTip}`
               )
             }
-            className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs border border-slate-700 transition-colors"
+            className="p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white text-xs border border-neutral-700 transition-colors"
             title="Ouvir alerta por voz"
           >
             <Volume2 className="w-4 h-4" />
@@ -59,15 +59,15 @@ export const AlertBanner: React.FC<AlertBannerProps> = ({
 
           <button
             onClick={onReroute}
-            className="flex-1 md:flex-initial px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs sm:text-sm shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2"
+            className="flex-1 md:flex-initial px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-black text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-95"
           >
-            <ShieldCheck className="w-4 h-4" />
-            <span>Sugerir Desvio Mais Seguro</span>
+            <ShieldCheck className="w-4 h-4 text-neutral-950 stroke-[2.5]" />
+            <span>Sugerir Desvio Seguro</span>
           </button>
 
           <button
             onClick={() => onDismiss(zone.id)}
-            className="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+            className="p-2.5 rounded-xl bg-neutral-900/80 hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors border border-neutral-800"
             title="Dispensar aviso"
           >
             <X className="w-4 h-4" />
