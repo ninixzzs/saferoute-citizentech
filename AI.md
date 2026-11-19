@@ -4,7 +4,7 @@
 > **Disciplinas:** Frontend & Web Development  
 > **Fundadora & Desenvolvedora:** **Nicolly Vilela** &middot; [LinkedIn](https://www.linkedin.com/in/nicollyvilela) &middot; [@ninixzzs](https://github.com/ninixzzs)  
 > **Repositório GitHub (Privado):** [https://github.com/ninixzzs/saferoute-citizentech](https://github.com/ninixzzs/saferoute-citizentech)  
-> **Deploy Oficial em Produção:** [https://saferoute-citizentech.vercel.app/](https://saferoute-citizentech.vercel.app/)  
+> **Deploy Oficial em Produção:** [https://saferoute-citizentech-sand.vercel.app/](https://saferoute-citizentech-sand.vercel.app/) &middot; [Espelho](https://saferoute-citizentech.vercel.app/)  
 > **Data:** Novembro de 2026  
 
 ---
