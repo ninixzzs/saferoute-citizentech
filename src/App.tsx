@@ -1365,58 +1365,33 @@ export function App() {
         onSelectMode={setTravelMode}
       />
 
-      {/* Central Passenger Safety Briefing Notification Modal (Always centered in the screen on desktop and mobile) */}
+      {/* Pre-Trip Safety Briefing Notification Modal (Clean, Monochromatic Black & White, Always Centered) */}
       {pendingTripBriefing && (
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="Notificação de Segurança SafeRoute"
+          aria-label="Notificação SafeRoute"
           onClick={() => {
             stopVoice();
             setPendingTripBriefing(null);
           }}
-          className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[9999] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 select-none animate-in fade-in duration-150"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className={`w-full max-w-lg rounded-3xl p-5 sm:p-7 space-y-4 shadow-[0_25px_80px_rgba(0,0,0,0.85)] border-2 backdrop-blur-2xl transition-all animate-in zoom-in-95 duration-200 select-none ${
-              pendingTripBriefing.status === 'calm'
-                ? 'bg-neutral-950 text-white border-emerald-500/60 shadow-emerald-950/40'
-                : 'bg-neutral-950 text-white border-amber-500/60 shadow-amber-950/40'
-            }`}
+            className="w-full max-w-md rounded-3xl bg-neutral-950 text-white border border-neutral-800 shadow-2xl p-6 space-y-4 animate-in zoom-in-95 duration-150"
           >
-            {/* Top Status Header */}
-            <div className="flex items-center justify-between border-b border-white/10 pb-3.5">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
               <div className="flex items-center gap-3">
-                <div
-                  className={`w-11 h-11 rounded-2xl flex items-center justify-center shadow-lg shrink-0 ${
-                    pendingTripBriefing.status === 'calm'
-                      ? 'bg-emerald-500 text-neutral-950 shadow-emerald-500/30'
-                      : 'bg-amber-500 text-neutral-950 shadow-amber-500/30'
-                  }`}
-                >
-                  {pendingTripBriefing.status === 'calm' ? (
-                    <ShieldCheck className="w-6 h-6 stroke-[2.5]" />
-                  ) : (
-                    <AlertTriangle className="w-6 h-6 stroke-[2.5]" />
-                  )}
+                <div className="w-9 h-9 rounded-xl bg-white text-neutral-950 flex items-center justify-center shrink-0 shadow-sm font-bold">
+                  <Shield className="w-5 h-5 fill-neutral-950 stroke-neutral-950" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`text-[10px] sm:text-[11px] font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                        pendingTripBriefing.status === 'calm'
-                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                      }`}
-                    >
-                      {pendingTripBriefing.status === 'calm' ? '● ESTÁ TUDO BEM' : '▲ ATENÇÃO PREVENTIVA'}
-                    </span>
-                    <span className="text-[10px] font-mono text-neutral-400">
-                      SafeRoute SP
-                    </span>
-                  </div>
-                  <h3 className="text-base sm:text-lg font-black text-white mt-1 leading-snug">
+                  <span className="text-[11px] font-mono font-bold tracking-wider uppercase text-neutral-400">
+                    SafeRoute
+                  </span>
+                  <h3 className="text-sm sm:text-base font-bold text-white leading-snug">
                     {pendingTripBriefing.headline}
                   </h3>
                 </div>
@@ -1428,42 +1403,39 @@ export function App() {
                   stopVoice();
                   setPendingTripBriefing(null);
                 }}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-neutral-300 hover:text-white flex items-center justify-center transition-colors shrink-0"
+                className="w-7 h-7 rounded-full bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white flex items-center justify-center transition-colors shrink-0"
                 aria-label="Fechar aviso"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Core Message & Route Context */}
-            <div className="space-y-3">
-              <p className="text-xs sm:text-sm text-neutral-200 leading-relaxed font-normal">
-                {pendingTripBriefing.message}
-              </p>
+            {/* Message */}
+            <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed font-normal">
+              {pendingTripBriefing.message}
+            </p>
 
-              {/* Informative Destination Pill */}
-              <div className="flex flex-wrap items-center gap-2 p-3 rounded-2xl bg-white/5 border border-white/10 text-xs font-mono text-neutral-300">
-                <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span className="text-neutral-400">Destino:</span>
-                <strong className="text-white">{destinationLocation.name}</strong>
-                <span className="text-neutral-600">&bull;</span>
-                <span className="text-neutral-400">Duração estimada:</span>
-                <strong className="text-emerald-400">{selectedRoute.durationMin} min</strong>
-              </div>
+            {/* Destination Context */}
+            <div className="flex flex-wrap items-center gap-2 p-2.5 rounded-xl bg-neutral-900 border border-neutral-800 text-xs font-mono text-neutral-400">
+              <MapPin className="w-3.5 h-3.5 text-neutral-300 shrink-0" />
+              <span>Destino:</span>
+              <strong className="text-white">{destinationLocation.name}</strong>
+              <span>&bull;</span>
+              <span>{selectedRoute.durationMin} min</span>
             </div>
 
-            {/* High-Impact Actions */}
-            <div className="space-y-2.5 pt-1.5">
+            {/* Actions (Pure Black & White) */}
+            <div className="space-y-2 pt-1">
               <button
                 type="button"
                 onClick={() => {
                   stopVoice();
                   handleConfirmStartTrip();
                 }}
-                className="w-full py-3.5 px-6 rounded-2xl bg-white hover:bg-neutral-200 text-black font-black text-sm flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(255,255,255,0.3)] transition-all active:scale-98"
+                className="w-full py-3 px-4 rounded-xl bg-white hover:bg-neutral-200 text-neutral-950 font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-98 shadow-sm"
               >
-                <Play className="w-4 h-4 fill-black stroke-black" />
-                <span>Iniciar Trajeto Agora</span>
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span>Iniciar Viagem Agora</span>
               </button>
 
               {pendingTripBriefing.recommendSafeRoute && (
@@ -1474,25 +1446,12 @@ export function App() {
                     setPendingTripBriefing(null);
                     handleAcceptReroute();
                   }}
-                  className="w-full py-3 px-5 rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-98"
+                  className="w-full py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white border border-neutral-800 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors active:scale-98"
                 >
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>Ativar Rota Segura Recomendada</span>
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Usar Rota Segura Recomendada</span>
                 </button>
               )}
-
-              <button
-                type="button"
-                onClick={() => {
-                  stopVoice();
-                  setPendingTripBriefing(null);
-                  handleOpenAssistant();
-                }}
-                className="w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white border border-white/10 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-                <span>Tirar dúvida com Assistente IA antes de sair</span>
-              </button>
             </div>
           </div>
         </div>

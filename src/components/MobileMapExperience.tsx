@@ -10,6 +10,7 @@ import {
   Pause,
   RotateCcw,
   ShieldCheck,
+  Shield,
   AlertTriangle,
   CornerUpLeft,
   CornerUpRight,
@@ -424,40 +425,42 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
               onTouchStart={(e) => e.stopPropagation()}
               className="absolute bottom-[132px] left-3 right-3 z-[425] space-y-2 pointer-events-auto"
             >
-              <div className="rounded-3xl bg-neutral-950/95 backdrop-blur-xl text-white border-2 border-red-500/50 shadow-[0_15px_45px_rgba(239,68,68,0.35)] p-4 space-y-2.5 animate-in slide-in-from-bottom-3 duration-200">
-                <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                  <span className="flex items-center gap-2 text-xs font-mono font-black text-red-400 uppercase tracking-widest">
-                    <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
-                    <span>ALERTA SAFEROUTE &bull; DEFESA CIVIL</span>
-                  </span>
+              <div className="rounded-2xl bg-neutral-950 text-white border border-neutral-800 shadow-2xl p-4 space-y-2.5 animate-in slide-in-from-bottom-3 duration-200">
+                <div className="flex items-center justify-between border-b border-neutral-800 pb-2">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-white" />
+                    <span className="font-display font-black text-xs text-white tracking-tight">
+                      SafeRoute
+                    </span>
+                  </div>
                   <button
                     type="button"
                     onClick={() => onDismissAlert(activeAlertZone.id)}
-                    className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 text-neutral-300 hover:text-white flex items-center justify-center transition-colors"
+                    className="w-6 h-6 rounded-full bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white flex items-center justify-center transition-colors"
                     aria-label="Fechar alerta"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
                 <div>
-                  <h4 className="text-xs sm:text-sm font-black text-white uppercase tracking-tight flex items-center gap-1.5">
+                  <h4 className="text-xs sm:text-sm font-bold text-white tracking-tight flex items-center gap-1.5">
                     <span>{activeAlertZone.neighborhood}</span>
                     <span className="text-neutral-500">&bull;</span>
                     <span className="text-neutral-300 font-medium text-xs">{activeAlertZone.name}</span>
                   </h4>
-                  <p className="text-xs text-neutral-300 mt-1 leading-relaxed">
+                  <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
                     {activeAlertZone.defenseCivilTip}
                   </p>
                 </div>
-                {/* Actions (Removed 'Ver no Mapa' as requested) */}
+                {/* Actions (Black and white minimal design) */}
                 <div className="flex items-center gap-2 pt-1 flex-wrap">
                   {selectedRoute.type !== 'segura' && (
                     <button
                       type="button"
                       onClick={onAcceptReroute}
-                      className="flex-1 py-2.5 px-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all"
+                      className="flex-1 py-2.5 px-3.5 rounded-xl bg-white text-neutral-950 hover:bg-neutral-200 font-black text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
                     >
-                      <ShieldCheck className="w-4 h-4 text-neutral-950 stroke-[2.5]" />
+                      <ShieldCheck className="w-4 h-4 text-neutral-950" />
                       <span>Desviar para Rota Segura</span>
                     </button>
                   )}
@@ -533,36 +536,24 @@ export const MobileMapExperience: React.FC<MobileMapExperienceProps> = ({
                   })}
                 </div>
 
-                {/* Instant safety assessment banner for mobile - Interactive click to trigger central notification */}
+                {/* Instant safety assessment banner for mobile (Clean black & white) */}
                 {selectedRoute.type === 'segura' || selectedRoute.safetyScore >= 80 ? (
                   <button
                     type="button"
                     onClick={onStart}
-                    className="w-full text-left px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-950 dark:text-emerald-200 flex items-center justify-between gap-1.5 text-[11px] font-semibold transition-all cursor-pointer shadow-xs active:scale-98 group"
-                    title="Clique para abrir notificação no meio da tela"
+                    className="w-full text-left px-3 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 border border-neutral-300 dark:border-neutral-800 text-neutral-900 dark:text-neutral-100 flex items-center gap-2 text-[11px] font-medium transition-all cursor-pointer active:scale-98 select-none"
                   >
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 group-hover:scale-110 transition-transform" />
-                      <span className="truncate">Está tudo bem! Trajeto sem áreas de risco críticas.</span>
-                    </div>
-                    <span className="text-[10px] font-mono font-bold text-emerald-700 dark:text-emerald-400 underline shrink-0">
-                      Abrir aviso &rarr;
-                    </span>
+                    <ShieldCheck className="w-4 h-4 text-neutral-950 dark:text-white shrink-0" />
+                    <span className="truncate">Está tudo bem! Trajeto sem áreas de risco críticas.</span>
                   </button>
                 ) : (
                   <button
                     type="button"
                     onClick={onStart}
-                    className="w-full text-left px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-950 dark:text-amber-200 flex items-center justify-between gap-1.5 text-[11px] font-semibold transition-all cursor-pointer shadow-xs active:scale-98 group"
-                    title="Clique para abrir notificação no meio da tela"
+                    className="w-full text-left px-3 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 border border-neutral-300 dark:border-neutral-800 text-neutral-900 dark:text-neutral-100 flex items-center gap-2 text-[11px] font-medium transition-all cursor-pointer active:scale-98 select-none"
                   >
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 group-hover:scale-110 transition-transform" />
-                      <span className="truncate">Atenção: Cruza áreas de risco (ex: Santa Ifigênia).</span>
-                    </div>
-                    <span className="text-[10px] font-mono font-bold text-amber-700 dark:text-amber-400 underline shrink-0">
-                      Abrir aviso &rarr;
-                    </span>
+                    <AlertTriangle className="w-4 h-4 text-neutral-950 dark:text-white shrink-0" />
+                    <span className="truncate">Atenção: Cruza áreas de risco (ex: Santa Ifigênia).</span>
                   </button>
                 )}
               </div>
